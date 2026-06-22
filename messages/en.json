@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "customRegistry": "Custom Registry",
+    "registry": "Registry",
+    "controlProtocol": "Control Protocol",
+    "bureau": "Bureau",
+    "archive": "Archive",
+    "cart": "Cart",
+    "cartEmpty": "Cart (00)",
+    "login": "Login",
+    "account": "Account"
+  },
+  "docStrip": {
+    "classification": "CLASSIFICATION: PUBLIC CATALOGUE",
+    "locale": "LOCALE",
+    "objectsOnRecord": "OBJECTS ON RECORD"
+  },
+  "registry": {
+    "section": "SECTION 01",
+    "title": "Object Registry",
+    "description": "Certified objects for the regulation of spatial photons.",
+    "sortLabel": "SORT",
+    "sortRegistryNo": "REGISTRY NO. ASC",
+    "noResults": "No registered objects found matching these criteria.",
+    "filters": {
+      "category": "Category",
+      "allObjects": "All Objects",
+      "pendant": "Pendant",
+      "wall": "Wall-Mounted",
+      "desk": "Desk Unit",
+      "floor": "Floor System",
+      "strip": "Strip Element",
+      "status": "Status",
+      "certified": "Certified (Available)",
+      "limited": "Limited Series",
+      "decommissioned": "Decommissioned",
+      "photonOutput": "Photon Output",
+      "compatibility": "Control Compatibility",
+      "valuation": "Valuation"
+    },
+    "cta": {
+      "formRef": "FORM 104-B",
+      "text": "File a custom configuration. Stack components, assign a controller, submit for registry approval.",
+      "button": "Register Design"
+    }
+  },
+  "product": {
+    "addToCart": "Request Object",
+    "outOfStock": "Decommissioned",
+    "specifications": "Technical Specifications",
+    "registryNo": "Reg. No.",
+    "status": {
+      "certified": "Certified",
+      "limited": "Limited Series",
+      "decommissioned": "Decommissioned"
+    }
+  },
+  "customRegistry": {
+    "title": "Custom Registry",
+    "subtitle": "FORM 104-B: DEVICE REGISTRY",
+    "description": "Select your components. Assign your material. Submit your design for registry approval."
+  },
+  "cart": {
+    "title": "Order Queue",
+    "empty": "No objects in queue.",
+    "total": "Total",
+    "checkout": "Proceed to Payment Protocol",
+    "continueShopping": "Return to Registry"
+  },
+  "footer": {
+    "protocols": {
+      "01": {
+        "code": "PROTOCOL 01",
+        "title": "App Governance",
+        "desc": "Every registered object reports to a single control interface."
+      },
+      "02": {
+        "code": "PROTOCOL 02",
+        "title": "Voice Override",
+        "desc": "Compatible with major voice-command frameworks."
+      },
+      "03": {
+        "code": "PROTOCOL 03",
+        "title": "Scheduled Operation",
+        "desc": "Automated photon schedules, set once, enforced indefinitely."
+      },
+      "04": {
+        "code": "PROTOCOL 04",
+        "title": "Bulletin Subscription",
+        "desc": "Receive registry updates and new object certifications.",
+        "placeholder": "Your email address",
+        "button": "Subscribe"
+      }
+    }
+  },
+  "common": {
+    "brandName": "The Ambience Bureau",
+    "brandTagline": "REGULATION OF SPATIAL PHOTONS // EST. 2026",
+    "loading": "Loading...",
+    "error": "An error occurred.",
+    "backToRegistry": "Back to Registry"
+  }
+}

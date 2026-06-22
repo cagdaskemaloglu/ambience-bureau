@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "customRegistry": "Custom Registry",
+    "registry": "Registry",
+    "controlProtocol": "Control Protocol",
+    "bureau": "Bureau",
+    "archive": "Archive",
+    "cart": "Cart",
+    "cartEmpty": "Cart (00)",
+    "login": "Giriş",
+    "account": "Hesabım"
+  },
+  "docStrip": {
+    "classification": "SINIFLANDIRMA: AÇIK KATALOG",
+    "locale": "YEREL",
+    "objectsOnRecord": "KAYITLI NESNE"
+  },
+  "registry": {
+    "section": "BÖLÜM 01",
+    "title": "Nesne Kaydı",
+    "description": "Mekânsal foton düzenlemesi için sertifikalı nesneler.",
+    "sortLabel": "SIRALAMA",
+    "sortRegistryNo": "KAYIT NO. ARTAN",
+    "noResults": "Bu kriterlere uygun kayıtlı nesne bulunamadı.",
+    "filters": {
+      "category": "Kategori",
+      "allObjects": "Tüm Nesneler",
+      "pendant": "Sarkıt",
+      "wall": "Duvar Montajı",
+      "desk": "Masa Birimi",
+      "floor": "Zemin Sistemi",
+      "strip": "Şerit Eleman",
+      "status": "Durum",
+      "certified": "Sertifikalı (Mevcut)",
+      "limited": "Sınırlı Seri",
+      "decommissioned": "Hizmet Dışı",
+      "photonOutput": "Foton Çıkışı",
+      "compatibility": "Kontrol Uyumluluğu",
+      "valuation": "Değerleme"
+    },
+    "cta": {
+      "formRef": "FORM 104-B",
+      "text": "Özel bir konfigürasyon dosyalayın. Bileşenleri istifleyin, kontrolör atayın, kayıt onayı için gönderin.",
+      "button": "Tasarım Kaydet"
+    }
+  },
+  "product": {
+    "addToCart": "Nesne Talep Et",
+    "outOfStock": "Hizmet Dışı",
+    "specifications": "Teknik Özellikler",
+    "registryNo": "Kayıt No.",
+    "status": {
+      "certified": "Sertifikalı",
+      "limited": "Sınırlı Seri",
+      "decommissioned": "Hizmet Dışı"
+    }
+  },
+  "customRegistry": {
+    "title": "Özel Kayıt",
+    "subtitle": "FORM 104-B: CİHAZ KAYIT FORMU",
+    "description": "Bileşenlerinizi seçin. Malzemenizi belirleyin. Tasarımınızı kayıt için gönderin."
+  },
+  "cart": {
+    "title": "Sipariş Kuyruğu",
+    "empty": "Kuyrukta nesne yok.",
+    "total": "Toplam",
+    "checkout": "Ödeme Prosedürüne Geç",
+    "continueShopping": "Kayda Dön"
+  },
+  "footer": {
+    "protocols": {
+      "01": {
+        "code": "PROTOKOL 01",
+        "title": "Uygulama Yönetimi",
+        "desc": "Kayıtlı her nesne tek bir kontrol arayüzüne rapor eder."
+      },
+      "02": {
+        "code": "PROTOKOL 02",
+        "title": "Sesli Komut",
+        "desc": "Büyük sesli komut sistemleriyle uyumlu."
+      },
+      "03": {
+        "code": "PROTOKOL 03",
+        "title": "Zamanlanmış Operasyon",
+        "desc": "Otomatik foton programları, bir kez ayarla, süresiz uygula."
+      },
+      "04": {
+        "code": "PROTOKOL 04",
+        "title": "Bülten Aboneliği",
+        "desc": "Kayıt güncellemelerini ve yeni nesne sertifikasyonlarını alın.",
+        "placeholder": "E-posta adresiniz",
+        "button": "Abone Ol"
+      }
+    }
+  },
+  "common": {
+    "brandName": "The Ambience Bureau",
+    "brandTagline": "MEKÂNSAL FOTON DÜZENLEMESİ // EST. 2026",
+    "loading": "Yükleniyor...",
+    "error": "Bir hata oluştu.",
+    "backToRegistry": "Kayda Dön"
+  }
+}

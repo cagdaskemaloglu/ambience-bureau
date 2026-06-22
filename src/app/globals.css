@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --font-inter: 'Inter', system-ui, sans-serif;
+    --font-jetbrains: 'JetBrains Mono', monospace;
+  }
+
+  html {
+    @apply bg-bureau-white text-bureau-ink h-full;
+    font-feature-settings: 'kern' 1, 'liga' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Thin 1px borders throughout */
+  * {
+    border-color: theme('colors.bureau.black');
+  }
+
+  /* Selection */
+  ::selection {
+    background: theme('colors.bureau.amber');
+    color: white;
+  }
+
+  /* Scrollbar — minimal, branded */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: theme('colors.bureau.rule'); }
+  ::-webkit-scrollbar-thumb:hover { background: theme('colors.bureau.subtle'); }
+}
+
+@layer components {
+  /* Bureau button variants */
+  .btn-bureau {
+    @apply inline-flex items-center justify-center gap-2
+           border border-bureau-black
+           px-5 py-3
+           font-mono text-xs tracking-wider uppercase
+           bg-bureau-black text-bureau-white
+           transition-colors duration-150
+           hover:bg-bureau-white hover:text-bureau-black
+           focus-visible:outline-2 focus-visible:outline-bureau-amber;
+  }
+
+  .btn-bureau-outline {
+    @apply inline-flex items-center justify-center gap-2
+           border border-bureau-black
+           px-5 py-3
+           font-mono text-xs tracking-wider uppercase
+           bg-transparent text-bureau-black
+           transition-colors duration-150
+           hover:bg-bureau-black hover:text-bureau-white
+           focus-visible:outline-2 focus-visible:outline-bureau-amber;
+  }
+
+  .btn-bureau-amber {
+    @apply inline-flex items-center justify-center gap-2
+           border border-bureau-amber
+           px-5 py-3
+           font-mono text-xs tracking-wider uppercase
+           bg-bureau-amber text-bureau-white
+           transition-colors duration-150
+           hover:bg-bureau-amber-dim
+           focus-visible:outline-2 focus-visible:outline-bureau-amber;
+  }
+
+  /* Mono label / eyebrow */
+  .label-mono {
+    @apply font-mono text-[10.5px] tracking-widest uppercase text-bureau-muted;
+  }
+
+  /* Serial number */
+  .serial {
+    @apply font-mono text-[10.5px] tracking-wider text-bureau-subtle;
+  }
+
+  /* Section rule */
+  .rule-h {
+    @apply border-t border-bureau-black;
+  }
+  .rule-v {
+    @apply border-l border-bureau-black;
+  }
+
+  /* Status tags */
+  .status-certified {
+    @apply font-mono text-[10px] tracking-wider uppercase font-semibold text-[#1a7a3c];
+  }
+  .status-limited {
+    @apply font-mono text-[10px] tracking-wider uppercase font-semibold text-bureau-amber;
+  }
+  .status-decommissioned {
+    @apply font-mono text-[10px] tracking-wider uppercase font-semibold text-[#b03224];
+  }
+}
