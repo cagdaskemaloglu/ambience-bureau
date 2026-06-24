@@ -1,5 +1,7 @@
+import { Any } from '@sanity/client/csm'
 import { createSupabaseAdminClient } from './server'
 import type { CustomDesignData } from '@/types/supabase'
+import { AnyARecord } from 'node:dns'
 
 // ============================================================
 // Bu dosya SADECE server-side (API routes, Server Actions) kullanılır.
@@ -77,8 +79,8 @@ export async function createOrder(params: {
     customDesignId?: string
   }>
 }) {
-  const supabase = createSupabaseAdminClient()
-
+  const supabase = createSupabaseAdminClient() as any
+ 
   // 1. Siparişi oluştur
   const { data: order, error: orderError } = await supabase
     .from('orders')
@@ -119,7 +121,7 @@ export async function createOrder(params: {
 
   const { error: itemsError } = await supabase
     .from('order_items')
-    .insert(itemRows)
+    .insert(itemRows as any)
 
   if (itemsError) {
     // Rollback: sipariş kalemleri eklenemezse siparişi sil
@@ -137,7 +139,7 @@ export async function updateOrderStatus(
   status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded',
   paymentInfo?: { iyzicoPaymentId?: string; iyzicoToken?: string; paidAt?: string }
 ) {
-  const supabase = createSupabaseAdminClient()
+  const supabase = createSupabaseAdminClient() as any
 
   const { data, error } = await supabase
     .from('orders')
