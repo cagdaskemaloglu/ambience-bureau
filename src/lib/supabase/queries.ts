@@ -16,7 +16,7 @@ export async function saveCustomDesign(params: {
   totalPrice: number // kuruş cinsinden
   snapshotUrl?: string
 }) {
-  const supabase = createSupabaseAdminClient()
+  const supabase = createSupabaseAdminClient() as any
 
   const { data, error } = await supabase
     .from('custom_designs')
