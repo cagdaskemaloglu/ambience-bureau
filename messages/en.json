@@ -93,6 +93,47 @@
       }
     }
   },
+  "checkout": {
+    "title": "Payment Protocol",
+    "formRef": "FORM 220-D: SHIPPING RECORD",
+    "guestOrMember": {
+      "heading": "Method of Continuance",
+      "asGuest": "Continue as Guest",
+      "asMember": "Sign In as Member",
+      "alreadyMember": "Already a member?",
+      "loginLink": "Sign in"
+    },
+    "guestEmail": {
+      "label": "Email Address",
+      "placeholder": "you@example.com",
+      "note": "Order confirmation will be sent to this address."
+    },
+    "shipping": {
+      "heading": "Shipping Information",
+      "name": "Full Name",
+      "phone": "Phone",
+      "address1": "Address Line 1",
+      "address2": "Address Line 2 (Optional)",
+      "city": "City",
+      "postal": "Postal Code",
+      "country": "Country"
+    },
+    "summary": {
+      "heading": "FORM 220-C: ORDER SUMMARY",
+      "subtotal": "Subtotal",
+      "vat": "VAT (20%)",
+      "shipping": "Shipping",
+      "free": "Free",
+      "total": "Total"
+    },
+    "submit": "Confirm Order and Proceed",
+    "submitting": "Processing...",
+    "errors": {
+      "guestEmailRequired": "Email address is required for guest checkout.",
+      "fieldsRequired": "Please fill in all required fields.",
+      "generic": "Order could not be created. Please try again."
+    }
+  },
   "common": {
     "brandName": "The Ambience Bureau",
     "brandTagline": "REGULATION OF SPATIAL PHOTONS // EST. 2026",

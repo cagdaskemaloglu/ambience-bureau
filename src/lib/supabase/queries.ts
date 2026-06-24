@@ -53,10 +53,11 @@ export async function getCustomDesignById(id: string) {
 export async function createOrder(params: {
   userId?: string | null
   guestEmail?: string | null
-  subtotal: number       // kuruş
-  vatAmount: number      // kuruş
-  shippingAmount: number // kuruş
-  totalAmount: number    // kuruş
+  currency: 'TRY' | 'USD'
+  subtotal: number       // kuruş/cent (en küçük birim)
+  vatAmount: number      // kuruş/cent
+  shippingAmount: number // kuruş/cent
+  totalAmount: number    // kuruş/cent
   shippingInfo: {
     name: string
     phone: string
@@ -84,6 +85,7 @@ export async function createOrder(params: {
     .insert({
       user_id: params.userId ?? null,
       guest_email: params.guestEmail ?? null,
+      currency: params.currency,
       subtotal: params.subtotal,
       vat_amount: params.vatAmount,
       shipping_amount: params.shippingAmount,

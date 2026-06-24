@@ -93,6 +93,47 @@
       }
     }
   },
+  "checkout": {
+    "title": "Ödeme Prosedürü",
+    "formRef": "FORM 220-D: TESLİMAT KAYDI",
+    "guestOrMember": {
+      "heading": "Devam Etme Yöntemi",
+      "asGuest": "Misafir Olarak Devam Et",
+      "asMember": "Üye Girişi Yap",
+      "alreadyMember": "Zaten üye misiniz?",
+      "loginLink": "Giriş yapın"
+    },
+    "guestEmail": {
+      "label": "E-posta Adresi",
+      "placeholder": "ornek@email.com",
+      "note": "Sipariş onayı bu adrese gönderilecektir."
+    },
+    "shipping": {
+      "heading": "Teslimat Bilgileri",
+      "name": "Ad Soyad",
+      "phone": "Telefon",
+      "address1": "Adres Satırı 1",
+      "address2": "Adres Satırı 2 (Opsiyonel)",
+      "city": "Şehir",
+      "postal": "Posta Kodu",
+      "country": "Ülke"
+    },
+    "summary": {
+      "heading": "FORM 220-C: SİPARİŞ ÖZETİ",
+      "subtotal": "Ara Toplam",
+      "vat": "KDV (%20)",
+      "shipping": "Kargo",
+      "free": "Ücretsiz",
+      "total": "Toplam"
+    },
+    "submit": "Siparişi Onayla ve Devam Et",
+    "submitting": "İşleniyor...",
+    "errors": {
+      "guestEmailRequired": "Misafir siparişi için e-posta adresi gereklidir.",
+      "fieldsRequired": "Lütfen zorunlu alanları doldurun.",
+      "generic": "Sipariş oluşturulamadı. Lütfen tekrar deneyin."
+    }
+  },
   "common": {
     "brandName": "The Ambience Bureau",
     "brandTagline": "MEKÂNSAL FOTON DÜZENLEMESİ // EST. 2026",
