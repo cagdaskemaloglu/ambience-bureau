@@ -89,7 +89,7 @@ export default async function ProductDetailPage({ params }: Props) {
     name,
     description: getLocalizedValue(product.shortDescription, locale) ?? '',
     sku: product.registryNo,
-    image: product.images?.map((img:any) => urlFor(img).url()) ?? [],
+    image: product.images?.map((img) => urlFor(img).url()) ?? [],
     offers: {
       '@type': 'Offer',
       price: jsonLdPrice,
@@ -142,7 +142,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
           {description && description.length > 0 && (
             <div className="mb-6 space-y-3 text-[13.5px] leading-relaxed text-bureau-ink [&_p]:mb-3">
-              <PortableText value={description as any} />
+              <PortableText value={description} />
             </div>
           )}
 

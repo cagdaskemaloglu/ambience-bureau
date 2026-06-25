@@ -2,14 +2,14 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 /**
- * Supabase auth session'ını her request'te yeniler (cookie refresh).
- * Middleware içinde next-intl'den SONRA çağrılır, response'a cookie'leri ekler.
- *
- * NOT: .env.local'de Supabase değişkenleri henüz gerçek değerlerle
- * doldurulmadıysa (placeholder/boş ise) bu fonksiyon sessizce atlanır.
- * Bu, Supabase kurulumu tamamlanmadan önce de geliştirmeye devam
- * edilebilmesi için kasıtlı bir güvenlik ağıdır.
- */
+* Supabase auth session'ını her request'te yeniler (cookie refresh).
+* Middleware içinde next-intl'den SONRA çağrılır, response'a cookie'leri ekler.
+*
+* NOT: .env.local'de Supabase değişkenleri henüz gerçek değerlerle
+* doldurulmadıysa (placeholder/boş ise) bu fonksiyon sessizce atlanır.
+* Bu, Supabase kurulumu tamamlanmadan önce de geliştirmeye devam
+* edilebilmesi için kasıtlı bir güvenlik ağıdır.
+*/
 export async function updateSupabaseSession(
   request: NextRequest,
   response: NextResponse

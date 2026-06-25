@@ -4,9 +4,9 @@ import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
 
 /**
- * Server Components, Server Actions ve Route Handlers için Supabase client.
- * Her request'te yeni bir instance oluşturulur (Next.js'in cookie API'si ile).
- */
+* Server Components, Server Actions ve Route Handlers için Supabase client.
+* Her request'te yeni bir instance oluşturulur (Next.js'in cookie API'si ile).
+*/
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies()
 
@@ -33,9 +33,9 @@ export async function createSupabaseServerClient() {
 }
 
 /**
- * Service role client — sadece güvenli server-side operasyonlar için.
- * RLS bypass eder. Webhook'lar, admin işlemleri.
- */
+* Service role client — sadece güvenli server-side operasyonlar için.
+* RLS bypass eder. Webhook'lar, admin işlemleri.
+*/
 export function createSupabaseAdminClient() {
   return createClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

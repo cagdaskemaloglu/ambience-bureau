@@ -2,26 +2,25 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useRouter } from '@/i18n/navigation'
 import { Link } from '@/i18n/navigation'
 import { formatPrice } from '@/lib/sanity'
 import { useCartStore } from '@/lib/store/cart'
 import { getCurrentUser } from '@/lib/supabase/auth'
+import { IyzicoPaymentForm } from './IyzicoPaymentForm'
 
 type CheckoutMode = 'guest' | 'member' | 'checking'
 
 export function CheckoutForm() {
   const locale = useLocale() as 'tr' | 'en'
   const t = useTranslations('checkout')
-  const router = useRouter()
 
   const items = useCartStore((s) => s.items)
   const getTotal = useCartStore((s) => s.getTotal)
-  const clearCart = useCartStore((s) => s.clearCart)
 
   const [mode, setMode] = useState<CheckoutMode>('checking')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [guestEmail, setGuestEmail] = useState('')
+  const [formContent, setFormContent] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -81,6 +80,7 @@ export function CheckoutForm() {
         body: JSON.stringify({
           items,
           currency,
+          locale,
           guestEmail: mode === 'guest' ? guestEmail : undefined,
           shippingInfo: form,
         }),
@@ -91,17 +91,25 @@ export function CheckoutForm() {
         throw new Error(data.error ?? t('errors.generic'))
       }
 
-      const { order } = await res.json()
+      const { checkoutFormContent } = await res.json()
 
-      // Sipariş başarıyla oluşturuldu — ödeme adımına geç (Faz 7.3'te iyzico)
-      // Şimdilik sepeti temizleyip onay sayfasına yönlendiriyoruz.
-      clearCart()
-      router.push(`/checkout/confirmation?order=${order.order_number}`)
+      if (!checkoutFormContent) {
+        throw new Error(t('errors.generic'))
+      }
+
+      // Ödeme formu hazır — sepeti BURADA temizlemiyoruz, sadece
+      // ödeme başarıyla tamamlandığında (onay sayfasında) temizlenecek.
+      setFormContent(checkoutFormContent)
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errors.generic'))
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  // Ödeme formu hazırsa, checkout formunu değil iyzico widget'ını göster
+  if (formContent) {
+    return <IyzicoPaymentForm htmlContent={formContent} />
   }
 
   if (items.length === 0) {
