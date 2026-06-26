@@ -20,7 +20,6 @@ interface CheckoutRequestBody {
   }
 }
 
-// KDV oranı — Türkiye standart oranı. İleride ülkeye göre değişebilir.
 const VAT_RATE = 0.2
 
 export async function POST(request: Request) {
@@ -53,19 +52,41 @@ export async function POST(request: Request) {
       )
     }
 
-    // Fiyatları en küçük para birimine çevir (kuruş/cent) — ondalık hata riskini önler
+    // Kuruş/cent dönüşüm fonksiyonu
     const toMinorUnit = (amount: number) => Math.round(amount * 100)
 
+    // 1. Her bir kalemin KDV dahil toplam fiyatlarını tek tek minor birimde hesaplayalım
+    // Böylece iyzico basketItems toplamı ile totalMinor kuruşu kuruşuna eşit olur.
+    let totalCalculatedMinor = 0
+    const iyzicoBasketItems = items.map((item) => {
+      const unitPrice = currency === 'TRY' ? item.priceTRY : item.priceUSD
+      const rawSubtotalItemMinor = toMinorUnit(unitPrice) * item.quantity
+      const vatItemMinor = Math.round(rawSubtotalItemMinor * VAT_RATE)
+      const totalItemWithVatMinor = rawSubtotalItemMinor + vatItemMinor
+      
+      totalCalculatedMinor += totalItemWithVatMinor
+
+      return {
+        id: item.id,
+        name: item.name[locale] || item.name['tr'] || 'Ürün',
+        category1: item.type === 'custom' ? 'Custom Registry' : 'Object Registry',
+        itemType: 'PHYSICAL' as const,
+        // iyzico'ya bu kalemin KDV dahil TOPLAM tutarını string formatta iletiyoruz
+        price: (totalItemWithVatMinor / 100).toFixed(2),
+      }
+    })
+
+    const shippingMinor = 0 // şimdilik ücretsiz kargo
+    const totalMinor = totalCalculatedMinor + shippingMinor
+
+    // Supabase kırılımları için geriye dönük hesaplama (Opsiyonel/Uyumlu)
     const subtotalMinor = items.reduce((sum, item) => {
       const unitPrice = currency === 'TRY' ? item.priceTRY : item.priceUSD
       return sum + toMinorUnit(unitPrice) * item.quantity
     }, 0)
+    const vatMinor = totalCalculatedMinor - subtotalMinor
 
-    const vatMinor = Math.round(subtotalMinor * VAT_RATE)
-    const shippingMinor = 0 // şimdilik ücretsiz kargo — ileride kurala bağlanabilir
-    const totalMinor = subtotalMinor + vatMinor + shippingMinor
-
-    // 1. Siparişi Supabase'de 'pending' olarak oluştur
+    // Supabase siparişi oluştur
     const order = await createOrder({
       userId,
       guestEmail: userId ? null : guestEmail,
@@ -86,18 +107,18 @@ export async function POST(request: Request) {
       })),
     })
 
-    // 2. iyzico Checkout Form'unu başlat
+    // iyzico Checkout Form hazırlığı
     const totalPriceDecimal = (totalMinor / 100).toFixed(2)
 
     const [nameSplit, ...surnameParts] = shippingInfo.name.trim().split(' ')
-    const surname = surnameParts.join(' ') || nameSplit // tek kelimelik isimler için fallback
+    const surname = surnameParts.join(' ') || nameSplit
 
     try {
       const iyzicoResult = await createCheckoutForm({
         locale,
         conversationId: order.order_number,
         price: totalPriceDecimal,
-        paidPrice: totalPriceDecimal,
+        paidPrice: totalPriceDecimal, // Kampanya/İndirim yoksa price ile birebir eşit olmalı
         currency,
         basketId: order.order_number,
         paymentGroup: 'PRODUCT',
@@ -107,9 +128,9 @@ export async function POST(request: Request) {
           id: userId ?? `guest-${order.order_number}`,
           name: nameSplit,
           surname,
-          gsmNumber: shippingInfo.phone,
+          gsmNumber: shippingInfo.phone.startsWith('+') ? shippingInfo.phone : `+90${shippingInfo.phone.replace(/\s+/g, '')}`,
           email: userEmail ?? '',
-          identityNumber: '11111111111', // KVKK: gerçek TC kimlik no istenmiyor, iyzico zorunlu alanı için placeholder
+          identityNumber: '11111111111',
           lastLoginDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
           registrationDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
           registrationAddress: shippingInfo.address1,
@@ -132,20 +153,11 @@ export async function POST(request: Request) {
           address: shippingInfo.address1,
           zipCode: shippingInfo.postal,
         },
-        basketItems: items.map((item) => ({
-          id: item.id,
-          name: item.name[locale],
-          category1: item.type === 'custom' ? 'Custom Registry' : 'Object Registry',
-          itemType: 'PHYSICAL',
-          price: (
-            toMinorUnit(currency === 'TRY' ? item.priceTRY : item.priceUSD) *
-            item.quantity /
-            100
-          ).toFixed(2),
-        })),
+        basketItems: iyzicoBasketItems,
       })
 
       if (iyzicoResult.status !== 'success') {
+        console.error('[iyzico API Hatası]:', iyzicoResult.errorMessage)
         await updateOrderStatus(order.id, 'cancelled')
         return NextResponse.json(
           { error: iyzicoResult.errorMessage ?? 'Ödeme başlatılamadı.' },
@@ -163,7 +175,6 @@ export async function POST(request: Request) {
         { status: 201 }
       )
     } catch (iyzicoError) {
-      // iyzico hatası — siparişi iptal et, kullanıcıya bildir
       console.error('[checkout API] iyzico hatası:', iyzicoError)
       await updateOrderStatus(order.id, 'cancelled')
       return NextResponse.json(
