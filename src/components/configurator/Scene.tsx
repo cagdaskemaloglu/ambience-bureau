@@ -5,10 +5,6 @@ import { OrbitControls, Environment, ContactShadows, GizmoHelper, GizmoViewport 
 import { Suspense } from 'react'
 import * as THREE from 'three'
 
-/**
- * Teknik çizim hissi veren grid zemin.
- * "The Ambience Bureau" estetiğine uygun: ince, steril, fonksiyonel.
- */
 function TechnicalGrid() {
   return (
     <gridHelper
@@ -22,10 +18,7 @@ function TechnicalGrid() {
 function SceneLights() {
   return (
     <>
-      {/* Genel dolgu ışığı — yumuşak, gölgesiz */}
       <ambientLight intensity={0.4} />
-
-      {/* Ana yönlü ışık — gölge üreten */}
       <directionalLight
         position={[120, 200, 100]}
         intensity={1.1}
@@ -41,8 +34,6 @@ function SceneLights() {
         shadow-bias={-0.0005}
         shadow-normalBias={0.02}
       />
-
-      {/* Karşı yönden yumuşak fill ışığı — tam siyah gölge olmasın */}
       <directionalLight position={[-100, 80, -100]} intensity={0.3} />
     </>
   )
@@ -71,9 +62,6 @@ export function Scene({ children, cameraDistance = 500 }: SceneProps) {
         <SceneLights />
         <TechnicalGrid />
 
-        {/* Environment ve ContactShadows AYRI bir Suspense'te — model
-            yüklemesi (yeni parça eklenmesi) bunları yeniden mount etmesin,
-            bu da kameranın/OrbitControls'un sıçramasına yol açıyordu. */}
         <Suspense fallback={null}>
           <Environment preset="studio" environmentIntensity={0.5} />
           <ContactShadows
@@ -89,9 +77,10 @@ export function Scene({ children, cameraDistance = 500 }: SceneProps) {
 
         <OrbitControls
           makeDefault
+          target={[0, 80, 0]}
           minDistance={150}
           maxDistance={1200}
-          maxPolarAngle={Math.PI / 1.95} // zeminin altına geçmeyi engeller
+          maxPolarAngle={Math.PI / 1.95}
           enableDamping
           dampingFactor={0.08}
         />

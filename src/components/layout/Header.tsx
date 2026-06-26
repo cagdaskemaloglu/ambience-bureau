@@ -6,6 +6,7 @@ import { Link } from '@/i18n/navigation'
 import { useRouter } from '@/i18n/navigation'
 import { useEffect, useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
+import Image from 'next/image'
 
 export function Header() {
   const t = useTranslations('nav')
@@ -14,8 +15,6 @@ export function Header() {
   const router = useRouter()
   const cartCount = useCartStore((state) => state.getCount())
 
-  // Hydration mismatch'i önlemek için: server'da her zaman 0 göster,
-  // client mount olduktan sonra gerçek (localStorage'dan gelen) sayıyı göster.
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
   const displayCount = mounted ? cartCount : 0
@@ -32,12 +31,21 @@ export function Header() {
     <header className="border-b border-bureau-black">
       <div className="flex items-start justify-between px-10 pb-5 pt-7">
         {/* Brand */}
-        <Link href="/" className="group no-underline">
-          <div className="text-base font-semibold tracking-[0.12em] uppercase text-bureau-black">
-            The Ambience Bureau
-          </div>
-          <div className="mt-1 font-mono text-[10px] tracking-widest text-bureau-muted uppercase">
-            REGULATION OF SPATIAL PHOTONS // EST. 2026
+        <Link href="/" className="group no-underline flex items-center gap-3">
+          <Image
+            src="/logo.png"
+            alt="The Ambience Bureau"
+            width={100}
+            height={100}
+            priority
+          />
+          <div>
+            <div className="text-base font-semibold tracking-[0.12em] uppercase text-bureau-black">
+              The Ambience Bureau
+            </div>
+            <div className="mt-1 font-mono text-[10px] tracking-widest text-bureau-muted uppercase">
+              REGULATION OF SPATIAL PHOTONS // EST. 2026
+            </div>
           </div>
         </Link>
 

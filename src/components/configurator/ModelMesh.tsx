@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { useSTLGeometry, useGLTFGeometry, isGLTFUrl } from '@/lib/hooks/useModelGeometry'
 
@@ -29,11 +29,10 @@ function useReportHeight(
 
 function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated }: ModelMeshProps) {
   const geometry = useSTLGeometry(url)
-  const meshRef = useRef<THREE.Mesh>(null)
   useReportHeight(geometry, onHeightCalculated)
 
   return (
-    <mesh ref={meshRef} geometry={geometry} position={position} castShadow receiveShadow>
+    <mesh geometry={geometry} position={position} castShadow receiveShadow>
       <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
     </mesh>
   )
@@ -41,26 +40,15 @@ function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHei
 
 function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated }: ModelMeshProps) {
   const geometry = useGLTFGeometry(url)
-  const meshRef = useRef<THREE.Mesh>(null)
   useReportHeight(geometry, onHeightCalculated)
 
   return (
-    <mesh ref={meshRef} geometry={geometry} position={position} castShadow receiveShadow>
+    <mesh geometry={geometry} position={position} castShadow receiveShadow>
       <meshStandardMaterial color={color} roughness={roughness} metalness={metalness} />
     </mesh>
   )
 }
 
-/**
- * URL'in uzantısına göre doğru mesh component'ini (STL veya GLTF) render eder.
- * Hangi component'in render edileceği JSX seviyesinde seçildiği için
- * React Hooks kurallarını ihlal etmez.
- *
- * onHeightCalculated: geometri yüklendiğinde gerçek bounding box yüksekliğini
- * (Three.js birimlerinde, STL/GLB dosyasındaki ham ölçek) bildirir.
- * LampModel bu değeri kullanarak parçaları doğru aralıkla istifler —
- * Sanity'deki elle girilen `dimensions.height` alanına bağımlı kalınmaz.
- */
 export function ModelMesh(props: ModelMeshProps) {
   return isGLTFUrl(props.url) ? <GLTFMesh {...props} /> : <STLMesh {...props} />
 }

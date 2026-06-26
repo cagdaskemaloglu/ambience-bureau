@@ -12,8 +12,9 @@ import { CollectionPicker } from './CollectionPicker'
 import { ControlPanel } from './ControlPanel'
 import { ConfigSummary } from './ConfigSummary'
 import type { Collection, LampPart } from '@/types'
+import { preloadModelUrls } from '@/lib/hooks/useModelGeometry'
 
-// Three.js/WebGL tarayıcı API'lerine bağımlı, SSR kapalı
+
 const ConfiguratorCanvas = dynamic(
   () => import('./ConfiguratorCanvas').then((m) => m.ConfiguratorCanvas),
   { ssr: false }
@@ -41,10 +42,13 @@ export function CustomRegistryClient({ collections }: { collections: Collection[
 
   const addCartItem = useCartStore((s) => s.addItem)
 
-  async function handleSelectCollection(key: string) {
+    async function handleSelectCollection(key: string) {
     setIsLoadingParts(true)
     try {
       const parts: LampPart[] = await getLampPartsByCollection(key)
+      // Tüm model URL'lerini hemen cache'e al — parçaya tıklanınca hazır olsun
+      const urls = parts.map((p) => p.modelUrl).filter(Boolean)
+      preloadModelUrls(urls)
       setCollection(key, parts)
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
@@ -59,18 +63,15 @@ export function CustomRegistryClient({ collections }: { collections: Collection[
     setSaveError(null)
 
     try {
-      // design_data JSONB formatına çevir — kaydedilen para birimi, o anki locale'e göre sabitlenir
       const designCurrency: 'TRY' | 'USD' = locale === 'tr' ? 'TRY' : 'USD'
 
       const parts: Array<{
         slotType: 'base' | 'body' | 'head'
         partId: string
         materialId: string
-        price: number // designCurrency'deki sabit fiyat
+        price: number
       }> = []
 
-      // Sepete eklenecek tasarımın HER İKİ para biriminde de fiyatını tutarız
-      // (dil değişince sepette yeniden hesaplama yapabilmek için)
       const cartParts: Array<{
         slotType: 'base' | 'body' | 'head'
         partId: string
@@ -130,7 +131,6 @@ export function CustomRegistryClient({ collections }: { collections: Collection[
 
       const { design } = await res.json()
 
-      // Sepete ekle — her iki para biriminde de toplam fiyat saklanır
       addCartItem({
         id: `custom-${design.id}`,
         type: 'custom',
@@ -153,7 +153,6 @@ export function CustomRegistryClient({ collections }: { collections: Collection[
     }
   }
 
-  // Başarı mesajı birkaç saniye sonra otomatik kapanır
   useEffect(() => {
     if (!saveSuccess) return
     const timeout = setTimeout(() => setSaveSuccess(null), 5000)
@@ -161,13 +160,13 @@ export function CustomRegistryClient({ collections }: { collections: Collection[
   }, [saveSuccess])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden lg:flex-row">
       {/* 3D Viewport */}
-      <div className="min-h-[300px] flex-1 border-b border-bureau-black lg:border-b-0 lg:border-r">
+      <div className="min-h-0 flex-1 border-b border-bureau-black lg:border-b-0 lg:border-r">
         <ConfiguratorCanvas />
       </div>
 
-      {/* Control Panel */}
+      {/* Control Panel — sadece bu scroll edilebilir */}
       <div className="flex w-full flex-col overflow-y-auto p-4 lg:w-[400px] lg:flex-shrink-0">
         {!collectionKey ? (
           <div>

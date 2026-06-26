@@ -35,9 +35,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-// NOT: Bu layout <html>/<body> AÇMAZ — bunlar src/app/layout.tsx'te.
-// Burada sadece locale doğrulama, mesaj provider'ı ve sayfa iskeleti
-// (Header/Footer) sağlanır.
 export default async function LocaleLayout({ children, params }: Props) {
   const { locale } = await params
 
@@ -49,9 +46,9 @@ export default async function LocaleLayout({ children, params }: Props) {
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <div className="flex flex-1 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <Header />
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</main>
         <ConditionalFooter />
       </div>
     </NextIntlClientProvider>

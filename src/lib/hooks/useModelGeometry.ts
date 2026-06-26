@@ -2,17 +2,15 @@
 
 import { useMemo } from 'react'
 import { useLoader } from '@react-three/fiber'
+import { useGLTF } from '@react-three/drei'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
 
-/**
- * STL geometrisini yükler ve normalize eder (normal hesaplama + merkezleme).
- * Bounding box bilgisini de geometry.boundingBox üzerinden hesaplar,
- * böylece gerçek model boyutu Sanity'deki elle girilen değerden
- * bağımsız olarak da okunabilir.
- * Bu hook'u çağıran component Suspense ile sarılmalı (useLoader async'tir).
- */
+export function isGLTFUrl(url: string): boolean {
+  return url.endsWith('.glb') || url.endsWith('.gltf')
+}
+
 export function useSTLGeometry(url: string): THREE.BufferGeometry {
   const geometry = useLoader(STLLoader, url)
   return useMemo(() => {
@@ -24,10 +22,6 @@ export function useSTLGeometry(url: string): THREE.BufferGeometry {
   }, [geometry])
 }
 
-/**
- * GLTF/GLB modelinden ilk mesh'in geometrisini çıkarır.
- * Bu hook'u çağıran component Suspense ile sarılmalı (useLoader async'tir).
- */
 export function useGLTFGeometry(url: string): THREE.BufferGeometry {
   const gltf = useLoader(GLTFLoader, url)
   return useMemo(() => {
@@ -42,11 +36,17 @@ export function useGLTFGeometry(url: string): THREE.BufferGeometry {
 }
 
 /**
- * URL uzantısına göre STL veya GLTF olduğunu belirler.
- * Component seviyesinde hangi hook'un çağrılacağına karar vermek için kullanılır
- * (örn. <ModelMesh url={x}> component'i içinde if/else ile useSTLGeometry veya
- * useGLTFGeometry'den birini, koşulsuz tek bir branch'te çağırır).
+ * Koleksiyon seçilince tüm part URL'lerini Three.js cache'ine önceden yükler.
+ * Böylece kullanıcı parçaya tıkladığında model zaten hazırdır — Suspense
+ * fallback'i tetiklenmez, model yanıp sönmez.
  */
-export function isGLTFUrl(url: string): boolean {
-  return url.endsWith('.glb') || url.endsWith('.gltf')
+export function preloadModelUrls(urls: string[]): void {
+  for (const url of urls) {
+    if (isGLTFUrl(url)) {
+      useGLTF.preload(url)
+    } else {
+      // STL için Three.js'in built-in FileLoader cache'ini kullan
+      useLoader.preload(STLLoader, url)
+    }
+  }
 }

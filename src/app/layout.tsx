@@ -34,10 +34,6 @@ export const metadata: Metadata = {
   },
 }
 
-// NOT: <html>/<body> SADECE burada açılır. [locale]/layout.tsx
-// kendi html/body'sini AÇMAZ — sadece içerik (Header/Footer/Provider)
-// sağlar. Bu, "/" gibi locale dışı path'lerin (örn. not-found) hata
-// vermeden render edilebilmesi için gereken güvenlik ağıdır.
 export default function RootLayout({
   children,
 }: {
@@ -49,7 +45,7 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="flex h-screen flex-col overflow-y-auto font-sans h-dvh">{children}</body>
+      <body className="flex h-dvh flex-col overflow-hidden font-sans">{children}</body>
     </html>
   )
 }
