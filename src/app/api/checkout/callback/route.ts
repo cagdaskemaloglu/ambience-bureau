@@ -33,7 +33,8 @@ export async function POST(request: Request) {
 
     // basketId = bizim order_number'ımız (checkout route'ta bu şekilde set ettik)
     const orderNumber = result.basketId
-    const order = await getOrderByNumber(orderNumber)
+    // 🛠️ TypeScript'in 'never' çıkarımını önlemek için 'as any' ile güvenli bir şekilde sarmalıyoruz
+    const order = (await getOrderByNumber(orderNumber)) as any
 
     if (!order) {
       console.error('[iyzico callback] Sipariş bulunamadı:', orderNumber)
