@@ -3,10 +3,7 @@ import { retrieveCheckoutForm } from '@/lib/iyzico/client'
 import { updateOrderStatus, getOrderByNumber } from '@/lib/supabase/queries'
 
 /**
- * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar
- * (form-urlencoded body içinde "token" alanı ile).
- * Biz bu token'ı kullanıp CF-Retrieve ile gerçek ödeme sonucunu sorgularız —
- * callback'in kendisi GÜVENİLİR DEĞİLDİR, sadece "bir şey oldu, sorgula" sinyalidir.
+ * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar.
  */
 export async function POST(request: Request) {
   try {
@@ -17,27 +14,28 @@ export async function POST(request: Request) {
     const token = formData.get('token') as string | null
 
     if (!token) {
+      console.error('[iyzico callback] Token bulunamadı')
       return redirectToResult(locale, 'error', 'missing_token')
     }
 
     // iyzico'dan gerçek ödeme sonucunu sorgula
+    // "conversationId: ''" imza hatasına yol açtığı için parametrelerden kaldırıldı.
     const result = await retrieveCheckoutForm({
-      locale: 'tr', // sorgu dili sonucu etkilemez, sabit verilebilir
-      conversationId: '', // conversationId opsiyonel sorguda, token yeterli
+      locale: 'tr',
       token,
     })
 
     if (result.status !== 'success' || !result.basketId) {
+      console.error('[iyzico callback] iyzico sorgusu başarısız veya basketId yok:', result.errorMessage)
       return redirectToResult(locale, 'error', 'retrieve_failed')
     }
 
-    // basketId = bizim order_number'ımız (checkout route'ta bu şekilde set ettik)
+    // basketId = bizim order_number'ımız
     const orderNumber = result.basketId
-    // 🛠️ TypeScript'in 'never' çıkarımını önlemek için 'as any' ile güvenli bir şekilde sarmalıyoruz
     const order = (await getOrderByNumber(orderNumber)) as any
 
     if (!order) {
-      console.error('[iyzico callback] Sipariş bulunamadı:', orderNumber)
+      console.error('[iyzico callback] Sipariş veritabanında bulunamadı:', orderNumber)
       return redirectToResult(locale, 'error', 'order_not_found')
     }
 
@@ -54,7 +52,7 @@ export async function POST(request: Request) {
     await updateOrderStatus(order.id, 'cancelled', { iyzicoToken: token })
     return redirectToResult(locale, 'error', 'payment_failed', orderNumber)
   } catch (error) {
-    console.error('[iyzico callback] Hata:', error)
+    console.error('[iyzico callback] Beklenmedik Hata:', error)
     return redirectToResult('tr', 'error', 'unexpected')
   }
 }

@@ -1,17 +1,14 @@
-// Eski satırları silin ve yerine bunu yapıştırın:
 import Iyzipay from 'iyzipay-ts'
 
-// ... dosyanın geri kalan client kodları aynen kalabilir ...
-// ── Client ────────────────────────────────────────────────
-
+// ── İstemci Başlatma ──────────────────────────────────────
+// API Anahtarlarındaki olası gizli boşluk karakterlerini engellemek için trim() kullanıyoruz.
 export const iyzico = new Iyzipay({
-  apiKey: process.env.IYZICO_API_KEY!,
-  secretKey: process.env.IYZICO_SECRET_KEY!,
+  apiKey: (process.env.IYZICO_API_KEY ?? '').trim(),
+  secretKey: (process.env.IYZICO_SECRET_KEY ?? '').trim(),
   uri: process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com',
 })
 
 // ── Tip Tanımları ─────────────────────────────────────────
-// iyzipay paketi resmi tip içermediği için burada elle tanımlıyoruz.
 
 export interface IyzicoBasketItem {
   id: string
@@ -19,7 +16,7 @@ export interface IyzicoBasketItem {
   category1: string
   category2?: string
   itemType: 'PHYSICAL' | 'VIRTUAL'
-  price: string // ondalık string, örn: "199.90"
+  price: string
 }
 
 export interface IyzicoAddress {
@@ -36,7 +33,7 @@ export interface IyzicoBuyer {
   surname: string
   gsmNumber: string
   email: string
-  identityNumber: string // TC kimlik no zorunlu — yabancı müşteriler için "11111111111" gibi placeholder kullanılabilir
+  identityNumber: string
   lastLoginDate: string
   registrationDate: string
   registrationAddress: string
@@ -49,8 +46,8 @@ export interface IyzicoBuyer {
 export interface CheckoutFormInitializeRequest {
   locale: 'tr' | 'en'
   conversationId: string
-  price: string // ondalık string
-  paidPrice: string // ondalık string (price ile aynı, kampanya yoksa)
+  price: string
+  paidPrice: string
   currency: 'TRY' | 'USD' | 'EUR'
   basketId: string
   paymentGroup: 'PRODUCT'
@@ -88,27 +85,19 @@ export interface CheckoutFormRetrieveResult {
   fraudStatus?: number
 }
 
-// ── Promise Wrapper'lar ───────────────────────────────────
-// iyzipay SDK'sı callback tabanlı (Node.js'in eski stili).
-// Next.js API route'larında async/await kullanabilmek için sarmalıyoruz.
-
-// ── Promise Wrapper'lar ───────────────────────────────────
-// iyzipay-ts zaten Promise tabanlı çalıştığı için doğrudan return edebiliriz.
-// ── Promise Wrapper'lar ───────────────────────────────────
-// iyzipay-ts zaten Promise tabanlı çalıştığı için doğrudan return edebiliriz.
+// ── API Metotları ────────────────────────────────────────
 
 export function createCheckoutForm(
   request: CheckoutFormInitializeRequest
 ): Promise<CheckoutFormInitializeResult> {
-  // Dönen Promise<unknown> değerini 'as Promise<CheckoutFormInitializeResult>' ile zorluyoruz
   return iyzico.checkoutFormInitialize.create(request as any) as Promise<CheckoutFormInitializeResult>;
 }
 
+// conversationId alanını isteğe bağlı (opsiyonel) yaptık
 export function retrieveCheckoutForm(params: {
   locale: 'tr' | 'en';
-  conversationId: string;
+  conversationId?: string; 
   token: string;
 }): Promise<CheckoutFormRetrieveResult> {
-  // Dönen Promise<unknown> değerini 'as Promise<CheckoutFormRetrieveResult>' ile zorluyoruz
   return iyzico.checkoutForm.retrieve(params as any) as Promise<CheckoutFormRetrieveResult>;
 }
