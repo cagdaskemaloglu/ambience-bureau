@@ -1,6 +1,7 @@
-// @ts-expect-error - iyzipay paketi resmi TypeScript tip tanımı içermiyor
-import Iyzipay from 'iyzipay'
+// Eski satırları silin ve yerine bunu yapıştırın:
+import Iyzipay from 'iyzipay-ts'
 
+// ... dosyanın geri kalan client kodları aynen kalabilir ...
 // ── Client ────────────────────────────────────────────────
 
 export const iyzico = new Iyzipay({
@@ -91,32 +92,23 @@ export interface CheckoutFormRetrieveResult {
 // iyzipay SDK'sı callback tabanlı (Node.js'in eski stili).
 // Next.js API route'larında async/await kullanabilmek için sarmalıyoruz.
 
+// ── Promise Wrapper'lar ───────────────────────────────────
+// iyzipay-ts zaten Promise tabanlı çalıştığı için doğrudan return edebiliriz.
+// ── Promise Wrapper'lar ───────────────────────────────────
+// iyzipay-ts zaten Promise tabanlı çalıştığı için doğrudan return edebiliriz.
+
 export function createCheckoutForm(
   request: CheckoutFormInitializeRequest
 ): Promise<CheckoutFormInitializeResult> {
-  return new Promise((resolve, reject) => {
-    iyzico.checkoutFormInitialize.create(
-      request,
-      (err: Error | null, result: CheckoutFormInitializeResult) => {
-        if (err) reject(err)
-        else resolve(result)
-      }
-    )
-  })
+  // Dönen Promise<unknown> değerini 'as Promise<CheckoutFormInitializeResult>' ile zorluyoruz
+  return iyzico.checkoutFormInitialize.create(request as any) as Promise<CheckoutFormInitializeResult>;
 }
 
 export function retrieveCheckoutForm(params: {
-  locale: 'tr' | 'en'
-  conversationId: string
-  token: string
+  locale: 'tr' | 'en';
+  conversationId: string;
+  token: string;
 }): Promise<CheckoutFormRetrieveResult> {
-  return new Promise((resolve, reject) => {
-    iyzico.checkoutForm.retrieve(
-      params,
-      (err: Error | null, result: CheckoutFormRetrieveResult) => {
-        if (err) reject(err)
-        else resolve(result)
-      }
-    )
-  })
+  // Dönen Promise<unknown> değerini 'as Promise<CheckoutFormRetrieveResult>' ile zorluyoruz
+  return iyzico.checkoutForm.retrieve(params as any) as Promise<CheckoutFormRetrieveResult>;
 }
