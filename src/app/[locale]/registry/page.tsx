@@ -57,8 +57,8 @@ export default async function RegistryPage({ searchParams }: Props) {
 
   return (
     <>
-      {/* Document strip */}
-      <div className="flex items-center justify-between border-b border-bureau-black px-10 py-3.5 font-mono text-[11px] text-bureau-muted">
+      {/* Document strip — sadece desktop */}
+      <div className="hidden items-center justify-between border-b border-bureau-black px-10 py-3.5 font-mono text-[11px] text-bureau-muted md:flex">
         <div>DOCUMENT REF: TAB-2026-REG-04 // CLASSIFICATION: PUBLIC CATALOGUE</div>
         <div className="text-bureau-black">
           OBJECTS ON RECORD: <span className="text-bureau-amber">{totalCount}</span>
@@ -67,8 +67,7 @@ export default async function RegistryPage({ searchParams }: Props) {
 
       <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
         <Sidebar objectCount={products.length} />
-
-        <main className="px-9 py-9">
+        <main className="px-5 py-6 md:px-9 md:py-9">
           <ProductGrid products={products} />
         </main>
       </div>
