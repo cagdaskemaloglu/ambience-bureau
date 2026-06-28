@@ -1,14 +1,122 @@
-// Resmi iyzipay paketi kullanılıyor — alan sırası ve imza formatı iyzico'nun
-// beklediğiyle birebir eşleşiyor. iyzipay-ts alan sırasını korumadığından
-// IYZWSv2 imzası tutarsız oluyor ve errorCode:1000 dönüyordu.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const Iyzipay = require('iyzipay')
+import crypto from 'crypto'
 
-const iyzico = new Iyzipay({
-  apiKey: (process.env.IYZICO_API_KEY ?? '').trim(),
-  secretKey: (process.env.IYZICO_SECRET_KEY ?? '').trim(),
-  uri: (process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com').trim(),
-})
+const API_KEY = (process.env.IYZICO_API_KEY ?? '').trim()
+const SECRET_KEY = (process.env.IYZICO_SECRET_KEY ?? '').trim()
+const BASE_URL = (process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com').trim()
+
+// ── İmza: Resmi iyzipay paketinin birebir aynısı (IYZWSv2 + SHA256 HMAC) ──
+// Kaynak: iyzipay/lib/utils.js → generateHashV2
+// İmza: HMAC-SHA256(secretKey, randomString + path + JSON.stringify(orderedBody))
+// Header: IYZWSv2 base64(apiKey:randomKey:randomString&signature:hex)
+function generateAuthHeader(path: string, body: object, randomString: string): string {
+  const signature = crypto
+    .createHmac('sha256', SECRET_KEY)
+    .update(randomString + path + JSON.stringify(body))
+    .digest('hex')
+
+  const authParams = [
+    'apiKey:' + API_KEY,
+    'randomKey:' + randomString,
+    'signature:' + signature,
+  ]
+  return 'IYZWSv2 ' + Buffer.from(authParams.join('&')).toString('base64')
+}
+
+function generateRandomString(): string {
+  return process.hrtime()[0] + Math.random().toString(36).slice(2)
+}
+
+function formatPrice(price: string | number | undefined): string | undefined {
+  if (price === undefined || price === null) return undefined
+  const n = parseFloat(String(price))
+  if (!isFinite(n)) return String(price)
+  const s = n.toString()
+  return s.indexOf('.') === -1 ? s + '.0' : s
+}
+
+async function iyziPost<T>(path: string, body: object): Promise<T> {
+  const randomString = generateRandomString()
+  const authorization = generateAuthHeader(path, body, randomString)
+
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': authorization,
+      'x-iyzi-rnd': randomString,
+      'x-iyzi-client-version': 'iyzipay-node-2.0.69',
+    },
+    body: JSON.stringify(body),
+  })
+
+  return res.json() as Promise<T>
+}
+
+// ── Alan sıraları resmi iyzipay paketinden birebir alındı ──
+// Kaynak: iyzipay/lib/requests/model/Buyer.js
+function orderBuyer(b: IyzicoBuyer) {
+  return {
+    id: b.id,
+    name: b.name,
+    surname: b.surname,
+    identityNumber: b.identityNumber,
+    email: b.email,
+    gsmNumber: b.gsmNumber,
+    registrationDate: b.registrationDate,
+    lastLoginDate: b.lastLoginDate,
+    registrationAddress: b.registrationAddress,
+    city: b.city,
+    country: b.country,
+    zipCode: b.zipCode,
+    ip: b.ip,
+  }
+}
+
+// Kaynak: iyzipay/lib/requests/model/Address.js
+function orderAddress(a: IyzicoAddress) {
+  return {
+    address: a.address,
+    zipCode: a.zipCode,
+    contactName: a.contactName,
+    city: a.city,
+    country: a.country,
+  }
+}
+
+// Kaynak: iyzipay/lib/requests/model/BasketItem.js
+function orderBasketItem(i: IyzicoBasketItem) {
+  return {
+    id: i.id,
+    price: formatPrice(i.price),
+    name: i.name,
+    category1: i.category1,
+    category2: i.category2,
+    itemType: i.itemType,
+  }
+}
+
+// Kaynak: iyzipay/lib/requests/CreateCheckoutFormInitializeRequest.js
+function buildCheckoutBody(req: CheckoutFormInitializeRequest) {
+  return {
+    locale: req.locale,
+    conversationId: req.conversationId,
+    price: formatPrice(req.price),
+    basketId: req.basketId,
+    paymentGroup: req.paymentGroup,
+    buyer: orderBuyer(req.buyer),
+    shippingAddress: orderAddress(req.shippingAddress),
+    billingAddress: orderAddress(req.billingAddress),
+    basketItems: req.basketItems.map(orderBasketItem),
+    callbackUrl: req.callbackUrl,
+    paymentSource: undefined,
+    currency: req.currency,
+    posOrderId: undefined,
+    paidPrice: formatPrice(req.paidPrice),
+    forceThreeDS: undefined,
+    cardUserKey: undefined,
+    enabledInstallments: req.enabledInstallments,
+  }
+}
 
 // ── Tip Tanımları ─────────────────────────────────────────
 
@@ -75,7 +183,7 @@ export interface CheckoutFormInitializeResult {
 
 export interface CheckoutFormRetrieveResult {
   status: 'success' | 'failure'
-  paymentStatus?: 'SUCCESS' | 'FAILURE' | 'INIT_THREEDS' | 'CALLBACK_THREEDS' | string
+  paymentStatus?: string
   paymentId?: string
   conversationId?: string
   basketId?: string
@@ -89,15 +197,14 @@ export interface CheckoutFormRetrieveResult {
 
 // ── API Metotları ─────────────────────────────────────────
 
+const CHECKOUT_INIT_PATH = '/payment/iyzipos/checkoutform/initialize/auth/ecom'
+const CHECKOUT_RETRIEVE_PATH = '/payment/iyzipos/checkoutform/auth/ecom/detail'
+
 export function createCheckoutForm(
   request: CheckoutFormInitializeRequest
 ): Promise<CheckoutFormInitializeResult> {
-  return new Promise((resolve, reject) => {
-    iyzico.checkoutFormInitialize.create(request, (err: Error, result: CheckoutFormInitializeResult) => {
-      if (err) return reject(err)
-      resolve(result)
-    })
-  })
+  const body = buildCheckoutBody(request)
+  return iyziPost<CheckoutFormInitializeResult>(CHECKOUT_INIT_PATH, body)
 }
 
 export function retrieveCheckoutForm(params: {
@@ -105,10 +212,5 @@ export function retrieveCheckoutForm(params: {
   conversationId?: string
   token: string
 }): Promise<CheckoutFormRetrieveResult> {
-  return new Promise((resolve, reject) => {
-    iyzico.checkoutForm.retrieve(params, (err: Error, result: CheckoutFormRetrieveResult) => {
-      if (err) return reject(err)
-      resolve(result)
-    })
-  })
+  return iyziPost<CheckoutFormRetrieveResult>(CHECKOUT_RETRIEVE_PATH, params)
 }
