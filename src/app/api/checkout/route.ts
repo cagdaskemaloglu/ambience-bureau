@@ -20,7 +20,11 @@ interface CheckoutRequestBody {
   }
 }
 
-const VAT_RATE = 0.2
+// NOT: Sanity'de girilen ürün fiyatları (priceTRY/priceUSD) ZATEN KDV DAHİLDİR.
+// Bu yüzden burada KDV'yi AYRICA hesaplayıp toplama eklemiyoruz — öyle yapmak
+// hem müşteriye çift KDV gösterir hem de iyzico'ya gönderilen price/paidPrice
+// ile basketItems toplamı arasında tutarsızlık yaratıp "geçersiz imza" hatasına
+// yol açar (iyzico, basket item toplamının price alanıyla eşleşmesini zorunlu kılar).
 
 export async function POST(request: Request) {
   try {
@@ -52,41 +56,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Kuruş/cent dönüşüm fonksiyonu
+    // Fiyatları en küçük para birimine çevir (kuruş/cent) — ondalık hata riskini önler
     const toMinorUnit = (amount: number) => Math.round(amount * 100)
 
-    // 1. Her bir kalemin KDV dahil toplam fiyatlarını tek tek minor birimde hesaplayalım
-    // Böylece iyzico basketItems toplamı ile totalMinor kuruşu kuruşuna eşit olur.
-    let totalCalculatedMinor = 0
-    const iyzicoBasketItems = items.map((item) => {
-      const unitPrice = currency === 'TRY' ? item.priceTRY : item.priceUSD
-      const rawSubtotalItemMinor = toMinorUnit(unitPrice) * item.quantity
-      const vatItemMinor = Math.round(rawSubtotalItemMinor * VAT_RATE)
-      const totalItemWithVatMinor = rawSubtotalItemMinor + vatItemMinor
-      
-      totalCalculatedMinor += totalItemWithVatMinor
-
-      return {
-        id: item.id,
-        name: item.name[locale] || item.name['tr'] || 'Ürün',
-        category1: item.type === 'custom' ? 'Custom Registry' : 'Object Registry',
-        itemType: 'PHYSICAL' as const,
-        // iyzico'ya bu kalemin KDV dahil TOPLAM tutarını string formatta iletiyoruz
-        price: (totalItemWithVatMinor / 100).toFixed(2),
-      }
-    })
-
-    const shippingMinor = 0 // şimdilik ücretsiz kargo
-    const totalMinor = totalCalculatedMinor + shippingMinor
-
-    // Supabase kırılımları için geriye dönük hesaplama (Opsiyonel/Uyumlu)
     const subtotalMinor = items.reduce((sum, item) => {
       const unitPrice = currency === 'TRY' ? item.priceTRY : item.priceUSD
       return sum + toMinorUnit(unitPrice) * item.quantity
     }, 0)
-    const vatMinor = totalCalculatedMinor - subtotalMinor
 
-    // Supabase siparişi oluştur
+    const vatMinor = 0 // KDV, ürün fiyatına zaten dahil — burada ayrıca eklenmiyor
+    const shippingMinor = 0 // şimdilik ücretsiz kargo — ileride kurala bağlanabilir
+    const totalMinor = subtotalMinor + shippingMinor
+
+    // 1. Siparişi Supabase'de 'pending' olarak oluştur
     const order = await createOrder({
       userId,
       guestEmail: userId ? null : guestEmail,
@@ -107,18 +89,40 @@ export async function POST(request: Request) {
       })),
     })
 
-    // iyzico Checkout Form hazırlığı
+    // 2. iyzico Checkout Form'unu başlat
     const totalPriceDecimal = (totalMinor / 100).toFixed(2)
 
+    const basketItems = items.map((item) => ({
+      id: item.id,
+      name: item.name[locale],
+      category1: item.type === 'custom' ? 'Custom Registry' : 'Object Registry',
+      itemType: 'PHYSICAL' as const,
+      price: (
+        (toMinorUnit(currency === 'TRY' ? item.priceTRY : item.priceUSD) * item.quantity) /
+        100
+      ).toFixed(2),
+    }))
+
+    // Güvenlik kontrolü: basket item toplamı price/paidPrice ile EŞİT olmalı,
+    // yoksa iyzico "geçersiz imza" hatası verir. Geliştirme sırasında erken
+    // uyarı almak için burada doğruluyoruz.
+    const basketTotal = basketItems.reduce((sum, item) => sum + Number(item.price), 0)
+    if (Math.abs(basketTotal - Number(totalPriceDecimal)) > 0.001) {
+      console.error(
+        '[checkout API] Basket toplamı ile price uyuşmuyor:',
+        { basketTotal, totalPriceDecimal }
+      )
+    }
+
     const [nameSplit, ...surnameParts] = shippingInfo.name.trim().split(' ')
-    const surname = surnameParts.join(' ') || nameSplit
+    const surname = surnameParts.join(' ') || nameSplit // tek kelimelik isimler için fallback
 
     try {
       const iyzicoResult = await createCheckoutForm({
         locale,
         conversationId: order.order_number,
         price: totalPriceDecimal,
-        paidPrice: totalPriceDecimal, // Kampanya/İndirim yoksa price ile birebir eşit olmalı
+        paidPrice: totalPriceDecimal,
         currency,
         basketId: order.order_number,
         paymentGroup: 'PRODUCT',
@@ -128,9 +132,9 @@ export async function POST(request: Request) {
           id: userId ?? `guest-${order.order_number}`,
           name: nameSplit,
           surname,
-          gsmNumber: shippingInfo.phone.startsWith('+') ? shippingInfo.phone : `+90${shippingInfo.phone.replace(/\s+/g, '')}`,
+          gsmNumber: shippingInfo.phone,
           email: userEmail ?? '',
-          identityNumber: '11111111111',
+          identityNumber: '11111111111', // KVKK: gerçek TC kimlik no istenmiyor, iyzico zorunlu alanı için placeholder
           lastLoginDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
           registrationDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
           registrationAddress: shippingInfo.address1,
@@ -153,11 +157,10 @@ export async function POST(request: Request) {
           address: shippingInfo.address1,
           zipCode: shippingInfo.postal,
         },
-        basketItems: iyzicoBasketItems,
+        basketItems,
       })
 
       if (iyzicoResult.status !== 'success') {
-        console.error('[iyzico API Hatası]:', iyzicoResult.errorMessage)
         await updateOrderStatus(order.id, 'cancelled')
         return NextResponse.json(
           { error: iyzicoResult.errorMessage ?? 'Ödeme başlatılamadı.' },
@@ -175,6 +178,7 @@ export async function POST(request: Request) {
         { status: 201 }
       )
     } catch (iyzicoError) {
+      // iyzico hatası — siparişi iptal et, kullanıcıya bildir
       console.error('[checkout API] iyzico hatası:', iyzicoError)
       await updateOrderStatus(order.id, 'cancelled')
       return NextResponse.json(

@@ -49,9 +49,11 @@ export function CheckoutForm() {
 
   const currency = locale === 'tr' ? 'TRY' : 'USD'
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
-  const subtotal = getTotal(locale)
-  const vat = Math.round(subtotal * 0.2)
-  const total = subtotal + vat
+  // NOT: Sanity'deki ürün fiyatları (priceTRY/priceUSD) ZATEN KDV DAHİLDİR.
+  // Burada ayrıca KDV hesaplayıp eklemiyoruz — bu hem müşteriye çift KDV
+  // göstermiş olurdu hem de iyzico'ya gönderilen tutarla basket item
+  // toplamı arasında tutarsızlık yaratıp "geçersiz imza" hatasına yol açardı.
+  const total = getTotal(locale)
 
   function updateField(field: keyof typeof form, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }))
@@ -260,11 +262,11 @@ export function CheckoutForm() {
           <div className="divide-y divide-dashed divide-bureau-rule border-t border-bureau-black">
             <div className="flex justify-between px-4 py-2 text-[12px]">
               <span className="text-bureau-muted">{t('summary.subtotal')}</span>
-              <span className="font-mono">{formatPrice(subtotal, currency, intlLocale)}</span>
+              <span className="font-mono">{formatPrice(total, currency, intlLocale)}</span>
             </div>
             <div className="flex justify-between px-4 py-2 text-[12px]">
-              <span className="text-bureau-muted">{t('summary.vat')}</span>
-              <span className="font-mono">{formatPrice(vat, currency, intlLocale)}</span>
+              <span className="text-bureau-muted">{t('summary.vatIncluded')}</span>
+              <span className="font-mono text-bureau-subtle">{t('summary.included')}</span>
             </div>
             <div className="flex justify-between px-4 py-2 text-[12px]">
               <span className="text-bureau-muted">{t('summary.shipping')}</span>
