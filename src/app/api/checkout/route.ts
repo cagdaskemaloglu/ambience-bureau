@@ -132,7 +132,13 @@ export async function POST(request: Request) {
           id: userId ?? `guest-${order.order_number}`,
           name: nameSplit,
           surname,
-          gsmNumber: shippingInfo.phone,
+          gsmNumber: (() => {
+            const raw = shippingInfo.phone.replace(/\s+/g, '').replace(/-/g, '')
+            if (raw.startsWith('+')) return raw
+            if (raw.startsWith('00')) return '+' + raw.slice(2)
+            if (raw.startsWith('0')) return '+90' + raw.slice(1)
+            return '+90' + raw
+          })(),
           email: userEmail ?? '',
           identityNumber: '11111111111', // KVKK: gerçek TC kimlik no istenmiyor, iyzico zorunlu alanı için placeholder
           lastLoginDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
