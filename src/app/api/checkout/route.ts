@@ -161,9 +161,14 @@ export async function POST(request: Request) {
       })
 
       if (iyzicoResult.status !== 'success') {
+        console.error('[iyzico] FULL RESPONSE:', JSON.stringify(iyzicoResult, null, 2))
         await updateOrderStatus(order.id, 'cancelled')
         return NextResponse.json(
-          { error: iyzicoResult.errorMessage ?? 'Ödeme başlatılamadı.' },
+          {
+            error: iyzicoResult.errorMessage ?? 'Ödeme başlatılamadı.',
+            errorCode: (iyzicoResult as any).errorCode,
+            iyzicoStatus: iyzicoResult.status,
+          },
           { status: 400 }
         )
       }
