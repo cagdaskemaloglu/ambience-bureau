@@ -1,7 +1,10 @@
-import Iyzipay from 'iyzipay-ts'
+// Resmi iyzipay paketi kullanılıyor — alan sırası ve imza formatı iyzico'nun
+// beklediğiyle birebir eşleşiyor. iyzipay-ts alan sırasını korumadığından
+// IYZWSv2 imzası tutarsız oluyor ve errorCode:1000 dönüyordu.
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const Iyzipay = require('iyzipay')
 
-// API anahtarlarındaki gizli boşlukları temizle
-export const iyzico = new Iyzipay({
+const iyzico = new Iyzipay({
   apiKey: (process.env.IYZICO_API_KEY ?? '').trim(),
   secretKey: (process.env.IYZICO_SECRET_KEY ?? '').trim(),
   uri: (process.env.IYZICO_BASE_URL ?? 'https://sandbox-api.iyzipay.com').trim(),
@@ -89,7 +92,12 @@ export interface CheckoutFormRetrieveResult {
 export function createCheckoutForm(
   request: CheckoutFormInitializeRequest
 ): Promise<CheckoutFormInitializeResult> {
-  return iyzico.checkoutFormInitialize.create(request as any) as Promise<CheckoutFormInitializeResult>
+  return new Promise((resolve, reject) => {
+    iyzico.checkoutFormInitialize.create(request, (err: Error, result: CheckoutFormInitializeResult) => {
+      if (err) return reject(err)
+      resolve(result)
+    })
+  })
 }
 
 export function retrieveCheckoutForm(params: {
@@ -97,5 +105,10 @@ export function retrieveCheckoutForm(params: {
   conversationId?: string
   token: string
 }): Promise<CheckoutFormRetrieveResult> {
-  return iyzico.checkoutForm.retrieve(params as any) as Promise<CheckoutFormRetrieveResult>
+  return new Promise((resolve, reject) => {
+    iyzico.checkoutForm.retrieve(params, (err: Error, result: CheckoutFormRetrieveResult) => {
+      if (err) return reject(err)
+      resolve(result)
+    })
+  })
 }
