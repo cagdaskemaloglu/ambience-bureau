@@ -124,7 +124,9 @@
       "vat": "KDV (%20)",
       "shipping": "Kargo",
       "free": "Ücretsiz",
-      "total": "Toplam"
+      "total": "Toplam",
+      "vatIncluded": "KDV Dahil",
+      "included": "dahil"
     },
     "submit": "Siparişi Onayla ve Devam Et",
     "submitting": "İşleniyor...",
