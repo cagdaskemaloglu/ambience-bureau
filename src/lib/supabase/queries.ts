@@ -180,3 +180,18 @@ export async function getOrdersByUserId(userId: string) {
   if (error) throw new Error(`Siparişler alınamadı: ${error.message}`)
   return data
 }
+
+// ── Sipariş için müşteri e-postası çözümleme ───────────────
+
+export async function resolveOrderRecipientEmail(order: {
+  guest_email: string | null
+  user_id: string | null
+}): Promise<string | null> {
+  if (order.guest_email) return order.guest_email
+  if (!order.user_id) return null
+
+  const supabase = createSupabaseAdminClient() as any
+  const { data, error } = await supabase.auth.admin.getUserById(order.user_id)
+  if (error || !data?.user?.email) return null
+  return data.user.email
+}

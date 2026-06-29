@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { retrieveCheckoutForm } from '@/lib/iyzico/client'
-import { updateOrderStatus, getOrderByNumber } from '@/lib/supabase/queries'
+import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
+import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
 
 /**
  * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar.
@@ -45,6 +46,48 @@ export async function POST(request: Request) {
         iyzicoToken: token,
         paidAt: new Date().toISOString(),
       })
+
+      // E-posta gönderimi — başarısız olsa da ödeme akışını bloklamaz.
+      // Hem üye hem misafir siparişler için doğru e-posta adresini çözümler.
+      try {
+        const recipientEmail = await resolveOrderRecipientEmail(order)
+
+        if (recipientEmail) {
+          const currency = (order.currency ?? 'TRY') as 'TRY' | 'USD'
+          const orderItems = (order.order_items ?? []).map((item: any) => ({
+            name: item.product_name,
+            quantity: item.quantity,
+            unitPriceMinor: item.unit_price,
+          }))
+
+          const emailParams = {
+            locale,
+            to: recipientEmail,
+            orderNumber: order.order_number,
+            customerName: order.shipping_name ?? '',
+            currency,
+            items: orderItems,
+            subtotalMinor: order.subtotal,
+            totalMinor: order.total_amount,
+            shippingAddress: {
+              name: order.shipping_name ?? '',
+              address1: order.shipping_address1 ?? '',
+              address2: order.shipping_address2 ?? undefined,
+              city: order.shipping_city ?? '',
+              postal: order.shipping_postal ?? '',
+              country: order.shipping_country ?? 'TR',
+            },
+          }
+
+          await sendOrderConfirmationEmail(emailParams)
+          await sendAdminOrderNotification(emailParams)
+        } else {
+          console.error('[iyzico callback] Sipariş için e-posta adresi çözümlenemedi:', orderNumber)
+        }
+      } catch (emailError) {
+        console.error('[iyzico callback] E-posta gönderim hatası:', emailError)
+      }
+
       return redirectToResult(locale, 'success', orderNumber)
     }
 
