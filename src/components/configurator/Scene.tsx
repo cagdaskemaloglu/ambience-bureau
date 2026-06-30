@@ -44,7 +44,7 @@ interface SceneProps {
   cameraDistance?: number
 }
 
-export function Scene({ children, cameraDistance = 500 }: SceneProps) {
+export function Scene({ children, cameraDistance = 750 }: SceneProps) {
   return (
     <div className="relative h-full w-full bg-bureau-surface">
       <Canvas

@@ -34,6 +34,9 @@ export function MobileControlPanel({
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   const bodyAtMax = body.length >= MAX_BODY_LAYERS
+  const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
+  const toggleIot = useConfiguratorStore((s) => s.toggleIot)
+  const iotPrice = locale === 'tr' ? '₺1.200' : '$33'
 
   return (
     <div className="flex flex-col">
@@ -45,6 +48,33 @@ export function MobileControlPanel({
         >
           ← {locale === 'tr' ? 'Koleksiyon' : 'Collection'}
         </button>
+      </div>
+
+      {/* IoT Toggle — en üstte */}
+      <div className="border-b border-bureau-rule px-3 py-2.5">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="block font-mono text-[9.5px] uppercase tracking-wide text-bureau-black">
+              {locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
+            </span>
+            <span className="font-mono text-[9px] text-bureau-muted">{iotPrice}</span>
+          </div>
+          <button
+            onClick={toggleIot}
+            className={`relative h-5 w-9 flex-shrink-0 border transition-colors ${
+              iotEnabled ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
+            }`}
+            aria-pressed={iotEnabled}
+          >
+            <span
+              className={`absolute top-0.5 h-3.5 w-3.5 border transition-transform ${
+                iotEnabled
+                  ? 'translate-x-4 border-white bg-white'
+                  : 'translate-x-0.5 border-bureau-rule bg-bureau-subtle'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Base */}

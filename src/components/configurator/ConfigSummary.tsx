@@ -14,6 +14,7 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
   const getTotalPrice = useConfiguratorStore((s) => s.getTotalPrice)
   const isComplete = useConfiguratorStore((s) => s.isComplete)
   const removeBodyLayer = useConfiguratorStore((s) => s.removeBodyLayer)
+  const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
 
   const total = getTotalPrice(locale as 'tr' | 'en')
   const complete = isComplete()
@@ -115,6 +116,17 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
             )}
           </div>
         </div>
+
+        {iotEnabled && (
+          <div className="flex items-center justify-between px-4 py-2.5 text-[12px]">
+            <span className="text-bureau-muted">
+              {locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
+            </span>
+            <span className="font-mono text-[11px] text-bureau-subtle">
+              {formatPrice(locale === 'tr' ? 1200 : 33, currency, intlLocale)}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t border-bureau-black px-4 py-3">

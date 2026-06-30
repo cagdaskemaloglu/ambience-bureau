@@ -61,7 +61,7 @@ export function SlotPicker({
           </span>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
         {slotsOfType.map((part) => {
           const name = getLocalizedValue(part.name, locale, '—')
           const count = getPartCount?.(part.partId) ?? 0
@@ -84,13 +84,13 @@ export function SlotPicker({
                   ×{count}
                 </span>
               )}
-              <div className="flex h-12 w-12 items-center justify-center overflow-hidden bg-bureau-surface">
+              <div className="flex h-9 w-9 items-center justify-center overflow-hidden bg-bureau-surface">
                 {part.thumbnail ? (
                   <Image
                     src={part.thumbnail}
                     alt={name ?? ''}
-                    width={48}
-                    height={48}
+                    width={36}
+                    height={36}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -99,7 +99,7 @@ export function SlotPicker({
                   </span>
                 )}
               </div>
-              <span className="line-clamp-1 text-center text-[9.5px] uppercase leading-tight">
+              <span className="line-clamp-1 text-center text-[8.5px] uppercase leading-tight">
                 {name}
               </span>
             </button>

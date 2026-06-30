@@ -20,6 +20,7 @@ interface ConfiguratorStore {
   lightColor: string
   lightBrightness: number // 0–1
   lightEnabled: boolean
+  iotEnabled: boolean
 
   // ── Actions ──────────────────────────────────────────────
   setCollection: (key: string, parts: LampPart[]) => void
@@ -39,6 +40,7 @@ interface ConfiguratorStore {
   setLightColor: (color: string) => void
   setLightBrightness: (value: number) => void
   toggleLight: () => void
+  toggleIot: () => void
 
   reset: () => void
 
@@ -63,6 +65,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   lightColor: '#F5D78E', // varsayılan sıcak beyaz ton
   lightBrightness: 0.7,
   lightEnabled: true,
+  iotEnabled: true,
 
   setCollection: (key, parts) =>
     set({
@@ -135,6 +138,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   setLightColor: (color) => set({ lightColor: color }),
   setLightBrightness: (value) => set({ lightBrightness: Math.max(0, Math.min(1, value)) }),
   toggleLight: () => set((state) => ({ lightEnabled: !state.lightEnabled })),
+  toggleIot: () => set((state) => ({ iotEnabled: !state.iotEnabled })),
 
   reset: () =>
     set({
@@ -144,6 +148,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       lightColor: '#F5D78E',
       lightBrightness: 0.7,
       lightEnabled: true,
+      iotEnabled: true,
     }),
 
   getTotalPrice: (locale) => {
@@ -164,6 +169,10 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     addSlotPrice(state.base)
     state.body.forEach(addSlotPrice)
     addSlotPrice(state.head)
+
+    if (state.iotEnabled) {
+      total += locale === 'tr' ? 1200 : 33
+    }
 
     return total
   },

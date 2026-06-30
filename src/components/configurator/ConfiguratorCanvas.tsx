@@ -4,6 +4,7 @@ import { Scene } from './Scene'
 import { LampModel } from './LampModel'
 import { LightSimulator } from './LightSimulator'
 import { CameraFit } from './CameraFit'
+import { LightControlsOverlay } from './LightControlsOverlay'
 
 /**
  * Konfigüratörün tüm 3D sahnesini birleştiren ana component.
@@ -15,12 +16,16 @@ import { CameraFit } from './CameraFit'
  * NOT: Suspense sarmalaması artık Scene.tsx içinde yapılıyor (children
  * kendi ayrı Suspense bloğunda) — burada tekrar sarmaya gerek yok.
  */
+
 export function ConfiguratorCanvas() {
   return (
-    <Scene>
-      <LampModel />
-      <LightSimulator />
-      <CameraFit />
-    </Scene>
+    <div className="relative h-full w-full">
+      <LightControlsOverlay />
+      <Scene>
+        <LampModel />
+        <LightSimulator />
+        <CameraFit />
+      </Scene>
+    </div>
   )
 }
