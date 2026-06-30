@@ -205,7 +205,7 @@ export async function getAllCollections() {
 
 export async function getLampPartsByCollection(collectionKey: string) {
   return sanityClient.fetch(
-    `*[_type == "lampPart" && collection->key.current == $collectionKey]
+    `*[_type == "lampPart" && $collectionKey in collections[]->key.current]
       | order(slotType asc, sortOrder asc) {
         _id,
         "partId": partId.current,

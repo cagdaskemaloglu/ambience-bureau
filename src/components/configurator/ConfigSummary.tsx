@@ -100,8 +100,8 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
         {body.length === 0 && (
           <div className="px-4 py-2.5 text-center text-[11px] text-bureau-subtle">
             {locale === 'tr'
-              ? 'Henüz gövde katmanı eklenmedi.'
-              : 'No body layers added yet.'}
+              ? 'Gövde katmanı eklenmedi (opsiyonel).'
+              : 'No body layers added (optional).'}
           </div>
         )}
 

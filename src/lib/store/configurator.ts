@@ -214,7 +214,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     const hasBase = !!state.base.partId && !!state.base.materialId
     const hasHead = !!state.head.partId && !!state.head.materialId
     const hasAllBody = state.body.every((b) => !!b.partId && !!b.materialId)
-    return hasBase && hasHead && hasAllBody && state.body.length > 0
+    // Gövde (body) opsiyoneldir — taban ve başlık zorunlu, gövde hiç seçilmeyebilir
+    return hasBase && hasHead && hasAllBody
   },
 }))
 

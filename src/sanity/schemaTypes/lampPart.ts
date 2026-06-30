@@ -37,12 +37,12 @@ export const lampPartSchema = defineType({
     }),
 
     defineField({
-      name: 'collection',
-      title: 'Collection',
-      description: 'Hangi koleksiyona ait? Örn: "totem", "waves", "cubes"',
-      type: 'reference',
-      to: [{ type: 'collection' }],
-      validation: (R) => R.required(),
+      name: 'collections',
+      title: 'Collections',
+      description: 'Bu parça hangi koleksiyon(lar)a ait? Birden fazla koleksiyonda kullanılabilir.',
+      type: 'array',
+      of: [defineArrayMember({ type: 'reference', to: [{ type: 'collection' }] })],
+      validation: (R) => R.required().min(1),
     }),
 
     // ── 3D Model ─────────────────────────────────────────
