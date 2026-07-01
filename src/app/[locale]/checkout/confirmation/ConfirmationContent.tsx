@@ -29,19 +29,36 @@ const ERROR_MESSAGES: Record<string, { tr: string; en: string }> = {
   },
 }
 
+// Timestamp: şimdiki tarih + saat (client-side, hydration uyumlu)
+function useTimestamp() {
+  const [ts, setTs] = useState<string>('')
+  useEffect(() => {
+    const now = new Date()
+    setTs(
+      now.toLocaleDateString('en-GB', {
+        day: '2-digit', month: 'short', year: 'numeric',
+      }).toUpperCase() +
+      ' — ' +
+      now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) +
+      ' UTC' + (now.getTimezoneOffset() === 0 ? '+0' : '')
+    )
+  }, [])
+  return ts
+}
+
 export function ConfirmationContent() {
   const locale = useLocale() as 'tr' | 'en'
   const searchParams = useSearchParams()
   const orderNumber = searchParams.get('order')
-  const status = searchParams.get('status') // 'success' veya null/error
+  const status = searchParams.get('status')
   const reason = searchParams.get('reason')
+  const timestamp = useTimestamp()
 
   const clearCart = useCartStore((s) => s.clearCart)
   const [cleared, setCleared] = useState(false)
 
   const isSuccess = status === 'success'
 
-  // Ödeme başarılı olduğunda sepeti temizle (sadece bir kere)
   useEffect(() => {
     if (isSuccess && !cleared) {
       clearCart()
@@ -49,58 +66,166 @@ export function ConfirmationContent() {
     }
   }, [isSuccess, cleared, clearCart])
 
+  // ── HATA DURUMU ────────────────────────────────────────────
   if (!isSuccess) {
     const errorMessage = reason ? ERROR_MESSAGES[reason]?.[locale] : null
 
     return (
-      <div className="flex flex-1 items-center justify-center px-6 py-16">
-        <div className="max-w-md border border-bureau-black text-center">
-          <div className="border-b border-bureau-black bg-bureau-surface px-4 py-2.5">
-            <span className="label-mono">FORM 220-E: REGISTRATION FAILED</span>
-          </div>
-          <div className="p-8">
-            <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-red-600">
-              ● {locale === 'tr' ? 'Kayıt Başarısız' : 'Registration Failed'}
+      <div className="flex flex-1 items-center justify-center px-5 py-16">
+        <div className="w-full max-w-lg border border-bureau-black">
+          {/* Header band */}
+          <div className="border-b border-bureau-black bg-bureau-black px-5 py-3">
+            <div className="flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/60">
+                FORM 220-E // CLASSIFICATION: INTERNAL
+              </span>
+              <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-red-400">
+                STATUS: FAILED
+              </span>
             </div>
-            <h1 className="mb-4 text-[22px] font-light uppercase tracking-wide">
-              {locale === 'tr' ? 'Sipariş Tamamlanamadı' : 'Order Could Not Be Completed'}
+          </div>
+
+          <div className="px-7 py-8">
+            <div className="mb-6 flex items-center gap-2.5">
+              <span className="h-2 w-2 rounded-full bg-red-500" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-red-600">
+                {locale === 'tr' ? 'Kayıt Başarısız' : 'Registration Failed'}
+              </span>
+            </div>
+
+            <h1 className="mb-2 text-[26px] font-light uppercase leading-tight tracking-wide text-bureau-black">
+              {locale === 'tr' ? 'Sipariş' : 'Order'}<br />
+              {locale === 'tr' ? 'Tamamlanamadı' : 'Could Not Be'}
+              {locale === 'en' && <><br />Completed</>}
             </h1>
+
+            <div className="my-6 border-t border-dashed border-bureau-rule" />
+
             <p className="mb-8 text-[13px] leading-relaxed text-bureau-muted">
               {errorMessage ?? ERROR_MESSAGES.unexpected[locale]}
             </p>
-            <Link href="/cart" className="btn-bureau inline-block">
-              {locale === 'tr' ? 'Sepete Dön' : 'Return to Cart'}
-            </Link>
+
+            <div className="flex gap-3">
+              <Link href="/cart" className="btn-bureau inline-block flex-1 text-center">
+                {locale === 'tr' ? 'Sepete Dön' : 'Return to Cart'}
+              </Link>
+              <Link href="/registry" className="btn-bureau-outline inline-block flex-1 text-center">
+                {locale === 'tr' ? 'Kayda Dön' : 'Return to Registry'}
+              </Link>
+            </div>
           </div>
         </div>
       </div>
     )
   }
 
+  // ── BAŞARI DURUMU ──────────────────────────────────────────
   return (
-    <div className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="max-w-md border border-bureau-black text-center">
-        <div className="border-b border-bureau-black bg-bureau-surface px-4 py-2.5">
-          <span className="label-mono">FORM 220-E: REGISTRATION CONFIRMED</span>
-        </div>
-        <div className="p-8">
-          <div className="mb-4 font-mono text-[11px] uppercase tracking-wide text-bureau-amber">
-            ● {locale === 'tr' ? 'Kayıt Onaylandı' : 'Registration Confirmed'}
+    <div className="flex flex-1 items-center justify-center px-5 py-16">
+      <div className="w-full max-w-lg border border-bureau-black">
+
+        {/* Header band */}
+        <div className="border-b border-bureau-black bg-bureau-black px-5 py-3">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/60">
+              FORM 220-E // CLASSIFICATION: CONFIRMED
+            </span>
+            <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-bureau-amber">
+              STATUS: ACTIVE
+            </span>
           </div>
-          <h1 className="mb-4 text-[22px] font-light uppercase tracking-wide">
-            {locale === 'tr' ? 'Siparişiniz Kayıt Altına Alındı' : 'Your Order Has Been Registered'}
+        </div>
+
+        <div className="px-7 pt-8 pb-6">
+          {/* Status indicator */}
+          <div className="mb-6 flex items-center gap-2.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-bureau-amber opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-bureau-amber" />
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-widest text-bureau-amber">
+              {locale === 'tr' ? 'Nesne Kayıt Altına Alındı' : 'Object Successfully Registered'}
+            </span>
+          </div>
+
+          {/* Main heading */}
+          <h1 className="mb-1 text-[28px] font-light uppercase leading-tight tracking-wide text-bureau-black">
+            {locale === 'tr' ? 'Nesneniz' : 'Your Object'}
           </h1>
-          {orderNumber && (
-            <p className="mb-6 font-mono text-[14px] font-semibold">{orderNumber}</p>
-          )}
-          <p className="mb-8 text-[13px] leading-relaxed text-bureau-muted">
+          <h1 className="mb-1 text-[28px] font-light uppercase leading-tight tracking-wide text-bureau-black">
+            {locale === 'tr' ? 'Kayıt Altına' : 'Has Been'}
+          </h1>
+          <h1 className="mb-6 text-[28px] font-light uppercase leading-tight tracking-wide text-bureau-amber">
+            {locale === 'tr' ? 'Alındı' : 'Registered'}
+          </h1>
+
+          <div className="my-5 border-t border-dashed border-bureau-rule" />
+
+          {/* Registry details table */}
+          <div className="mb-5 space-y-0 border border-bureau-rule">
+            <div className="flex items-center border-b border-bureau-rule">
+              <span className="w-[45%] border-r border-bureau-rule px-3.5 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
+                {locale === 'tr' ? 'Kayıt No' : 'Registry No'}
+              </span>
+              <span className="px-3.5 py-2.5 font-mono text-[11px] font-semibold tracking-wider text-bureau-black">
+                {orderNumber ?? '—'}
+              </span>
+            </div>
+            <div className="flex items-center border-b border-bureau-rule">
+              <span className="w-[45%] border-r border-bureau-rule px-3.5 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
+                {locale === 'tr' ? 'Kayıt Tarihi' : 'Registration Date'}
+              </span>
+              <span className="px-3.5 py-2.5 font-mono text-[10px] text-bureau-black">
+                {timestamp || '—'}
+              </span>
+            </div>
+            <div className="flex items-center border-b border-bureau-rule">
+              <span className="w-[45%] border-r border-bureau-rule px-3.5 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
+                {locale === 'tr' ? 'Sınıflandırma' : 'Classification'}
+              </span>
+              <span className="px-3.5 py-2.5 font-mono text-[10px] uppercase text-bureau-black">
+                SPATIAL PHOTON OBJECT
+              </span>
+            </div>
+            <div className="flex items-center">
+              <span className="w-[45%] border-r border-bureau-rule px-3.5 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
+                {locale === 'tr' ? 'Durum' : 'Status'}
+              </span>
+              <span className="px-3.5 py-2.5 font-mono text-[10px] uppercase text-bureau-amber">
+                PROCESSING
+              </span>
+            </div>
+          </div>
+
+          {/* Info paragraph */}
+          <p className="mb-2 text-[12px] leading-relaxed text-bureau-muted">
             {locale === 'tr'
-              ? 'Sipariş onay belgeniz kayıtlı e-posta adresinize gönderilecektir. Ödeme durumu güncellemeleri için bu sayfayı referans olarak kullanabilirsiniz.'
-              : 'Your order confirmation document will be sent to your registered email address. You may reference this page for payment status updates.'}
+              ? 'Sipariş onay belgesi kayıtlı e-posta adresinize iletilmiştir. Bu kayıt numarasını referans alarak sipariş durumunuzu takip edebilirsiniz.'
+              : 'Your order confirmation document has been dispatched to your registered email address. You may use this registry number to track the status of your order.'}
           </p>
-          <Link href="/registry" className="btn-bureau inline-block">
-            {locale === 'tr' ? 'Kayda Dön' : 'Return to Registry'}
-          </Link>
+          <p className="mb-6 text-[11px] leading-relaxed text-bureau-subtle">
+            {locale === 'tr'
+              ? 'Nesneniz işleme alındıktan sonra tahmini teslimat süresi 5–10 iş günüdür.'
+              : 'Estimated dispatch window: 5–10 business days from processing confirmation.'}
+          </p>
+
+          <div className="border-t border-dashed border-bureau-rule pt-5">
+            <div className="flex gap-3">
+              <Link href="/registry" className="btn-bureau inline-block flex-1 text-center">
+                {locale === 'tr' ? 'Kayda Dön' : 'Return to Registry'}
+              </Link>
+              <Link href="/" className="btn-bureau-outline inline-block flex-1 text-center">
+                {locale === 'tr' ? 'Ana Sayfa' : 'Home'}
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer band */}
+        <div className="border-t border-bureau-rule bg-bureau-surface px-5 py-2.5">
+          <span className="font-mono text-[9px] uppercase tracking-[0.15em] text-bureau-subtle">
+            The Ambience Bureau // Regulation of Spatial Photons // Est. 2026
+          </span>
         </div>
       </div>
     </div>

@@ -23,10 +23,13 @@ export async function generateMetadata({
 
 export default async function CustomRegistryPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ collection?: string }>
 }) {
   const { locale } = await params
+  const { collection } = await searchParams
   const t = await getTranslations({ locale, namespace: 'customRegistry' })
   const collections = await getAllLampCollections()
 
@@ -36,7 +39,7 @@ export default async function CustomRegistryPage({
         {t('subtitle')}
       </div>
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <CustomRegistryClient collections={collections} />
+        <CustomRegistryClient collections={collections} initialCollectionKey={collection} />
       </div>
     </div>
   )

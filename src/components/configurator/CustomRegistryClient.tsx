@@ -19,7 +19,13 @@ const ConfiguratorCanvas = dynamic(
   { ssr: false }
 )
 
-export function CustomRegistryClient({ collections }: { collections: Collection[] }) {
+export function CustomRegistryClient({
+  collections,
+  initialCollectionKey,
+}: {
+  collections: Collection[]
+  initialCollectionKey?: string
+}) {
   const locale = useLocale()
   const router = useRouter()
   const [isLoadingParts, setIsLoadingParts] = useState(false)
@@ -39,6 +45,14 @@ export function CustomRegistryClient({ collections }: { collections: Collection[
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getSelectedMaterial = useConfiguratorStore((s) => s.getSelectedMaterial)
   const addCartItem = useCartStore((s) => s.addItem)
+
+  // URL'den gelen koleksiyon key'i varsa otomatik seç
+  useEffect(() => {
+    if (initialCollectionKey && initialCollectionKey !== collectionKey) {
+      handleSelectCollection(initialCollectionKey)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCollectionKey])
 
   async function handleSelectCollection(key: string) {
     setIsLoadingParts(true)
