@@ -170,34 +170,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               )}
             </div>
 
-            {/* Auth links */}
-            {user ? (
-              <Link
-                href="/account"
-                onClick={() => setMenuOpen(false)}
-                className="block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-black"
-              >
-                {locale === 'tr' ? 'Sicilim' : 'My Registry'}
-              </Link>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  onClick={() => setMenuOpen(false)}
-                  className="block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-black"
-                >
-                  {locale === 'tr' ? 'Giriş Yap' : 'Sign In'}
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  onClick={() => setMenuOpen(false)}
-                  className="block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-amber"
-                >
-                  {locale === 'tr' ? 'Kayıt Ol' : 'Register'}
-                </Link>
-              </>
-            )}
-
             {NAV_ITEMS.map(({ href, labelKey }) => (
               <Link
                 key={href}
