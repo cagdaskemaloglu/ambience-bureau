@@ -18,12 +18,22 @@ export async function signInWithEmail(email: string, password: string) {
   return supabase.auth.signInWithPassword({ email, password })
 }
 
-export async function signInWithMagicLink(email: string, redirectTo?: string) {
+export async function signInWithGoogle(locale: string = 'tr') {
+  const supabase = createSupabaseClient()
+  return supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/auth/callback?next=/${locale}/account`,
+    },
+  })
+}
+
+export async function signInWithMagicLink(email: string, locale: string = 'tr') {
   const supabase = createSupabaseClient()
   return supabase.auth.signInWithOtp({
     email,
     options: {
-      emailRedirectTo: redirectTo ?? `${window.location.origin}/auth/callback`,
+      emailRedirectTo: `${window.location.origin}/auth/callback?next=/${locale}/account`,
     },
   })
 }
@@ -39,15 +49,23 @@ export async function getCurrentUser() {
   return data.user
 }
 
+export async function getProfile(userId: string) {
+  const supabase = createSupabaseClient()
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single()
+  if (error) return null
+  return data
+}
+
 // ── Misafir Session Yönetimi ──────────────────────────────
-// Üye olmayan kullanıcılar için tarayıcıda taşınan geçici kimlik.
-// custom_designs.guest_session_id ve checkout akışında kullanılır.
 
 const GUEST_SESSION_KEY = 'tab_guest_session_id'
 
 export function getOrCreateGuestSessionId(): string {
   if (typeof window === 'undefined') return ''
-
   let sessionId = localStorage.getItem(GUEST_SESSION_KEY)
   if (!sessionId) {
     sessionId = crypto.randomUUID()

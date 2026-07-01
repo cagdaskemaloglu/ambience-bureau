@@ -4,6 +4,8 @@ import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { formatPrice } from '@/lib/sanity'
 import { useCartStore } from '@/lib/store/cart'
+import { useEffect, useState } from 'react'
+import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 
 export function CartSummary() {
   const locale = useLocale() as 'tr' | 'en'
@@ -15,6 +17,24 @@ export function CartSummary() {
   const currency = locale === 'tr' ? 'TRY' : 'USD'
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
+
+  // Kazanılacak kredi: toplam x %10
+  const issuedCredits = Math.floor(total * 0.1 * 100) / 100
+
+  const [bureauCredits, setBureauCredits] = useState<number | null>(null)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    getCurrentUser().then(async (user) => {
+      if (user) {
+        setIsLoggedIn(true)
+        const profile = await getProfile(user.id)
+        if (profile) {
+          setBureauCredits((profile as any).bureau_credits ?? 0)
+        }
+      }
+    })
+  }, [])
 
   return (
     <div className="border border-bureau-black">
@@ -29,6 +49,30 @@ export function CartSummary() {
           </span>
           <span className="font-mono">{itemCount}</span>
         </div>
+
+        {/* Kazanılacak Bureau Credits */}
+        {isLoggedIn && issuedCredits > 0 && (
+          <div className="flex items-center justify-between bg-bureau-amber/5 px-4 py-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-bureau-amber">
+              {locale === 'tr' ? 'Bu İşlemden Kazanılacak' : 'Issued Credits'}
+            </span>
+            <span className="font-mono text-[12px] font-semibold text-bureau-amber">
+              +{issuedCredits.toFixed(2)} BC
+            </span>
+          </div>
+        )}
+
+        {/* Mevcut Bureau Credits */}
+        {isLoggedIn && bureauCredits !== null && bureauCredits > 0 && (
+          <div className="flex items-center justify-between px-4 py-2.5">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-bureau-muted">
+              {locale === 'tr' ? 'Mevcut Büro Krediniz' : 'Available Bureau Credits'}
+            </span>
+            <span className="font-mono text-[12px] text-bureau-muted">
+              {bureauCredits.toFixed(2)} BC
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="flex items-center justify-between border-t border-bureau-black px-4 py-3">

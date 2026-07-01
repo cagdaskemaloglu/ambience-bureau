@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import Image from 'next/image'
 import { getLocalizedValue } from '@/lib/sanity'
+import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import type { Collection } from '@/types'
 
 const NAV_ITEMS = [
@@ -28,9 +29,13 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false)
   const [mobileSubOpen, setMobileSubOpen] = useState(false)
+  const [user, setUser] = useState<any>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => setMounted(true), [])
+  useEffect(() => {
+    setMounted(true)
+    getCurrentUser().then(setUser)
+  }, [])
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
@@ -191,6 +196,21 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <span className="mx-1 opacity-30">/</span>
               <span className={locale === 'en' ? 'text-bureau-black font-semibold' : 'opacity-50'}>EN</span>
             </button>
+            {user ? (
+              <Link
+                href="/account"
+                className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
+              >
+                {locale === 'tr' ? 'Sicilim' : 'My Registry'}
+              </Link>
+            ) : (
+              <Link
+                href="/auth/login"
+                className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
+              >
+                {locale === 'tr' ? 'Giriş Yap' : 'Sign In'}
+              </Link>
+            )}
             <Link
               href="/cart"
               className="border-l border-bureau-black pl-6 font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline hover:text-bureau-amber transition-colors"

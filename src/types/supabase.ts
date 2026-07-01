@@ -33,6 +33,8 @@ export interface Database {
           country: string | null
           locale: 'tr' | 'en'
           marketing_opt: boolean
+          bureau_credits: number
+          account_id: string | null
           created_at: string
           updated_at: string
         }
@@ -75,6 +77,8 @@ export interface Database {
           iyzico_token: string | null
           paid_at: string | null
           notes: string | null
+          bureau_credits_used: number
+          credits_earned: number
           created_at: string
           updated_at: string
         }
@@ -133,6 +137,47 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['order_items']['Insert']>
       }
 
+      bureau_credit_transactions: {
+        Row: {
+          id: string
+          user_id: string
+          amount: number
+          type: 'earned' | 'spent' | 'granted' | 'expired'
+          description: string | null
+          order_id: string | null
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          amount: number
+          type: 'earned' | 'spent' | 'granted' | 'expired'
+          description?: string | null
+          order_id?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['bureau_credit_transactions']['Insert']>
+      }
+
+      service_requests: {
+        Row: {
+          id: string
+          user_id: string
+          order_item_id: string
+          status: 'pending' | 'reviewing' | 'in_service' | 'resolved' | 'rejected'
+          issue_description: string
+          admin_notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          order_item_id: string
+          issue_description: string
+          status?: 'pending' | 'reviewing' | 'in_service' | 'resolved' | 'rejected'
+          admin_notes?: string | null
+        }
+        Update: Partial<Database['public']['Tables']['service_requests']['Insert']>
+      }
+
       custom_designs: {
         Row: {
           id: string
@@ -180,3 +225,5 @@ export type Profile = Database['public']['Tables']['profiles']['Row']
 export type Order = Database['public']['Tables']['orders']['Row']
 export type OrderItem = Database['public']['Tables']['order_items']['Row']
 export type CustomDesignRow = Database['public']['Tables']['custom_designs']['Row']
+export type BureauCreditTransaction = Database['public']['Tables']['bureau_credit_transactions']['Row']
+export type ServiceRequest = Database['public']['Tables']['service_requests']['Row']
