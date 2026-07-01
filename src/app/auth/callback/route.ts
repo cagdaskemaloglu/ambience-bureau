@@ -1,11 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
-/**
- * Magic link / email doğrulama sonrası Supabase'in yönlendirdiği route.
- * Bu route locale prefix DIŞINDA çalışır (middleware matcher'da hariç tutulmalı,
- * çünkü Supabase redirect URL'i sabit olmalı).
- */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
@@ -17,8 +12,14 @@ export async function GET(request: Request) {
     if (!error) {
       return NextResponse.redirect(`${origin}${next}`)
     }
+    console.error('[auth/callback] exchangeCodeForSession error:', error)
   }
 
-  // Hata durumunda login sayfasına geri dön
-  return NextResponse.redirect(`${origin}/tr/auth/login?error=auth_callback_failed`)
+  const errorParam = searchParams.get('error') ?? 'auth_callback_failed'
+  const errorDesc = searchParams.get('error_description') ?? ''
+  console.error('[auth/callback] OAuth error:', errorParam, errorDesc)
+
+  return NextResponse.redirect(
+    `${origin}/tr/auth/login?error=${errorParam}`
+  )
 }
