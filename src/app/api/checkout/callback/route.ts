@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { retrieveCheckoutForm } from '@/lib/iyzico/client'
 import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
+import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
 
 /**
@@ -86,6 +87,42 @@ export async function POST(request: Request) {
         }
       } catch (emailError) {
         console.error('[iyzico callback] E-posta gönderim hatası:', emailError)
+      }
+
+      // Bureau Credits işlemleri — üye siparişleri için
+      if (order.user_id) {
+        try {
+          const admin = createSupabaseAdminClient()
+
+          // 1. Kullanılan kredileri düş
+          const creditsUsed = Number(order.bureau_credits_used ?? 0)
+          if (creditsUsed > 0) {
+            // RPC ile atomic düşüm
+            await (admin as any).rpc('grant_bureau_credits', {
+              p_user_id: order.user_id,
+              p_amount: -creditsUsed,
+              p_description: `Sipariş #${orderNumber} — Büro Kredisi Kullanımı`,
+            })
+          }
+
+          // 2. Kazanılan kredileri ekle (%10 — kullanılan krediler kazanımdan düşülür)
+          const subtotal = Number(order.total_amount ?? 0) + creditsUsed
+          const creditsEarned = Math.floor(subtotal * 0.1 * 100) / 100
+
+          if (creditsEarned > 0) {
+            await (admin as any).rpc('grant_bureau_credits', {
+              p_user_id: order.user_id,
+              p_amount: creditsEarned,
+              p_description: `Sipariş #${orderNumber} — %10 Bureau Credits`,
+            })
+            await (admin as any)
+              .from('orders')
+              .update({ credits_earned: creditsEarned })
+              .eq('id', order.id)
+          }
+        } catch (creditError) {
+          console.error('[iyzico callback] Kredi işlem hatası:', creditError)
+        }
       }
 
       return redirectToResult(locale, 'success', orderNumber)

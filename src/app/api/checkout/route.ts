@@ -3,12 +3,14 @@ import { createOrder, updateOrderStatus } from '@/lib/supabase/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createCheckoutForm } from '@/lib/iyzico/client'
 import type { CartItem } from '@/types'
+import { createSupabaseAdminClient } from '@/lib/supabase/server'
 
 interface CheckoutRequestBody {
   items: CartItem[]
   currency: 'TRY' | 'USD'
   locale: 'tr' | 'en'
   guestEmail?: string
+  useCredits?: string
   shippingInfo: {
     name: string
     phone: string
@@ -66,7 +68,25 @@ export async function POST(request: Request) {
 
     const vatMinor = 0 // KDV, ürün fiyatına zaten dahil — burada ayrıca eklenmiyor
     const shippingMinor = 0 // şimdilik ücretsiz kargo — ileride kurala bağlanabilir
-    const totalMinor = subtotalMinor + shippingMinor
+
+    // Bureau Credits kullanımı
+    const useCreditsParam = parseFloat(body.useCredits ?? '0')
+    let creditsUsedMinor = 0
+    if (userId && useCreditsParam > 0) {
+      const admin = createSupabaseAdminClient()
+      const { data: profile } = await (admin as any)
+        .from('profiles')
+        .select('bureau_credits')
+        .eq('id', userId)
+        .single()
+      const available = Number(profile?.bureau_credits ?? 0)
+      const subtotalFull = subtotalMinor / 100
+      const maxUsable = Math.min(available, subtotalFull)
+      const actualUse = Math.min(useCreditsParam, maxUsable)
+      creditsUsedMinor = Math.round(actualUse * 100)
+    }
+
+    const totalMinor = Math.max(0, subtotalMinor + shippingMinor - creditsUsedMinor)
 
     // 1. Siparişi Supabase'de 'pending' olarak oluştur
     const order = await createOrder({
@@ -77,6 +97,7 @@ export async function POST(request: Request) {
       vatAmount: vatMinor,
       shippingAmount: shippingMinor,
       totalAmount: totalMinor,
+      bureauCreditsUsed: creditsUsedMinor / 100,
       shippingInfo,
       items: items.map((item) => ({
         itemType: item.type,

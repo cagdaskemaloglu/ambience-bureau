@@ -56,10 +56,11 @@ export async function createOrder(params: {
   userId?: string | null
   guestEmail?: string | null
   currency: 'TRY' | 'USD'
-  subtotal: number       // kuruş/cent (en küçük birim)
-  vatAmount: number      // kuruş/cent
-  shippingAmount: number // kuruş/cent
-  totalAmount: number    // kuruş/cent
+  subtotal: number
+  vatAmount: number
+  shippingAmount: number
+  totalAmount: number
+  bureauCreditsUsed?: number
   shippingInfo: {
     name: string
     phone: string
@@ -92,6 +93,7 @@ export async function createOrder(params: {
       vat_amount: params.vatAmount,
       shipping_amount: params.shippingAmount,
       total_amount: params.totalAmount,
+      bureau_credits_used: params.bureauCreditsUsed ?? 0,
       status: 'pending',
       shipping_name: params.shippingInfo.name,
       shipping_phone: params.shippingInfo.phone,
