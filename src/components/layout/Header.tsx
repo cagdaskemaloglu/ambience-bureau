@@ -34,7 +34,17 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   useEffect(() => {
     setMounted(true)
-    getCurrentUser().then(setUser)
+    // İlk yüklemede user'ı al
+    import('@/lib/supabase/client').then(({ createSupabaseClient }) => {
+      const supabase = createSupabaseClient()
+      // Mevcut session
+      supabase.auth.getUser().then(({ data }) => setUser(data.user))
+      // Auth değişikliklerini dinle — login/logout anında güncelle
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null)
+      })
+      return () => subscription.unsubscribe()
+    })
   }, [])
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
