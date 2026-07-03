@@ -36,6 +36,8 @@ export function RegistryStatus({
 
   const bureauCreditsTRY = parseFloat(profile?.bureau_credits_try ?? '0')
   const bureauCreditsUSD = parseFloat(profile?.bureau_credits_usd ?? '0')
+  const bureauCredits = tr ? bureauCreditsTRY : bureauCreditsUSD
+  const creditSymbol = tr ? '₺' : '$'
 
   async function handleSignOut() {
     setSigningOut(true)
@@ -52,10 +54,10 @@ export function RegistryStatus({
         <div className="border-b border-bureau-black bg-bureau-black px-5 py-3">
           <div className="flex items-center justify-between">
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/60">
-              FORM 200 // REGISTRY STATUS DOCUMENT
+              {tr ? 'FORM 200 // SİCİL DURUM BELGESİ' : 'FORM 200 // REGISTRY STATUS DOCUMENT'}
             </span>
             <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-bureau-amber">
-              CERTIFIED
+              {tr ? 'SERTİFİKALI' : 'CERTIFIED'}
             </span>
           </div>
         </div>
@@ -68,11 +70,11 @@ export function RegistryStatus({
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-bureau-amber" />
                 </span>
                 <span className="font-mono text-[10px] uppercase tracking-widest text-bureau-amber">
-                  REGISTRY STATUS: CERTIFIED
+                  {tr ? 'SİCİL DURUMU: SERTİFİKALI' : 'REGISTRY STATUS: CERTIFIED'}
                 </span>
               </div>
               <p className="font-mono text-[10px] uppercase tracking-wider text-bureau-muted">
-                ACCOUNT ID: #{profile?.account_id ?? '—'}
+                {tr ? 'HESAP KİMLİĞİ' : 'ACCOUNT ID'}: #{profile?.account_id ?? '—'}
               </p>
               <p className="mt-1 font-mono text-[10px] uppercase tracking-wider text-bureau-muted">
                 {profile?.full_name || profile?.email}
@@ -82,27 +84,15 @@ export function RegistryStatus({
               <p className="font-mono text-[9px] uppercase tracking-widest text-bureau-muted">
                 {tr ? 'Mevcut Büro Kredisi' : 'Available Bureau Credits'}
               </p>
-              {bureauCreditsTRY > 0 && (
-                <p className="mt-1 text-[22px] font-light text-bureau-amber">
-                  {bureauCreditsTRY.toFixed(2)} <span className="text-[12px]">BC ₺</span>
-                </p>
-              )}
-              {bureauCreditsUSD > 0 && (
-                <p className="mt-0.5 text-[22px] font-light text-bureau-amber">
-                  {bureauCreditsUSD.toFixed(2)} <span className="text-[12px]">BC $</span>
-                </p>
-              )}
-              {bureauCreditsTRY === 0 && bureauCreditsUSD === 0 && (
-                <p className="mt-1 text-[22px] font-light text-bureau-amber">
-                  0.00 <span className="text-[14px]">BC</span>
-                </p>
-              )}
+              <p className="mt-1 text-[28px] font-light text-bureau-amber">
+                {bureauCredits.toFixed(2)} <span className="text-[14px]">BC {creditSymbol}</span>
+              </p>
             </div>
           </div>
 
           <div className="mt-4 border border-bureau-rule bg-bureau-surface px-4 py-3">
             <p className="font-mono text-[9.5px] leading-relaxed text-bureau-subtle">
-              [SYSTEM NOTE: Bureau Credits are non-transferable and formally assigned to regulate your future hardware acquisitions.]
+              {tr ? '[SİSTEM NOTU: Büro Kredileri devredilemez ve gelecekteki donanım alımlarınızı düzenlemek üzere resmi olarak size tahsis edilmiştir.]' : '[SYSTEM NOTE: Bureau Credits are non-transferable and formally assigned to regulate your future hardware acquisitions.]'}
             </p>
           </div>
         </div>
@@ -139,8 +129,7 @@ export function RegistryStatus({
               { label: tr ? 'E-posta' : 'Email', value: profile?.email },
               { label: tr ? 'Ad Soyad' : 'Full Name', value: profile?.full_name || '—' },
               { label: tr ? 'Toplam Sipariş' : 'Total Orders', value: String(orders.length) },
-              { label: tr ? 'Büro Kredisi (₺)' : 'Bureau Credits (₺)', value: `${bureauCreditsTRY.toFixed(2)} BC` },
-              { label: tr ? 'Büro Kredisi ($)' : 'Bureau Credits ($)', value: `${bureauCreditsUSD.toFixed(2)} BC` },
+              { label: tr ? 'Büro Kredisi' : 'Bureau Credits', value: `${bureauCredits.toFixed(2)} BC ${creditSymbol}` },
             ].map((row, i) => (
               <div key={i} className={`flex items-center ${i < 5 ? 'border-b border-bureau-rule' : ''}`}>
                 <span className="w-[45%] border-r border-bureau-rule px-4 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
@@ -237,21 +226,9 @@ export function RegistryStatus({
             <p className="font-mono text-[9.5px] uppercase tracking-widest text-bureau-amber">
               {tr ? 'Mevcut Büro Kredisi' : 'Available Bureau Credits'}
             </p>
-            {bureauCreditsTRY > 0 && (
-              <p className="mt-1 text-[26px] font-light text-bureau-black">
-                {bureauCreditsTRY.toFixed(2)} <span className="text-[14px] text-bureau-amber">BC ₺</span>
-              </p>
-            )}
-            {bureauCreditsUSD > 0 && (
-              <p className="mt-0.5 text-[26px] font-light text-bureau-black">
-                {bureauCreditsUSD.toFixed(2)} <span className="text-[14px] text-bureau-amber">BC $</span>
-              </p>
-            )}
-            {bureauCreditsTRY === 0 && bureauCreditsUSD === 0 && (
-              <p className="mt-1 text-[26px] font-light text-bureau-black">
-                0.00 <span className="text-[14px] text-bureau-amber">BC</span>
-              </p>
-            )}
+            <p className="mt-1 text-[32px] font-light text-bureau-black">
+              {bureauCredits.toFixed(2)} <span className="text-[16px] text-bureau-amber">BC {creditSymbol}</span>
+            </p>
           </div>
 
           {creditTransactions.length === 0 ? (

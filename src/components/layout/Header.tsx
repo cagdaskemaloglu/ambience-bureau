@@ -233,7 +233,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               href="/cart"
               className="border-l border-bureau-black pl-6 font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline hover:text-bureau-amber transition-colors"
             >
-              Cart ({String(displayCount).padStart(2, '0')})
+              {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
             </Link>
           </div>
 
@@ -244,7 +244,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
               onClick={() => setMenuOpen(false)}
             >
-              Cart ({String(displayCount).padStart(2, '0')})
+              {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
             </Link>
             <button
               onClick={() => setMenuOpen((v) => !v)}
@@ -393,7 +393,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               onClick={() => setMenuOpen(false)}
               className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
             >
-              Cart ({String(displayCount).padStart(2, '0')})
+              {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
             </Link>
           </div>
         </div>
