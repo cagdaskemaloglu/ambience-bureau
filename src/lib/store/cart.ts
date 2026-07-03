@@ -4,6 +4,9 @@ import type { CartItem } from '@/types'
 
 interface CartStore {
   items: CartItem[]
+  isDrawerOpen: boolean
+  openDrawer: () => void
+  closeDrawer: () => void
   addItem: (item: CartItem) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
@@ -17,6 +20,9 @@ export const useCartStore = create<CartStore>()(
   persist(
     (set, get) => ({
       items: [],
+      isDrawerOpen: false,
+      openDrawer: () => set({ isDrawerOpen: true }),
+      closeDrawer: () => set({ isDrawerOpen: false }),
 
       addItem: (item) =>
         set((state) => {

@@ -5,7 +5,7 @@ import { formatPrice } from '@/lib/sanity'
 import { useCartStore } from '@/lib/store/cart'
 import type { CartItem } from '@/types'
 
-export function CartItemRow({ item }: { item: CartItem }) {
+export function CartItemRow({ item, compact = false }: { item: CartItem; compact?: boolean }) {
   const locale = useLocale() as 'tr' | 'en'
   const updateQuantity = useCartStore((s) => s.updateQuantity)
   const removeItem = useCartStore((s) => s.removeItem)
@@ -17,7 +17,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
   const lineTotal = unitPrice * item.quantity
 
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-dashed border-bureau-rule py-4">
+    <div className={`flex items-start justify-between gap-4 border-b border-dashed border-bureau-rule ${compact ? 'py-3' : 'py-4'}`}>
       {/* Sol: tip + isim + custom tasarım detayı */}
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center gap-2">
@@ -28,7 +28,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
             </span>
           )}
         </div>
-        <h3 className="text-[13.5px] font-semibold uppercase tracking-bureau">{name}</h3>
+        <h3 className={`font-semibold uppercase tracking-bureau ${compact ? 'text-[12px]' : 'text-[13.5px]'}`}>{name}</h3>
 
         {item.customDesign && (
           <p className="mt-1 text-[11px] text-bureau-muted">
@@ -38,7 +38,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
         )}
 
         {/* Adet kontrolü */}
-        <div className="mt-3 flex items-center gap-3">
+        <div className="mt-2 flex items-center gap-3">
           <div className="flex items-center border border-bureau-black">
             <button
               onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -70,7 +70,7 @@ export function CartItemRow({ item }: { item: CartItem }) {
 
       {/* Sağ: fiyat */}
       <div className="flex-shrink-0 text-right">
-        <div className="font-mono text-[13px] font-semibold">
+        <div className={`font-mono font-semibold ${compact ? 'text-[12px]' : 'text-[13px]'}`}>
           {formatPrice(lineTotal, currency, intlLocale)}
         </div>
         {item.quantity > 1 && (

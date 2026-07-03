@@ -6,6 +6,7 @@ import { routing } from '@/i18n/routing'
 import { Header } from '@/components/layout/Header'
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter'
 import { getAllLampCollections } from '@/lib/queries'
+import { CartDrawer } from '@/components/cart/CartDrawer'
 
 type Props = {
   children: React.ReactNode
@@ -52,6 +53,7 @@ export default async function LocaleLayout({ children, params }: Props) {
         <Header collections={collections} />
         <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</main>
         <ConditionalFooter />
+        <CartDrawer />
       </div>
     </NextIntlClientProvider>
   )

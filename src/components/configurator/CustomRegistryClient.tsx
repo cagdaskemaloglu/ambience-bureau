@@ -45,6 +45,7 @@ export function CustomRegistryClient({
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getSelectedMaterial = useConfiguratorStore((s) => s.getSelectedMaterial)
   const addCartItem = useCartStore((s) => s.addItem)
+  const openDrawer = useCartStore((s) => s.openDrawer)
 
   // URL'den gelen koleksiyon key'i varsa otomatik seç
   useEffect(() => {
@@ -138,6 +139,13 @@ export function CustomRegistryClient({
       })
 
       setSaveSuccess(design.design_ref)
+
+      // Mobilde sepete yönlendir, desktop'ta drawer aç
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        router.push('/cart')
+      } else {
+        openDrawer()
+      }
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Tasarım kaydedilemedi.')
     } finally {
