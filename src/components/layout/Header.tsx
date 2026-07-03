@@ -289,7 +289,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
           <nav className="flex flex-col divide-y divide-bureau-rule overflow-y-auto flex-1">
             {/* Custom Registry — link + açılır alt liste */}
             <div>
-              <div className={`flex items-stretch ${isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'}`}>
+              <div className={`flex items-stretch border-b border-bureau-rule ${isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'}`}>
                 <Link
                   href="/custom-registry"
                   onClick={() => setMenuOpen(false)}
@@ -302,7 +302,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                   <button
                     onClick={() => setMobileSubOpen((v) => !v)}
                     aria-label={locale === 'tr' ? 'Koleksiyonları göster' : 'Show collections'}
-                    className="flex items-center px-5"
+                    className="flex w-12 items-center justify-center border-l border-bureau-rule"
                   >
                     <svg
                       width="11"
@@ -318,7 +318,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               </div>
 
               {mobileSubOpen && collections.length > 0 && (
-                <div className="border-t border-bureau-rule bg-bureau-surface">
+                <div className="border-b border-bureau-rule bg-bureau-surface">
                   {collections.map((collection) => {
                     const key = collection.key.current
                     const name = getLocalizedValue(collection.name, locale, '—')
@@ -326,7 +326,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                       <button
                         key={collection._id}
                         onClick={() => goToCollection(key)}
-                        className="block w-full px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black"
+                        className="block w-full px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black hover:text-bureau-amber"
                       >
                         {name}
                       </button>
