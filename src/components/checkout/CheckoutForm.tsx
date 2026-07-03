@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
+import { useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { formatPrice } from '@/lib/sanity'
 import { useCartStore } from '@/lib/store/cart'
@@ -13,6 +14,8 @@ type CheckoutMode = 'guest' | 'member' | 'checking'
 export function CheckoutForm() {
   const locale = useLocale() as 'tr' | 'en'
   const t = useTranslations('checkout')
+  const searchParams = useSearchParams()
+  const useCreditsParam = searchParams.get('useCredits') ?? '0'
 
   const items = useCartStore((s) => s.items)
   const getTotal = useCartStore((s) => s.getTotal)
@@ -84,6 +87,7 @@ export function CheckoutForm() {
           currency,
           locale,
           guestEmail: mode === 'guest' ? guestEmail : undefined,
+          useCredits: useCreditsParam,
           shippingInfo: form,
         }),
       })
