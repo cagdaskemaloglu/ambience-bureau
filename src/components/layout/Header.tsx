@@ -237,8 +237,16 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             </Link>
           </div>
 
-          {/* Mobile right: cart + hamburger */}
-          <div className="flex items-center gap-4 lg:hidden">
+          {/* Mobile right: custom registry CTA + cart + hamburger */}
+          <div className="flex items-center gap-3 lg:hidden">
+            <Link
+              href="/custom-registry"
+              className="flex items-center gap-1.5 border border-bureau-black bg-bureau-black px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase text-white no-underline"
+              onClick={() => setMenuOpen(false)}
+            >
+              <span className="h-[4px] w-[4px] rounded-full bg-bureau-amber flex-shrink-0" />
+              {locale === 'tr' ? 'Tasarla' : 'Design'}
+            </Link>
             <Link
               href="/cart"
               className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
