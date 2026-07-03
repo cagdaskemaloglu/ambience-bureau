@@ -7,9 +7,6 @@ import { useCartStore } from '@/lib/store/cart'
 import { useEffect, useState } from 'react'
 import { getCurrentUser, getProfile } from '@/lib/supabase/auth'
 
-// 1 BC = 1 TRY veya 1 USD (locale'e göre)
-const BC_TO_CURRENCY = 1
-
 export function CartSummary() {
   const locale = useLocale() as 'tr' | 'en'
   const t = useTranslations('cart')
@@ -20,10 +17,10 @@ export function CartSummary() {
   const currency = locale === 'tr' ? 'TRY' : 'USD'
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
-
   const issuedCredits = Math.floor(total * 0.1 * 100) / 100
 
-  const [bureauCredits, setBureauCredits] = useState<number>(0)
+  const [creditsTRY, setCreditsTRY] = useState(0)
+  const [creditsUSD, setCreditsUSD] = useState(0)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [useCredits, setUseCredits] = useState(false)
 
@@ -33,14 +30,16 @@ export function CartSummary() {
         setIsLoggedIn(true)
         const profile = await getProfile(user.id)
         if (profile) {
-          setBureauCredits(Number((profile as any).bureau_credits ?? 0))
+          setCreditsTRY(Number((profile as any).bureau_credits_try ?? 0))
+          setCreditsUSD(Number((profile as any).bureau_credits_usd ?? 0))
         }
       }
     })
   }, [])
 
-  // Kullanılabilecek max kredi — toplam fiyatı geçemez
-  const maxUsable = Math.min(bureauCredits, total)
+  // Locale'e göre doğru kredi bakiyesi
+  const availableCredits = locale === 'tr' ? creditsTRY : creditsUSD
+  const maxUsable = Math.min(availableCredits, total)
   const creditsToUse = useCredits ? maxUsable : 0
   const finalTotal = Math.max(0, total - creditsToUse)
 
@@ -58,7 +57,7 @@ export function CartSummary() {
           <span className="font-mono">{itemCount}</span>
         </div>
 
-        {/* Ara toplam */}
+        {/* Ara toplam (kredi uygulanınca) */}
         {useCredits && creditsToUse > 0 && (
           <div className="flex justify-between px-4 py-2 text-[12px]">
             <span className="text-bureau-muted">
@@ -70,16 +69,16 @@ export function CartSummary() {
           </div>
         )}
 
-        {/* Mevcut Bureau Credits + kullan toggle */}
-        {isLoggedIn && bureauCredits > 0 && (
+        {/* Bureau Credits kullanım toggle */}
+        {isLoggedIn && availableCredits > 0 && (
           <div className="px-4 py-3">
             <div className="flex items-center justify-between">
               <div>
                 <span className="block font-mono text-[10px] uppercase tracking-wider text-bureau-muted">
-                  {locale === 'tr' ? 'Büro Kredisi' : 'Bureau Credits'}
+                  {locale === 'tr' ? 'Büro Kredisi (₺)' : 'Bureau Credits ($)'}
                 </span>
                 <span className="font-mono text-[11px] text-bureau-black">
-                  {bureauCredits.toFixed(2)} BC {locale === 'tr' ? 'mevcut' : 'available'}
+                  {availableCredits.toFixed(2)} BC {locale === 'tr' ? 'mevcut' : 'available'}
                 </span>
               </div>
               <button
@@ -90,7 +89,9 @@ export function CartSummary() {
                 aria-pressed={useCredits}
               >
                 <span className={`absolute top-0.5 h-5 w-5 border transition-transform ${
-                  useCredits ? 'translate-x-5 border-white bg-white' : 'translate-x-0 border-bureau-rule bg-bureau-subtle'
+                  useCredits
+                    ? 'translate-x-5 border-white bg-white'
+                    : 'translate-x-0 border-bureau-rule bg-bureau-subtle'
                 }`} />
               </button>
             </div>
@@ -107,6 +108,17 @@ export function CartSummary() {
           </div>
         )}
 
+        {/* Diğer dil kredisi varsa bilgi ver */}
+        {isLoggedIn && availableCredits === 0 && (locale === 'tr' ? creditsUSD : creditsTRY) > 0 && (
+          <div className="px-4 py-2.5">
+            <p className="font-mono text-[9.5px] text-bureau-subtle">
+              {locale === 'tr'
+                ? `${creditsUSD.toFixed(2)} BC ($) krediniz var — sadece $ ile alışverişte kullanılabilir.`
+                : `You have ${creditsTRY.toFixed(2)} BC (₺) — only usable for ₺ purchases.`}
+            </p>
+          </div>
+        )}
+
         {/* Kazanılacak Bureau Credits */}
         {isLoggedIn && issuedCredits > 0 && (
           <div className="flex items-center justify-between bg-bureau-amber/5 px-4 py-2.5">
@@ -114,7 +126,7 @@ export function CartSummary() {
               {locale === 'tr' ? 'Bu İşlemden Kazanılacak' : 'Issued Credits'}
             </span>
             <span className="font-mono text-[12px] font-semibold text-bureau-amber">
-              +{issuedCredits.toFixed(2)} BC
+              +{issuedCredits.toFixed(2)} BC {locale === 'tr' ? '(₺)' : '($)'}
             </span>
           </div>
         )}

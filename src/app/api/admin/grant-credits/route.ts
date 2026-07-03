@@ -11,18 +11,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { userId, amount, description } = await request.json()
+    const { userId, amount, description, currency } = await request.json()
 
     if (!userId || !amount || typeof amount !== 'number') {
       return NextResponse.json({ error: 'userId ve amount zorunludur.' }, { status: 400 })
     }
 
+    const validCurrency = currency === 'USD' ? 'USD' : 'TRY'
     const admin = createSupabaseAdminClient()
 
     const { error } = await (admin as any).rpc('grant_bureau_credits', {
       p_user_id: userId,
       p_amount: amount,
       p_description: description ?? 'Admin tarafından tanımlandı',
+      p_currency: validCurrency,
     })
 
     if (error) throw error
@@ -30,14 +32,15 @@ export async function POST(request: Request) {
     // Güncel bakiyeyi döndür
     const { data: profile } = await (admin as any)
       .from('profiles')
-      .select('account_id, bureau_credits')
+      .select('account_id, bureau_credits_try, bureau_credits_usd')
       .eq('id', userId)
       .single()
 
     return NextResponse.json({
       success: true,
       accountId: profile?.account_id,
-      newBalance: profile?.bureau_credits,
+      balanceTRY: profile?.bureau_credits_try,
+      balanceUSD: profile?.bureau_credits_usd,
     })
   } catch (err) {
     console.error('[admin/grant-credits]', err)

@@ -34,6 +34,8 @@ export interface Database {
           locale: 'tr' | 'en'
           marketing_opt: boolean
           bureau_credits: number
+          bureau_credits_try: number
+          bureau_credits_usd: number
           account_id: string | null
           created_at: string
           updated_at: string
@@ -145,12 +147,14 @@ export interface Database {
           type: 'earned' | 'spent' | 'granted' | 'expired'
           description: string | null
           order_id: string | null
+          currency: 'TRY' | 'USD'
           created_at: string
         }
         Insert: {
           user_id: string
           amount: number
           type: 'earned' | 'spent' | 'granted' | 'expired'
+          currency?: 'TRY' | 'USD'
           description?: string | null
           order_id?: string | null
         }

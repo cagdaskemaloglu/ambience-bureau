@@ -93,19 +93,20 @@ export async function POST(request: Request) {
       if (order.user_id) {
         try {
           const admin = createSupabaseAdminClient()
+          const currency = (order.currency ?? 'TRY') as 'TRY' | 'USD'
 
-          // 1. Kullanılan kredileri düş
+          // 1. Kullanılan kredileri düş (aynı currency)
           const creditsUsed = Number(order.bureau_credits_used ?? 0)
           if (creditsUsed > 0) {
-            // RPC ile atomic düşüm
             await (admin as any).rpc('grant_bureau_credits', {
               p_user_id: order.user_id,
               p_amount: -creditsUsed,
               p_description: `Sipariş #${orderNumber} — Büro Kredisi Kullanımı`,
+              p_currency: currency,
             })
           }
 
-          // 2. Kazanılan kredileri ekle (%10 — kullanılan krediler kazanımdan düşülür)
+          // 2. Kazanılan kredileri ekle (%10 — sipariş currency'siyle)
           const subtotal = Number(order.total_amount ?? 0) + creditsUsed
           const creditsEarned = Math.floor(subtotal * 0.1 * 100) / 100
 
@@ -114,6 +115,7 @@ export async function POST(request: Request) {
               p_user_id: order.user_id,
               p_amount: creditsEarned,
               p_description: `Sipariş #${orderNumber} — %10 Bureau Credits`,
+              p_currency: currency,
             })
             await (admin as any)
               .from('orders')
