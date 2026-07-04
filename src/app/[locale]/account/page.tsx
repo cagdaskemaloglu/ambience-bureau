@@ -27,10 +27,25 @@ export default async function AccountPage({
 
   const { data: orders } = await admin
     .from('orders')
-    .select('*, order_items(*)')
+    .select(`
+      *,
+      order_items (
+        *,
+        custom_designs ( snapshot_url )
+      )
+    `)
     .eq('user_id', user.id)
     .in('status', ['processing', 'shipped', 'delivered'])
     .order('created_at', { ascending: false })
+
+  // snapshot_url'i order_item seviyesine taşı
+  const ordersWithSnapshot = (orders ?? []).map((order: any) => ({
+    ...order,
+    order_items: (order.order_items ?? []).map((item: any) => ({
+      ...item,
+      snapshot_url: item.custom_designs?.snapshot_url ?? null,
+    })),
+  }))
 
   const { data: creditTx } = await admin
     .from('bureau_credit_transactions')
@@ -42,7 +57,7 @@ export default async function AccountPage({
   return (
     <RegistryStatus
       profile={profile}
-      orders={orders ?? []}
+      orders={ordersWithSnapshot}
       creditTransactions={creditTx ?? []}
       locale={locale as 'tr' | 'en'}
     />

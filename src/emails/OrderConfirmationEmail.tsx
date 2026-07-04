@@ -5,6 +5,7 @@ import {
   Heading,
   Hr,
   Html,
+  Img,
   Preview,
   Section,
   Text,
@@ -19,8 +20,10 @@ interface OrderConfirmationEmailProps {
   items: Array<{
     name: string
     quantity: number
-    unitPrice: string // önceden formatlanmış, örn. "₺7.490"
+    unitPrice: string
     lineTotal: string
+    snapshotUrl?: string
+    parts?: Array<{ slotType: string; partId: string; materialId: string; color: string }>
   }>
   subtotal: string // KDV dahil ara toplam (= total, kargo öncesi)
   total: string

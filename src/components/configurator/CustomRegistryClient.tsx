@@ -1,7 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { useConfiguratorStore } from '@/lib/store/configurator'
@@ -32,6 +32,11 @@ export function CustomRegistryClient({
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null)
+  const screenshotFnRef = useRef<(() => string) | null>(null)
+
+  const handleScreenshotReady = useCallback((fn: () => string) => {
+    screenshotFnRef.current = fn
+  }, [])
 
   const collectionKey = useConfiguratorStore((s) => s.collectionKey)
   const setCollection = useConfiguratorStore((s) => s.setCollection)
@@ -73,6 +78,25 @@ export function CustomRegistryClient({
     setSaveError(null)
 
     try {
+      // 1. Screenshot al
+      let snapshotUrl: string | undefined
+      if (screenshotFnRef.current) {
+        try {
+          const dataUrl = screenshotFnRef.current()
+          const uploadRes = await fetch('/api/upload-snapshot', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ dataUrl, designRef: `snap-${Date.now()}` }),
+          })
+          if (uploadRes.ok) {
+            const { url } = await uploadRes.json()
+            snapshotUrl = url
+          }
+        } catch (snapErr) {
+          console.warn('Screenshot alınamadı:', snapErr)
+        }
+      }
+
       const designCurrency: 'TRY' | 'USD' = locale === 'tr' ? 'TRY' : 'USD'
 
       const parts: Array<{
@@ -117,6 +141,7 @@ export function CustomRegistryClient({
           designData: { currency: designCurrency, parts, lightColor, lightBrightness },
           totalPrice,
           guestSessionId,
+          snapshotUrl,
         }),
       })
 
@@ -164,7 +189,7 @@ export function CustomRegistryClient({
 
       {/* ── DESKTOP: yan yana ── */}
       <div className="hidden min-h-0 flex-1 border-r border-bureau-black lg:flex">
-        <ConfiguratorCanvas />
+        <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
       </div>
       <div className="hidden w-[400px] flex-shrink-0 flex-col overflow-y-auto p-4 lg:flex">
         {!collectionKey ? (
@@ -221,7 +246,7 @@ export function CustomRegistryClient({
           <>
             {/* 3D Viewer — üst %60 */}
             <div className="min-h-0 flex-[3] overflow-hidden border-b border-bureau-black">
-              <ConfiguratorCanvas />
+              <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
             </div>
 
             {/* Parts paneli — alt %40 */}

@@ -55,11 +55,41 @@ export async function POST(request: Request) {
 
         if (recipientEmail) {
           const currency = (order.currency ?? 'TRY') as 'TRY' | 'USD'
-          const orderItems = (order.order_items ?? []).map((item: any) => ({
-            name: item.product_name,
-            quantity: item.quantity,
-            unitPriceMinor: item.unit_price,
-          }))
+          const admin = createSupabaseAdminClient()
+
+          // Custom design snapshot ve parça detayları
+          const orderItems = await Promise.all(
+            (order.order_items ?? []).map(async (item: any) => {
+              let snapshotUrl: string | undefined
+              let parts: Array<{ slotType: string; partId: string; materialId: string; color: string }> = []
+
+              if (item.custom_design_id) {
+                const { data: design } = await (admin as any)
+                  .from('custom_designs')
+                  .select('snapshot_url, design_data')
+                  .eq('id', item.custom_design_id)
+                  .single()
+
+                if (design) {
+                  snapshotUrl = design.snapshot_url ?? undefined
+                  parts = (design.design_data?.parts ?? []).map((p: any) => ({
+                    slotType: p.slotType,
+                    partId: p.partId,
+                    materialId: p.materialId,
+                    color: p.color ?? '',
+                  }))
+                }
+              }
+
+              return {
+                name: item.product_name,
+                quantity: item.quantity,
+                unitPriceMinor: item.unit_price,
+                snapshotUrl,
+                parts,
+              }
+            })
+          )
 
           const emailParams = {
             locale,

@@ -14,6 +14,8 @@ interface SendOrderConfirmationParams {
     name: string
     quantity: number
     unitPriceMinor: number // kuruş/cent
+    snapshotUrl?: string
+    parts?: Array<{ slotType: string; partId: string; materialId: string; color: string }>
   }>
   subtotalMinor: number // kuruş/cent — KDV dahil, kargo hariç
   totalMinor: number // kuruş/cent — kargo dahil nihai toplam
@@ -36,6 +38,8 @@ export async function sendOrderConfirmationEmail(params: SendOrderConfirmationPa
     quantity: item.quantity,
     unitPrice: fmt(item.unitPriceMinor),
     lineTotal: fmt(item.unitPriceMinor * item.quantity),
+    snapshotUrl: item.snapshotUrl,
+    parts: item.parts,
   }))
 
   const subject =
@@ -89,6 +93,8 @@ export async function sendAdminOrderNotification(params: SendOrderConfirmationPa
           quantity: item.quantity,
           unitPrice: fmt(item.unitPriceMinor),
           lineTotal: fmt(item.unitPriceMinor * item.quantity),
+          snapshotUrl: item.snapshotUrl,
+          parts: item.parts,
         })),
         subtotal: fmt(params.subtotalMinor),
         total: fmt(params.totalMinor),

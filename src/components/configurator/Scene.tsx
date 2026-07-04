@@ -55,7 +55,7 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
           near: 1,
           far: 3000,
         }}
-        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}
+        gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, preserveDrawingBuffer: true }}
       >
         <color attach="background" args={['#FAFAFA']} />
 

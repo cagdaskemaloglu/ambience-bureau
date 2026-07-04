@@ -178,6 +178,17 @@ export function RegistryStatus({
                       </div>
                     </div>
                     <div className="px-4 py-4">
+                      {/* Custom design snapshot */}
+                      {item.snapshot_url && (
+                        <div className="mb-3 overflow-hidden border border-bureau-rule">
+                          <img
+                            src={item.snapshot_url}
+                            alt={item.product_name}
+                            className="h-48 w-full object-contain bg-bureau-surface p-2"
+                          />
+                        </div>
+                      )}
+
                       <p className="mb-3 text-[14px] font-light uppercase tracking-wide">
                         {item.product_name}
                       </p>
