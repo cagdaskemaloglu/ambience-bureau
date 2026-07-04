@@ -61,7 +61,7 @@ export default async function ArchivePage({
                 <Link
                   key={post._id}
                   href={`/archive/${post.slug.current}`}
-                  className="flex flex-col bg-bureau-white p-5 no-underline transition-colors hover:bg-bureau-surface"
+                  className="flex flex-col bg-white p-5 no-underline transition-colors hover:bg-bureau-surface"
                 >
                   <div className="mb-3 flex h-40 items-center justify-center overflow-hidden bg-bureau-surface">
                     {post.coverImage ? (
@@ -109,6 +109,10 @@ export default async function ArchivePage({
                 </Link>
               )
             })}
+            {/* Boş hücreler — grid gap'in siyah görünmemesi için */}
+            {Array.from({ length: (3 - (posts.length % 3)) % 3 }).map((_, i) => (
+              <div key={`empty-${i}`} className="bg-white" />
+            ))}
           </div>
         )}
       </div>

@@ -237,16 +237,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             </Link>
           </div>
 
-          {/* Mobile right: custom registry CTA + cart + hamburger */}
-          <div className="flex items-center gap-3 lg:hidden">
-            <Link
-              href="/custom-registry"
-              className="flex items-center gap-1.5 border border-bureau-black bg-bureau-black px-3 py-1.5 font-mono text-[10px] tracking-wider uppercase text-white no-underline"
-              onClick={() => setMenuOpen(false)}
-            >
-              <span className="h-[4px] w-[4px] rounded-full bg-bureau-amber flex-shrink-0" />
-              {locale === 'tr' ? 'Tasarla' : 'Design'}
-            </Link>
+          {/* Mobile right: cart + hamburger */}
+          <div className="flex items-center gap-4 lg:hidden">
             <Link
               href="/cart"
               className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
@@ -269,7 +261,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
       {/* Mobile menu overlay */}
       {menuOpen && (
-        <div className="fixed inset-0 z-30 flex flex-col bg-white lg:hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-white lg:hidden">
           {/* Overlay header */}
           <div className="flex items-center justify-between border-b border-bureau-black px-5 py-4">
             <Link href="/" className="no-underline flex items-center gap-3" onClick={() => setMenuOpen(false)}>
@@ -294,14 +286,16 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
           </div>
 
           {/* Nav links */}
-          <nav className="flex flex-col divide-y divide-bureau-rule overflow-y-auto flex-1">
-            {/* Custom Registry — link + açılır alt liste */}
-            <div>
-              <div className={`flex items-stretch border-b border-bureau-rule ${isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'}`}>
+          <nav className="flex flex-col overflow-y-auto flex-1">
+            {/* Custom Registry */}
+            <div className="border-b border-bureau-rule">
+              <div className="flex items-stretch">
                 <Link
                   href="/custom-registry"
                   onClick={() => setMenuOpen(false)}
-                  className="flex flex-1 items-center gap-3 px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline"
+                  className={`flex flex-1 items-center gap-3 px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline ${
+                    isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'
+                  }`}
                 >
                   <span className="h-[5px] w-[5px] rounded-full bg-bureau-amber flex-shrink-0" />
                   {t('customRegistry')}
@@ -312,11 +306,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                     aria-label={locale === 'tr' ? 'Koleksiyonları göster' : 'Show collections'}
                     className="flex w-12 items-center justify-center border-l border-bureau-rule"
                   >
-                    <svg
-                      width="11"
-                      height="7"
-                      viewBox="0 0 9 6"
-                      fill="none"
+                    <svg width="11" height="7" viewBox="0 0 9 6" fill="none"
                       className={`transition-transform duration-150 ${mobileSubOpen ? 'rotate-180' : ''}`}
                     >
                       <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.3" />
@@ -324,9 +314,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                   </button>
                 )}
               </div>
-
               {mobileSubOpen && collections.length > 0 && (
-                <div className="border-b border-bureau-rule bg-bureau-surface">
+                <div className="bg-bureau-surface">
                   {collections.map((collection) => {
                     const key = collection.key.current
                     const name = getLocalizedValue(collection.name, locale, '—')
@@ -334,7 +323,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                       <button
                         key={collection._id}
                         onClick={() => goToCollection(key)}
-                        className="block w-full px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black hover:text-bureau-amber"
+                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black hover:text-bureau-amber"
                       >
                         {name}
                       </button>
