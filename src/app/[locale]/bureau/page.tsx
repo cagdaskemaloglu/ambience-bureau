@@ -62,7 +62,7 @@ export default async function BureauPage({
                 <p className="leading-relaxed text-bureau-black">
                   The Ambience Bureau<br />
                   {tr ? 'Organize Sanayi Bölgesi' : 'Organized Industrial Zone'}<br />
-                  Eskişehir, Türkiye
+                  Mersin, Türkiye
                 </p>
               </div>
 
@@ -71,10 +71,10 @@ export default async function BureauPage({
                   {tr ? 'E-posta' : 'Email'}
                 </p>
                 <a
-                  href="mailto:ambiencebureau@gmail.com"
+                  href="mailto:contact@ambiencebureau.com"
                   className="text-bureau-black underline hover:text-bureau-amber transition-colors"
                 >
-                  ambiencebureau@gmail.com
+                  contact@ambiencebureau.com
                 </a>
               </div>
 
