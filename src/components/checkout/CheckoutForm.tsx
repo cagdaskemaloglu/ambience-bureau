@@ -274,13 +274,23 @@ export function CheckoutForm() {
               <span className="text-bureau-muted">{t('summary.shipping')}</span>
               <span className="font-mono text-bureau-amber">{t('summary.free')}</span>
             </div>
+            {creditsToUse > 0 && (
+              <div className="flex justify-between px-4 py-2 text-[12px]">
+                <span className="text-bureau-muted">
+                  {locale === 'tr' ? 'Büro Kredisi' : 'Bureau Credits'}
+                </span>
+                <span className="font-mono text-bureau-amber">
+                  -{formatPrice(creditsToUse, currency, intlLocale)}
+                </span>
+              </div>
+            )}
           </div>
           <div className="flex items-center justify-between border-t border-bureau-black px-4 py-3">
             <span className="font-mono text-[11px] uppercase tracking-wide">
               {t('summary.total')}
             </span>
             <span className="font-mono text-[16px] font-semibold">
-              {formatPrice(total, currency, intlLocale)}
+              {formatPrice(Math.max(0, total - creditsToUse), currency, intlLocale)}
             </span>
           </div>
         </div>
