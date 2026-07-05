@@ -14,6 +14,7 @@ export function CartDrawer() {
   const closeDrawer = useCartStore((s) => s.closeDrawer)
   const items = useCartStore((s) => s.items)
   const getTotal = useCartStore((s) => s.getTotal)
+  const setCreditsToUse = useCartStore((s) => s.setCreditsToUse)
 
   const total = getTotal(locale)
   const currency = locale === 'tr' ? 'TRY' : 'USD'
@@ -42,38 +43,30 @@ export function CartDrawer() {
           ? Number((profile as any).bureau_credits_try ?? 0)
           : Number((profile as any).bureau_credits_usd ?? 0)
         setAvailableCredits(credits)
-        // sessionStorage'da toggle açıksa yansıt
-        const stored = sessionStorage.getItem('useCredits')
-        if (stored && parseFloat(stored) > 0) {
-          setUseCredits(true)
-        }
+        // Store'da önceki değer varsa yansıt
+        const storeCredits = useCartStore.getState().creditsToUse
+        if (storeCredits > 0) setUseCredits(true)
       }
       setCreditsLoaded(true)
     })
   }, [isOpen, locale])
 
-  // useCredits veya availableCredits değişince sessionStorage güncelle
-  // Ama sadece creditsLoaded olduktan sonra — yoksa 0 yazar
+  // creditsToUse store'u sync tut
   useEffect(() => {
     if (!creditsLoaded) return
-    if (useCredits && maxUsable > 0) {
-      sessionStorage.setItem('useCredits', maxUsable.toFixed(2))
-    } else if (!useCredits) {
-      sessionStorage.removeItem('useCredits')
-    }
+    setCreditsToUse(useCredits && maxUsable > 0 ? maxUsable : 0)
   }, [useCredits, maxUsable, creditsLoaded])
 
   function handleToggleCredits() {
-    setUseCredits(v => !v)
+    const newVal = !useCredits
+    setUseCredits(newVal)
+    // Store'a yaz — sessionStorage'a güvenmiyoruz
+    setCreditsToUse(newVal && maxUsable > 0 ? maxUsable : 0)
   }
 
   function handleGoToCheckout() {
-    // Checkout'a geçmeden önce sessionStorage'ın güncel değerini garantile
-    if (useCredits && maxUsable > 0) {
-      sessionStorage.setItem('useCredits', maxUsable.toFixed(2))
-    } else {
-      sessionStorage.removeItem('useCredits')
-    }
+    // Son güvenli değeri store'a yaz
+    setCreditsToUse(useCredits && maxUsable > 0 ? maxUsable : 0)
     closeDrawer()
   }
 

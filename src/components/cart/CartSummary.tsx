@@ -12,6 +12,7 @@ export function CartSummary() {
   const t = useTranslations('cart')
   const getTotal = useCartStore((s) => s.getTotal)
   const items = useCartStore((s) => s.items)
+  const setCreditsToUse = useCartStore((s) => s.setCreditsToUse)
 
   const total = getTotal(locale)
   const currency = locale === 'tr' ? 'TRY' : 'USD'

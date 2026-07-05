@@ -7,6 +7,8 @@ interface CartStore {
   isDrawerOpen: boolean
   openDrawer: () => void
   closeDrawer: () => void
+  creditsToUse: number
+  setCreditsToUse: (amount: number) => void
   addItem: (item: CartItem) => void
   removeItem: (id: string) => void
   updateQuantity: (id: string, quantity: number) => void
@@ -23,6 +25,8 @@ export const useCartStore = create<CartStore>()(
       isDrawerOpen: false,
       openDrawer: () => set({ isDrawerOpen: true }),
       closeDrawer: () => set({ isDrawerOpen: false }),
+      creditsToUse: 0,
+      setCreditsToUse: (amount) => set({ creditsToUse: amount }),
 
       addItem: (item) =>
         set((state) => {
@@ -49,7 +53,7 @@ export const useCartStore = create<CartStore>()(
               : state.items.map((i) => (i.id === id ? { ...i, quantity } : i)),
         })),
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], creditsToUse: 0 }),
 
       getTotal: (locale) => {
         return get().items.reduce((sum, item) => {
