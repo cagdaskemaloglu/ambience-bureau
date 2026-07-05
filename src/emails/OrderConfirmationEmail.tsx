@@ -116,17 +116,41 @@ export default function OrderConfirmationEmail({
           {/* Items */}
           <Text style={styles.sectionHeading}>{t.itemsHeading}</Text>
           {items.map((item, idx) => (
-            <Row key={idx} style={styles.itemRow}>
-              <Column>
-                <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemQty}>
-                  {t.qty}: {item.quantity} × {item.unitPrice}
-                </Text>
-              </Column>
-              <Column align="right">
-                <Text style={styles.itemTotal}>{item.lineTotal}</Text>
-              </Column>
-            </Row>
+            <Section key={idx}>
+              {/* Snapshot fotoğrafı */}
+              {item.snapshotUrl && (
+                <Img
+                  src={item.snapshotUrl}
+                  alt={item.name}
+                  width={300}
+                  style={{ width: '100%', maxWidth: '300px', height: 'auto', marginBottom: '12px', border: '1px solid #e5e5e5' }}
+                />
+              )}
+              <Row style={styles.itemRow}>
+                <Column>
+                  <Text style={styles.itemName}>{item.name}</Text>
+                  <Text style={styles.itemQty}>
+                    {t.qty}: {item.quantity} × {item.unitPrice}
+                  </Text>
+                  {/* Parça detayları */}
+                  {item.parts && item.parts.length > 0 && (
+                    <Section style={{ marginTop: '6px', padding: '8px', backgroundColor: '#f5f5f5' }}>
+                      <Text style={{ fontSize: '10px', fontFamily: 'monospace', color: '#888', margin: '0 0 4px 0', textTransform: 'uppercase' }}>
+                        Parça Detayları / Part Details
+                      </Text>
+                      {item.parts.map((part, pIdx) => (
+                        <Text key={pIdx} style={{ fontSize: '11px', fontFamily: 'monospace', color: '#333', margin: '2px 0' }}>
+                          [{part.slotType}] {part.partId} · {part.materialId}
+                        </Text>
+                      ))}
+                    </Section>
+                  )}
+                </Column>
+                <Column align="right">
+                  <Text style={styles.itemTotal}>{item.lineTotal}</Text>
+                </Column>
+              </Row>
+            </Section>
           ))}
 
           <Hr style={styles.hrDashed} />

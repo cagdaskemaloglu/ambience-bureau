@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useSearchParams } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { formatPrice } from '@/lib/sanity'
 import { useCartStore } from '@/lib/store/cart'
@@ -14,8 +13,14 @@ type CheckoutMode = 'guest' | 'member' | 'checking'
 export function CheckoutForm() {
   const locale = useLocale() as 'tr' | 'en'
   const t = useTranslations('checkout')
-  const searchParams = useSearchParams()
-  const useCreditsParam = searchParams.get('useCredits') ?? '0'
+  const [useCreditsParam, setUseCreditsParam] = useState('0')
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('useCredits') ?? '0'
+      setUseCreditsParam(stored)
+    }
+  }, [])
 
   const items = useCartStore((s) => s.items)
   const getTotal = useCartStore((s) => s.getTotal)
@@ -106,6 +111,10 @@ export function CheckoutForm() {
       // Ödeme formu hazır — sepeti BURADA temizlemiyoruz, sadece
       // ödeme başarıyla tamamlandığında (onay sayfasında) temizlenecek.
       setFormContent(checkoutFormContent)
+      // Kredi kullanımı iyzico'ya gönderildi, sessionStorage'ı temizle
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('useCredits')
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t('errors.generic'))
     } finally {

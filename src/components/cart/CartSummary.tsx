@@ -37,11 +37,35 @@ export function CartSummary() {
     })
   }, [])
 
-  // Locale'e göre doğru kredi bakiyesi
   const availableCredits = locale === 'tr' ? creditsTRY : creditsUSD
   const maxUsable = Math.min(availableCredits, total)
   const creditsToUse = useCredits ? maxUsable : 0
   const finalTotal = Math.max(0, total - creditsToUse)
+
+  // Toggle değiştiğinde sessionStorage'a kaydet — checkout sayfası oradan okur
+  function handleToggleCredits() {
+    const newVal = !useCredits
+    setUseCredits(newVal)
+    if (typeof window !== 'undefined') {
+      if (newVal && creditsToUse > 0) {
+        sessionStorage.setItem('useCredits', maxUsable.toFixed(2))
+      } else {
+        sessionStorage.removeItem('useCredits')
+      }
+    }
+  }
+
+  // useCredits açıkken maxUsable güncellenirse sessionStorage'ı da güncelle
+  useEffect(() => {
+    if (useCredits && typeof window !== 'undefined') {
+      if (maxUsable > 0) {
+        sessionStorage.setItem('useCredits', maxUsable.toFixed(2))
+      } else {
+        sessionStorage.removeItem('useCredits')
+        setUseCredits(false)
+      }
+    }
+  }, [useCredits, maxUsable])
 
   return (
     <div className="border border-bureau-black">
@@ -75,14 +99,14 @@ export function CartSummary() {
             <div className="flex items-center justify-between">
               <div>
                 <span className="block font-mono text-[10px] uppercase tracking-wider text-bureau-muted">
-                  {locale === 'tr' ? 'Büro Kredisi (₺)' : 'Bureau Credits ($)'}
+                  {locale === 'tr' ? `Büro Kredisi (${locale === 'tr' ? '₺' : '$'})` : `Bureau Credits ($)`}
                 </span>
                 <span className="font-mono text-[11px] text-bureau-black">
                   {availableCredits.toFixed(2)} BC {locale === 'tr' ? 'mevcut' : 'available'}
                 </span>
               </div>
               <button
-                onClick={() => setUseCredits(v => !v)}
+                onClick={handleToggleCredits}
                 className={`relative h-6 w-11 flex-shrink-0 border transition-colors ${
                   useCredits ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
                 }`}
@@ -108,7 +132,7 @@ export function CartSummary() {
           </div>
         )}
 
-        {/* Diğer dil kredisi varsa bilgi ver */}
+        {/* Diğer dil kredisi varsa bilgi */}
         {isLoggedIn && availableCredits === 0 && (locale === 'tr' ? creditsUSD : creditsTRY) > 0 && (
           <div className="px-4 py-2.5">
             <p className="font-mono text-[9.5px] text-bureau-subtle">
@@ -146,10 +170,7 @@ export function CartSummary() {
       </p>
 
       <div className="space-y-2 p-4 pt-2">
-        <Link
-          href={`/checkout${useCredits && creditsToUse > 0 ? `?useCredits=${creditsToUse.toFixed(2)}` : ''}`}
-          className="btn-bureau block w-full text-center"
-        >
+        <Link href="/checkout" className="btn-bureau block w-full text-center">
           {t('checkout')}
         </Link>
         <Link

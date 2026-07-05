@@ -72,11 +72,12 @@ export async function POST(request: Request) {
 
                 if (design) {
                   snapshotUrl = design.snapshot_url ?? undefined
+                  // design_data.parts: { slotType, partId, materialId, price }
                   parts = (design.design_data?.parts ?? []).map((p: any) => ({
-                    slotType: p.slotType,
-                    partId: p.partId,
-                    materialId: p.materialId,
-                    color: p.color ?? '',
+                    slotType: String(p.slotType ?? '').toUpperCase(),
+                    partId: String(p.partId ?? ''),
+                    materialId: String(p.materialId ?? ''),
+                    color: String(p.color ?? p.materialId ?? ''),
                   }))
                 }
               }
