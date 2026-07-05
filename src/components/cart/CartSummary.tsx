@@ -17,7 +17,6 @@ export function CartSummary() {
   const currency = locale === 'tr' ? 'TRY' : 'USD'
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0)
-  const issuedCredits = Math.floor(total * 0.1 * 100) / 100
 
   const [creditsTRY, setCreditsTRY] = useState(0)
   const [creditsUSD, setCreditsUSD] = useState(0)
@@ -41,6 +40,8 @@ export function CartSummary() {
   const maxUsable = Math.min(availableCredits, total)
   const creditsToUse = useCredits ? maxUsable : 0
   const finalTotal = Math.max(0, total - creditsToUse)
+  // Kazanılacak BC: ödenecek tutar üzerinden %10 (indirim sonrası)
+  const issuedCredits = Math.floor(finalTotal * 0.1 * 100) / 100
 
   // Toggle değiştiğinde sessionStorage'a kaydet — checkout sayfası oradan okur
   function handleToggleCredits() {
