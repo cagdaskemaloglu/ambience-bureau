@@ -14,6 +14,7 @@ export function CartDrawer() {
   const closeDrawer = useCartStore((s) => s.closeDrawer)
   const items = useCartStore((s) => s.items)
   const getTotal = useCartStore((s) => s.getTotal)
+  const storeCreditsToUse = useCartStore((s) => s.creditsToUse)
   const setCreditsToUse = useCartStore((s) => s.setCreditsToUse)
 
   const total = getTotal(locale)
@@ -21,20 +22,25 @@ export function CartDrawer() {
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
   const panelRef = useRef<HTMLDivElement>(null)
 
+  // availableCredits ref — state güncellemesini beklemeden kullanmak için
+  const availableCreditsRef = useRef(0)
   const [availableCredits, setAvailableCredits] = useState(0)
   const [useCredits, setUseCredits] = useState(false)
   const [creditsLoaded, setCreditsLoaded] = useState(false)
 
-  // availableCredits yüklendikten sonra maxUsable hesapla
+  // Hesaplamalar — availableCredits yüklendikten sonra geçerli
   const maxUsable = Math.min(availableCredits, total)
-  const creditsToUse = useCredits && availableCredits > 0 ? maxUsable : 0
-  const finalTotal = Math.max(0, total - creditsToUse)
+  const creditsApplied = useCredits ? maxUsable : 0
+  const finalTotal = Math.max(0, total - creditsApplied)
   const issuedCredits = Math.floor(finalTotal * 0.1 * 100) / 100
 
-  // Drawer her açıldığında credits yeniden yükle
   useEffect(() => {
     if (!isOpen) return
     setCreditsLoaded(false)
+    setAvailableCredits(0)
+    availableCreditsRef.current = 0
+    setUseCredits(storeCreditsToUse > 0)
+
     getCurrentUser().then(async (user) => {
       if (!user) { setCreditsLoaded(true); return }
       const profile = await getProfile(user.id)
@@ -42,31 +48,33 @@ export function CartDrawer() {
         const credits = locale === 'tr'
           ? Number((profile as any).bureau_credits_try ?? 0)
           : Number((profile as any).bureau_credits_usd ?? 0)
+        availableCreditsRef.current = credits
         setAvailableCredits(credits)
-        // Store'da önceki değer varsa yansıt
-        const storeCredits = useCartStore.getState().creditsToUse
-        if (storeCredits > 0) setUseCredits(true)
+        // Daha önce toggle açıksa ve hâlâ kredi varsa koru
+        if (storeCreditsToUse > 0 && credits > 0) {
+          setUseCredits(true)
+        }
       }
       setCreditsLoaded(true)
     })
   }, [isOpen, locale])
 
-  // creditsToUse store'u sync tut
-  useEffect(() => {
-    if (!creditsLoaded) return
-    setCreditsToUse(useCredits && maxUsable > 0 ? maxUsable : 0)
-  }, [useCredits, maxUsable, creditsLoaded])
-
+  // Toggle: ref'ten anlık değeri oku — state gecikmesine takılmaz
   function handleToggleCredits() {
     const newVal = !useCredits
     setUseCredits(newVal)
-    // Store'a yaz — sessionStorage'a güvenmiyoruz
-    setCreditsToUse(newVal && maxUsable > 0 ? maxUsable : 0)
+    const credits = availableCreditsRef.current
+    const usable = Math.min(credits, total)
+    const amount = newVal && usable > 0 ? usable : 0
+    setCreditsToUse(amount)
   }
 
+  // Checkout'a giderken de ref'ten oku
   function handleGoToCheckout() {
-    // Son güvenli değeri store'a yaz
-    setCreditsToUse(useCredits && maxUsable > 0 ? maxUsable : 0)
+    const credits = availableCreditsRef.current
+    const usable = Math.min(credits, total)
+    const amount = useCredits && usable > 0 ? usable : 0
+    setCreditsToUse(amount)
     closeDrawer()
   }
 
@@ -98,10 +106,7 @@ export function CartDrawer() {
               {locale === 'tr' ? 'Sepet' : 'Cart'} ({items.reduce((s, i) => s + i.quantity, 0)})
             </h2>
           </div>
-          <button
-            onClick={closeDrawer}
-            className="flex h-8 w-8 items-center justify-center border border-bureau-rule hover:border-bureau-black transition-colors"
-          >
+          <button onClick={closeDrawer} className="flex h-8 w-8 items-center justify-center border border-bureau-rule hover:border-bureau-black transition-colors">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" strokeWidth="1.5"/>
               <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" strokeWidth="1.5"/>
@@ -126,7 +131,7 @@ export function CartDrawer() {
         {items.length > 0 && (
           <div className="flex-shrink-0 border-t border-bureau-black px-5 py-4">
 
-            {/* Bureau Credits toggle — sadece yüklendikten sonra göster */}
+            {/* Bureau Credits toggle */}
             {creditsLoaded && availableCredits > 0 && (
               <div className="mb-3 border border-bureau-rule p-3">
                 <div className="flex items-center justify-between">
@@ -150,10 +155,10 @@ export function CartDrawer() {
                     }`} />
                   </button>
                 </div>
-                {useCredits && creditsToUse > 0 && (
+                {useCredits && creditsApplied > 0 && (
                   <div className="mt-2 flex justify-between font-mono text-[10px] text-bureau-amber">
                     <span>{locale === 'tr' ? 'Kullanılacak' : 'Applied'}</span>
-                    <span className="font-semibold">-{creditsToUse.toFixed(2)} BC</span>
+                    <span className="font-semibold">-{creditsApplied.toFixed(2)} BC</span>
                   </div>
                 )}
               </div>
@@ -180,7 +185,7 @@ export function CartDrawer() {
                 {formatPrice(finalTotal, currency, intlLocale)}
               </span>
             </div>
-            {useCredits && creditsToUse > 0 && (
+            {useCredits && creditsApplied > 0 && (
               <div className="mb-2 flex justify-between font-mono text-[10px] text-bureau-subtle">
                 <span>{locale === 'tr' ? 'Kredi öncesi' : 'Before credits'}</span>
                 <span className="line-through">{formatPrice(total, currency, intlLocale)}</span>
