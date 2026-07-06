@@ -24,6 +24,7 @@ export function CartDrawer() {
 
   // availableCredits ref — state güncellemesini beklemeden kullanmak için
   const availableCreditsRef = useRef(0)
+  const useCreditsRef = useRef(false)
   const [availableCredits, setAvailableCredits] = useState(0)
   const [useCredits, setUseCredits] = useState(false)
   const [creditsLoaded, setCreditsLoaded] = useState(false)
@@ -52,6 +53,7 @@ export function CartDrawer() {
         setAvailableCredits(credits)
         // Daha önce toggle açıksa ve hâlâ kredi varsa koru
         if (storeCreditsToUse > 0 && credits > 0) {
+          useCreditsRef.current = true
           setUseCredits(true)
         }
       }
@@ -62,6 +64,7 @@ export function CartDrawer() {
   // Toggle: ref'ten anlık değeri oku — state gecikmesine takılmaz
   function handleToggleCredits() {
     const newVal = !useCredits
+    useCreditsRef.current = newVal
     setUseCredits(newVal)
     const credits = availableCreditsRef.current
     const usable = Math.min(credits, total)
@@ -69,11 +72,12 @@ export function CartDrawer() {
     setCreditsToUse(amount)
   }
 
-  // Checkout'a giderken de ref'ten oku
+  // Checkout'a giderken ref'ten oku — closure stale değil
   function handleGoToCheckout() {
     const credits = availableCreditsRef.current
+    const isUsing = useCreditsRef.current
     const usable = Math.min(credits, total)
-    const amount = useCredits && usable > 0 ? usable : 0
+    const amount = isUsing && usable > 0 ? usable : 0
     setCreditsToUse(amount)
     closeDrawer()
   }
