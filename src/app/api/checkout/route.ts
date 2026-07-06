@@ -76,10 +76,13 @@ export async function POST(request: Request) {
       const admin = createSupabaseAdminClient()
       const { data: profile } = await (admin as any)
         .from('profiles')
-        .select('bureau_credits')
+        .select('bureau_credits_try, bureau_credits_usd')
         .eq('id', userId)
         .single()
-      const available = Number(profile?.bureau_credits ?? 0)
+      // Siparişin para birimine göre doğru kredi kolonu
+      const available = currency === 'TRY'
+        ? Number(profile?.bureau_credits_try ?? 0)
+        : Number(profile?.bureau_credits_usd ?? 0)
       const subtotalFull = subtotalMinor / 100
       const maxUsable = Math.min(available, subtotalFull)
       const actualUse = Math.min(useCreditsParam, maxUsable)
