@@ -114,7 +114,6 @@ export async function POST(request: Request) {
     })
 
     // 2. iyzico Checkout Form'unu başlat
-    const totalPriceDecimal = (totalMinor / 100).toFixed(2)
 
     const basketItems: Array<{
       id: string
@@ -133,28 +132,13 @@ export async function POST(request: Request) {
       ).toFixed(2),
     }))
 
-    // Kredi indirimi varsa basket'e negatif kalem ekle
-    // iyzico: basketItems toplamı == price == paidPrice olmalı
-    if (creditsUsedMinor > 0) {
-      basketItems.push({
-        id: 'bureau-credits-discount',
-        name: locale === 'tr' ? 'Büro Kredisi İndirimi' : 'Bureau Credits Discount',
-        category1: 'Discount',
-        itemType: 'VIRTUAL' as const,
-        price: (-(creditsUsedMinor / 100)).toFixed(2),
-      })
-    }
-
-    // Güvenlik kontrolü: basket item toplamı price/paidPrice ile EŞİT olmalı,
-    // yoksa iyzico "geçersiz imza" hatası verir. Geliştirme sırasında erken
-    // uyarı almak için burada doğruluyoruz.
-    const basketTotal = basketItems.reduce((sum, item) => sum + Number(item.price), 0)
-    if (Math.abs(basketTotal - Number(totalPriceDecimal)) > 0.001) {
-      console.error(
-        '[checkout API] Basket toplamı ile price uyuşmuyor:',
-        { basketTotal, totalPriceDecimal }
-      )
-    }
+    // iyzico kuralı: price = basketItems toplamı, paidPrice = gerçek ödeme (indirimli olabilir)
+    const basketTotalMinor = basketItems.reduce(
+      (sum, i) => sum + Math.round(parseFloat(i.price) * 100),
+      0
+    )
+    const priceDecimal = (basketTotalMinor / 100).toFixed(2)
+    const paidPriceDecimal = (totalMinor / 100).toFixed(2)
 
     const [nameSplit, ...surnameParts] = shippingInfo.name.trim().split(' ')
     const surname = surnameParts.join(' ') || nameSplit // tek kelimelik isimler için fallback
@@ -163,8 +147,8 @@ export async function POST(request: Request) {
       const iyzicoResult = await createCheckoutForm({
         locale,
         conversationId: order.order_number,
-        price: totalPriceDecimal,
-        paidPrice: totalPriceDecimal,
+        price: priceDecimal,
+        paidPrice: paidPriceDecimal,
         currency,
         basketId: order.order_number,
         paymentGroup: 'PRODUCT',
