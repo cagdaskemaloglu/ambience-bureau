@@ -48,13 +48,9 @@ export function CartSummary() {
   function handleToggleCredits() {
     const newVal = !useCredits
     setUseCredits(newVal)
-    if (typeof window !== 'undefined') {
-      if (newVal && creditsToUse > 0) {
-        sessionStorage.setItem('useCredits', maxUsable.toFixed(2))
-      } else {
-        sessionStorage.removeItem('useCredits')
-      }
-    }
+    // maxUsable: mevcut kredinin ne kadarı kullanılabilir
+    const amount = newVal && maxUsable > 0 ? maxUsable : 0
+    setCreditsToUse(amount)
   }
 
   // useCredits açıkken maxUsable güncellenirse sessionStorage'ı da güncelle

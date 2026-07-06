@@ -69,6 +69,7 @@ export function CartDrawer() {
     const credits = availableCreditsRef.current
     const usable = Math.min(credits, total)
     const amount = newVal && usable > 0 ? usable : 0
+    console.log('[CartDrawer] handleToggleCredits', { newVal, credits, usable, amount })
     setCreditsToUse(amount)
   }
 
@@ -78,6 +79,7 @@ export function CartDrawer() {
     const isUsing = useCreditsRef.current
     const usable = Math.min(credits, total)
     const amount = isUsing && usable > 0 ? usable : 0
+    console.log('[CartDrawer] handleGoToCheckout', { credits, isUsing, usable, amount })
     setCreditsToUse(amount)
     closeDrawer()
   }
