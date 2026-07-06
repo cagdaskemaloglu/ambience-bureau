@@ -14,6 +14,15 @@ export function CheckoutForm() {
   const locale = useLocale() as 'tr' | 'en'
   const t = useTranslations('checkout')
   const creditsToUse = useCartStore((s) => s.creditsToUse)
+  const [hydrated, setHydrated] = useState(false)
+
+  useEffect(() => {
+    // Zustand persist hydration tamamlanana kadar bekle
+    const unsub = useCartStore.persist.onFinishHydration(() => setHydrated(true))
+    // Zaten hydrate olduysa
+    if (useCartStore.persist.hasHydrated()) setHydrated(true)
+    return unsub
+  }, [])
   const items = useCartStore((s) => s.items)
   const getTotal = useCartStore((s) => s.getTotal)
 
@@ -243,11 +252,9 @@ export function CheckoutForm() {
       {/* Sipariş özeti */}
       <div>
         {/* DEBUG — sonra kaldır */}
-        {creditsToUse > 0 && (
-          <div className="mb-2 border border-bureau-amber bg-bureau-amber/10 px-3 py-2 font-mono text-[11px] text-bureau-amber">
-            DEBUG: creditsToUse = {creditsToUse.toFixed(2)} BC
-          </div>
-        )}
+        <div className="mb-2 border border-bureau-amber bg-bureau-amber/10 px-3 py-2 font-mono text-[11px] text-bureau-amber">
+          DEBUG: hydrated={hydrated ? 'yes' : 'no'} | creditsToUse={creditsToUse.toFixed(2)} BC
+        </div>
         <div className="border border-bureau-black">
           <div className="border-b border-bureau-black bg-bureau-surface px-4 py-2.5">
             <span className="label-mono">{t('summary.heading')}</span>

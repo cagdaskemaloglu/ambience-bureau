@@ -67,7 +67,11 @@ export const useCartStore = create<CartStore>()(
       },
     }),
     {
-      name: 'tab-cart-storage', // localStorage key — "The Ambience Bureau" kısaltması
+      name: 'tab-cart-storage',
+      partialize: (state) => ({
+        items: state.items,
+        creditsToUse: state.creditsToUse,
+      }),
     }
   )
 )
