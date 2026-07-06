@@ -116,7 +116,13 @@ export async function POST(request: Request) {
     // 2. iyzico Checkout Form'unu başlat
     const totalPriceDecimal = (totalMinor / 100).toFixed(2)
 
-    const basketItems = items.map((item) => ({
+    const basketItems: Array<{
+      id: string
+      name: string
+      category1: string
+      itemType: 'PHYSICAL' | 'VIRTUAL'
+      price: string
+    }> = items.map((item) => ({
       id: item.id,
       name: item.name[locale],
       category1: item.type === 'custom' ? 'Custom Registry' : 'Object Registry',
@@ -126,6 +132,18 @@ export async function POST(request: Request) {
         100
       ).toFixed(2),
     }))
+
+    // Kredi indirimi varsa basket'e negatif kalem ekle
+    // iyzico: basketItems toplamı == price == paidPrice olmalı
+    if (creditsUsedMinor > 0) {
+      basketItems.push({
+        id: 'bureau-credits-discount',
+        name: locale === 'tr' ? 'Büro Kredisi İndirimi' : 'Bureau Credits Discount',
+        category1: 'Discount',
+        itemType: 'VIRTUAL' as const,
+        price: (-(creditsUsedMinor / 100)).toFixed(2),
+      })
+    }
 
     // Güvenlik kontrolü: basket item toplamı price/paidPrice ile EŞİT olmalı,
     // yoksa iyzico "geçersiz imza" hatası verir. Geliştirme sırasında erken
