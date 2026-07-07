@@ -18,15 +18,33 @@ function warrantyProgress(paidAt: string): { daysLeft: number; percent: number; 
   return { daysLeft, percent, expired: remaining <= 0 }
 }
 
+const ORDER_STATUS: Record<string, { tr: string; en: string; color: string }> = {
+  pending:    { tr: 'Bekliyor',   en: 'Pending',    color: 'text-yellow-600' },
+  processing: { tr: 'İşleniyor', en: 'Processing', color: 'text-blue-600' },
+  shipped:    { tr: 'Kargoda',   en: 'Shipped',    color: 'text-purple-600' },
+  delivered:  { tr: 'Teslim Edildi', en: 'Delivered', color: 'text-green-600' },
+  cancelled:  { tr: 'İptal',     en: 'Cancelled',  color: 'text-red-600' },
+}
+
+const SERVICE_STATUS: Record<string, { tr: string; en: string }> = {
+  pending:    { tr: 'Bekliyor',    en: 'Pending' },
+  reviewing:  { tr: 'İnceleniyor', en: 'Reviewing' },
+  in_service: { tr: 'Serviste',    en: 'In Service' },
+  resolved:   { tr: 'Çözüldü',    en: 'Resolved' },
+  rejected:   { tr: 'Reddedildi', en: 'Rejected' },
+}
+
 export function RegistryStatus({
   profile,
   orders,
   creditTransactions,
+  serviceRequests = [],
   locale,
 }: {
   profile: any
   orders: any[]
   creditTransactions: any[]
+  serviceRequests?: any[]
   locale: 'tr' | 'en'
 }) {
   const router = useRouter()
@@ -172,10 +190,22 @@ export function RegistryStatus({
                         <span className="font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
                           {item.registry_no}
                         </span>
-                        <span className="font-mono text-[9px] uppercase text-bureau-subtle">
-                          {order.paid_at ? new Date(order.paid_at).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-GB') : '—'}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          {order.status && (
+                            <span className={`font-mono text-[9px] uppercase ${ORDER_STATUS[order.status]?.color ?? 'text-bureau-muted'}`}>
+                              {ORDER_STATUS[order.status]?.[locale] ?? order.status}
+                            </span>
+                          )}
+                          <span className="font-mono text-[9px] uppercase text-bureau-subtle">
+                            {order.paid_at ? new Date(order.paid_at).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-GB') : '—'}
+                          </span>
+                        </div>
                       </div>
+                      {order.tracking_number && (
+                        <p className="mt-1 font-mono text-[9px] text-bureau-muted">
+                          {tr ? 'Takip No' : 'Tracking'}: <span className="text-bureau-black">{order.tracking_number}</span>
+                        </p>
+                      )}
                     </div>
                     <div className="px-4 py-4">
                       {/* Custom design snapshot */}
@@ -220,6 +250,7 @@ export function RegistryStatus({
                       <ServiceRequestButton
                         orderItemId={item.id}
                         locale={locale}
+                        existingRequests={serviceRequests.filter((r: any) => r.order_item_id === item.id)}
                       />
                     </div>
                   </div>
@@ -273,12 +304,25 @@ export function RegistryStatus({
   )
 }
 
-function ServiceRequestButton({ orderItemId, locale }: { orderItemId: string; locale: 'tr' | 'en' }) {
+function ServiceRequestButton({
+  orderItemId,
+  locale,
+  existingRequests = [],
+}: {
+  orderItemId: string
+  locale: 'tr' | 'en'
+  existingRequests?: any[]
+}) {
   const tr = locale === 'tr'
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [sent, setSent] = useState(false)
+
+  // Aktif (çözülmemiş) talep var mı?
+  const activeRequest = existingRequests.find(
+    (r: any) => !['resolved', 'rejected'].includes(r.status)
+  )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -290,6 +334,26 @@ function ServiceRequestButton({ orderItemId, locale }: { orderItemId: string; lo
     })
     if (res.ok) setSent(true)
     setLoading(false)
+  }
+
+  // Aktif talep varsa durumu göster
+  if (activeRequest) {
+    return (
+      <div className="border border-bureau-rule bg-bureau-surface px-3 py-2">
+        <p className="font-mono text-[9px] uppercase tracking-wider text-bureau-muted">
+          {tr ? 'Mevcut Servis Talebi' : 'Active Service Request'}
+        </p>
+        <p className="mt-0.5 font-mono text-[10px] uppercase text-bureau-amber">
+          {SERVICE_STATUS[activeRequest.status]?.[locale] ?? activeRequest.status}
+        </p>
+        {activeRequest.admin_notes && (
+          <p className="mt-1 text-[11px] text-bureau-muted">{activeRequest.admin_notes}</p>
+        )}
+        <p className="mt-1 font-mono text-[9px] text-bureau-subtle">
+          {new Date(activeRequest.created_at).toLocaleDateString(locale === 'tr' ? 'tr-TR' : 'en-GB')}
+        </p>
+      </div>
+    )
   }
 
   if (sent) {

@@ -54,11 +54,19 @@ export default async function AccountPage({
     .order('created_at', { ascending: false })
     .limit(10)
 
+  // Servis talepleri
+  const { data: serviceRequests } = await admin
+    .from('service_requests')
+    .select('*, order_items(product_name, registry_no)')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
   return (
     <RegistryStatus
       profile={profile}
       orders={ordersWithSnapshot}
       creditTransactions={creditTx ?? []}
+      serviceRequests={serviceRequests ?? []}
       locale={locale as 'tr' | 'en'}
     />
   )
