@@ -40,7 +40,11 @@ export async function signInWithMagicLink(email: string, locale: string = 'tr') 
 
 export async function signOut() {
   const supabase = createSupabaseClient()
-  return supabase.auth.signOut()
+  const result = await supabase.auth.signOut()
+  // Sepet ve kredi bilgisini temizle
+  const { useCartStore } = await import('@/lib/store/cart')
+  useCartStore.getState().clearCart()
+  return result
 }
 
 export async function getCurrentUser() {

@@ -125,9 +125,14 @@ export default function LoginPage() {
                 />
               </div>
               <div>
+                <div className="flex items-center justify-between">
                 <label className="mb-1 block font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
                   {tr ? 'Şifre' : 'Password'}
                 </label>
+                <Link href="/auth/reset-password" className="font-mono text-[9px] uppercase tracking-wide text-bureau-muted underline hover:text-bureau-amber">
+                  {tr ? 'Şifremi unuttum' : 'Forgot password?'}
+                </Link>
+              </div>
                 <input
                   type="password"
                   value={password}
