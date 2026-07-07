@@ -137,10 +137,9 @@ export async function POST(request: Request) {
             })
           }
 
-          // 2. Kazanılan kredileri ekle (%10 — total_amount kuruş, creditsUsed TL/$ cinsinden)
+          // 2. Kazanılan kredileri ekle (%10 — sadece gerçekte ödenen tutar üzerinden)
           const totalInCurrency = Number(order.total_amount ?? 0) / 100
-          const subtotalInCurrency = totalInCurrency + creditsUsed
-          const creditsEarned = Math.floor(subtotalInCurrency * 0.1 * 100) / 100
+          const creditsEarned = Math.floor(totalInCurrency * 0.1 * 100) / 100
 
           if (creditsEarned > 0) {
             await (admin as any).rpc('grant_bureau_credits', {
