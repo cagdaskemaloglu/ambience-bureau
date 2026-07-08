@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { signOut } from '@/lib/supabase/auth'
 
@@ -55,6 +55,13 @@ export function RegistryStatus({
   const tr = locale === 'tr'
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab)
   const [signingOut, setSigningOut] = useState(false)
+
+  // Header'daki "Sicilim" dropdown'ından ?tab=... değişince
+  // (aynı route içinde kalındığı için component yeniden mount olmuyor,
+  // bu yüzden initialTab prop'u her değiştiğinde activeTab'ı senkronize et)
+  useEffect(() => {
+    setActiveTab(initialTab)
+  }, [initialTab])
 
   const bureauCreditsTRY = parseFloat(profile?.bureau_credits_try ?? '0')
   const bureauCreditsUSD = parseFloat(profile?.bureau_credits_usd ?? '0')
