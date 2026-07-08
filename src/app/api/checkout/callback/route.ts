@@ -3,6 +3,7 @@ import { retrieveCheckoutForm } from '@/lib/iyzico/client'
 import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
+import { generateOrderDocuments } from '@/lib/documents/generateOrderDocuments'
 
 /**
  * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar.
@@ -47,6 +48,15 @@ export async function POST(request: Request) {
         iyzicoToken: token,
         paidAt: new Date().toISOString(),
       })
+
+      // Sertifika, Ürün Kartı ve Garanti Belgesi PDF'lerini üret — başarısız
+      // olsa da ödeme/onay akışını bloklamaz, sadece loglanır.
+      try {
+        const freshOrder = await getOrderByNumber(orderNumber)
+        await generateOrderDocuments(freshOrder, locale)
+      } catch (docError) {
+        console.error('[iyzico callback] Belge üretim hatası:', docError)
+      }
 
       // E-posta gönderimi — başarısız olsa da ödeme akışını bloklamaz.
       // Hem üye hem misafir siparişler için doğru e-posta adresini çözümler.

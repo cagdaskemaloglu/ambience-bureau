@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Product Card - Front View</title>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap" rel="stylesheet">
+    <style>
+        @page {
+            size: A5;
+            margin: 15mm 12mm;
+            background-color: #f4ebd9;
+        }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            font-size: 9pt;
+            line-height: 1.2;
+        }
+        pre {
+            font-family: 'Courier New', Courier, monospace;
+            margin: 0;
+            padding: 0;
+            white-space: pre-wrap;
+        }
+        .handwritten {
+            font-family: 'Caveat', cursive;
+            color: #b91c1c;
+            font-size: 13pt;
+            font-weight: 600;
+        }
+        .drawing-box {
+            display: inline-block;
+            width: 100%;
+            max-height: 140px;
+            object-fit: contain;
+        }
+    </style>
+</head>
+<body>
+
+<pre>
+THE AMBIENCE BUREAU                                     FORM REF: CR-02
+DEPARTMENT OF SPATIAL PHOTON REGULATION                 STATUS: ISSUED
+-----------------------------------------------------------------------
+
+[ VISUAL RECORD // ARCHIVE FILE ]
+
++-----------------------------------+   REGISTRY NO:   #<span class="handwritten">{{registryNo}}</span>
+|{{productImageBlock}}|
+|                                   |   ASSET:         {{productName}}
+|                                   |
+|                                   |   CLASSIF:       {{classification}}
+|                                   |                  {{assetSubtype}}
+|                                   |
+|                                   |   FIRMWARE:      {{firmwareVersion}}
+|                                   |
+|                                   |   NET WEIGHT:    {{netWeight}}
+|                                   |
+|                                   |   MANUFACTURER:  BUREAU LABS
+|                                   |
+|                                   |   STAMP AREA:    [ INK STAMP ]
++-----------------------------------+
+
+-----------------------------------------------------------------------
+OFFICIAL NOTICE: THIS ASSET IS OFFICIALLY REGISTERED TO REGULATE THE 
+PHOTON DENSITY AND PSYCHOLOGICAL VOLUME OF ARCHITECTURAL SPACES.
+</pre>
+
+</body>
+</html>

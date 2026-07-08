@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from '@/i18n/navigation'
+import { useRouter, Link } from '@/i18n/navigation'
 import { signOut } from '@/lib/supabase/auth'
 
 type TabKey = 'status' | 'archive' | 'credits'
@@ -233,6 +233,15 @@ export function RegistryStatus({
                       <p className="mb-3 text-[14px] font-light uppercase tracking-wide">
                         {item.product_name}
                       </p>
+
+                      {item.certificate_no && (
+                        <Link
+                          href={`/dossier/${item.certificate_no}`}
+                          className="mb-3 inline-block font-mono text-[9.5px] uppercase tracking-wider text-bureau-amber no-underline hover:underline"
+                        >
+                          {tr ? '→ Ürün Kimlik Sayfası' : '→ Product Identity Page'}
+                        </Link>
+                      )}
 
                       {/* Garanti progress bar */}
                       {warranty && (

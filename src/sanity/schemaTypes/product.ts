@@ -147,6 +147,29 @@ export const productSchema = defineType({
       },
     }),
 
+    // ── Ürün Kimlik Belgeleri (Sertifika / Ürün Kartı / Garanti) ──
+    defineField({
+      name: 'netWeightKg',
+      title: 'Net Weight (KG)',
+      description: 'Ürün kimlik belgelerinde "NET AĞIRLIK" alanında görünür. Örn: 4.82',
+      type: 'number',
+    }),
+
+    defineField({
+      name: 'firmwareVersion',
+      title: 'Firmware Version',
+      description: 'Örn: v1.0.26 [ESP32]',
+      type: 'string',
+      initialValue: 'v1.0.26 [ESP32]',
+    }),
+
+    defineField({
+      name: 'assetSubtype',
+      title: 'Asset Subtype (Bracketed classification line)',
+      description: 'Belgelerdeki sınıflandırma alt satırı. Örn: [VERTICAL COLUMN] / [DİKEY KOLON]',
+      type: 'string',
+    }),
+
     defineField({
       name: 'compatibility',
       title: 'Control Compatibility',

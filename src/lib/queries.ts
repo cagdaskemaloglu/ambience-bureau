@@ -133,6 +133,21 @@ export async function getProductBySlug(slug: string) {
   )
 }
 
+// Ürün kimlik sayfası (dossier) için — sipariş kaleminde saklanan
+// sanity_product_id üzerinden ürünü çeker (görsel + specs + net ağırlık vb.)
+export async function getProductById(id: string) {
+  return sanityClient.fetch(
+    `*[_type == "product" && _id == $id][0] {
+      ${PRODUCT_FULL_FRAGMENT},
+      netWeightKg,
+      firmwareVersion,
+      assetSubtype
+    }`,
+    { id },
+    { next: { tags: [`product-id-${id}`] } }
+  )
+}
+
 export async function getRelatedProducts(category: string, excludeSlug: string, limit = 4) {
   return sanityClient.fetch(
     `*[_type == "product" && category == $category && slug.current != $excludeSlug]

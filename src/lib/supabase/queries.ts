@@ -183,6 +183,21 @@ export async function getOrdersByUserId(userId: string) {
   return data
 }
 
+// ── Ürün Kimlik Sayfası (Dossier) ──────────────────────────
+// Genel/paylaşılabilir sayfa için certificate_no üzerinden sipariş kalemini,
+// bağlı olduğu siparişi (durum kontrolü için) ve üretilmiş belgeleri getirir.
+export async function getOrderItemByCertificateNo(certificateNo: string) {
+  const supabase = createSupabaseAdminClient() as any
+  const { data, error } = await supabase
+    .from('order_items')
+    .select('*, orders!inner(status, paid_at, created_at), order_documents(*)')
+    .eq('certificate_no', certificateNo)
+    .single()
+
+  if (error) return null
+  return data
+}
+
 // ── Sipariş için müşteri e-postası çözümleme ───────────────
 
 export async function resolveOrderRecipientEmail(order: {
