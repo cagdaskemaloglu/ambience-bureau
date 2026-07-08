@@ -18,6 +18,12 @@ const NAV_ITEMS = [
   { href: '/archive' as const, labelKey: 'archive', isCTA: false },
 ] as const
 
+const ACCOUNT_TABS = [
+  { href: '/account' as const, labelTr: 'Durum', labelEn: 'Status' },
+  { href: '/account?tab=archive' as const, labelTr: 'Ürün Arşivi', labelEn: 'Object Archive' },
+  { href: '/account?tab=credits' as const, labelTr: 'Kredi Geçmişi', labelEn: 'Credit Log' },
+] as const
+
 export function Header({ collections = [] }: { collections?: Collection[] }) {
   const t = useTranslations('nav')
   const locale = useLocale()
@@ -29,8 +35,11 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false)
   const [mobileSubOpen, setMobileSubOpen] = useState(false)
+  const [accountDropdownOpen, setAccountDropdownOpen] = useState(false)
+  const [accountMobileSubOpen, setAccountMobileSubOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const accountDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setMounted(true)
@@ -63,6 +72,19 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [desktopDropdownOpen])
+
+  // Sicilim dropdown dışına tıklanınca kapat
+  useEffect(() => {
+    function handleClickOutsideAccount(e: MouseEvent) {
+      if (accountDropdownRef.current && !accountDropdownRef.current.contains(e.target as Node)) {
+        setAccountDropdownOpen(false)
+      }
+    }
+    if (accountDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutsideAccount)
+      return () => document.removeEventListener('mousedown', handleClickOutsideAccount)
+    }
+  }, [accountDropdownOpen])
 
   const displayCount = mounted ? cartCount : 0
   const otherLocale = locale === 'tr' ? 'en' : 'tr'
@@ -207,12 +229,47 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <span className={locale === 'en' ? 'text-bureau-black font-semibold' : 'opacity-50'}>EN</span>
             </button>
             {user ? (
-              <Link
-                href="/account"
-                className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
-              >
-                {locale === 'tr' ? 'Sicilim' : 'My Registry'}
-              </Link>
+              <div ref={accountDropdownRef} className="relative flex items-stretch">
+                <div className="flex items-center gap-1">
+                  <Link
+                    href="/account"
+                    className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
+                  >
+                    {locale === 'tr' ? 'Sicilim' : 'My Registry'}
+                  </Link>
+                  <button
+                    onClick={() => setAccountDropdownOpen((v) => !v)}
+                    aria-label={locale === 'tr' ? 'Sicil menüsünü göster' : 'Show registry menu'}
+                    aria-expanded={accountDropdownOpen}
+                    className="flex items-center text-bureau-muted hover:text-bureau-black transition-colors"
+                  >
+                    <svg
+                      width="9"
+                      height="6"
+                      viewBox="0 0 9 6"
+                      fill="none"
+                      className={`transition-transform duration-150 ${accountDropdownOpen ? 'rotate-180' : ''}`}
+                    >
+                      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.3" />
+                    </svg>
+                  </button>
+                </div>
+
+                {accountDropdownOpen && (
+                  <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-[220px] border border-bureau-black bg-white shadow-lg">
+                    {ACCOUNT_TABS.map((tab) => (
+                      <Link
+                        key={tab.href}
+                        href={tab.href}
+                        onClick={() => setAccountDropdownOpen(false)}
+                        className="block w-full px-3.5 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-bureau-black no-underline transition-colors hover:bg-bureau-surface hover:text-bureau-amber"
+                      >
+                        {locale === 'tr' ? tab.labelTr : tab.labelEn}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <div className="flex items-center gap-4">
                 <Link
@@ -335,13 +392,42 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
             {/* Auth links */}
             {user ? (
-              <Link
-                href="/account"
-                onClick={() => setMenuOpen(false)}
-                className="block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-black"
-              >
-                {locale === 'tr' ? 'Sicilim' : 'My Registry'}
-              </Link>
+              <div className="border-b border-bureau-rule">
+                <div className="flex items-stretch">
+                  <Link
+                    href="/account"
+                    onClick={() => setMenuOpen(false)}
+                    className="flex flex-1 items-center px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-black"
+                  >
+                    {locale === 'tr' ? 'Sicilim' : 'My Registry'}
+                  </Link>
+                  <button
+                    onClick={() => setAccountMobileSubOpen((v) => !v)}
+                    aria-label={locale === 'tr' ? 'Sicil menüsünü göster' : 'Show registry menu'}
+                    className="flex w-12 items-center justify-center border-l border-bureau-rule"
+                  >
+                    <svg width="11" height="7" viewBox="0 0 9 6" fill="none"
+                      className={`transition-transform duration-150 ${accountMobileSubOpen ? 'rotate-180' : ''}`}
+                    >
+                      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.3" />
+                    </svg>
+                  </button>
+                </div>
+                {accountMobileSubOpen && (
+                  <div className="bg-bureau-surface">
+                    {ACCOUNT_TABS.map((tab) => (
+                      <Link
+                        key={tab.href}
+                        href={tab.href}
+                        onClick={() => { setMenuOpen(false); setAccountMobileSubOpen(false) }}
+                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black no-underline hover:text-bureau-amber"
+                      >
+                        {locale === 'tr' ? tab.labelTr : tab.labelEn}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ) : (
               <>
                 <Link

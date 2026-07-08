@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from '@/i18n/navigation'
 import { signOut } from '@/lib/supabase/auth'
 
+type TabKey = 'status' | 'archive' | 'credits'
+
 const WARRANTY_MONTHS = 24
 
 function warrantyProgress(paidAt: string): { daysLeft: number; percent: number; expired: boolean } {
@@ -40,16 +42,18 @@ export function RegistryStatus({
   creditTransactions,
   serviceRequests = [],
   locale,
+  initialTab = 'status',
 }: {
   profile: any
   orders: any[]
   creditTransactions: any[]
   serviceRequests?: any[]
   locale: 'tr' | 'en'
+  initialTab?: TabKey
 }) {
   const router = useRouter()
   const tr = locale === 'tr'
-  const [activeTab, setActiveTab] = useState<'status' | 'archive' | 'credits'>('status')
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab)
   const [signingOut, setSigningOut] = useState(false)
 
   const bureauCreditsTRY = parseFloat(profile?.bureau_credits_try ?? '0')

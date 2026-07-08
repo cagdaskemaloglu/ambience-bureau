@@ -5,10 +5,14 @@ import { RegistryStatus } from './RegistryStatus'
 
 export default async function AccountPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>
+  searchParams: Promise<{ tab?: string }>
 }) {
   const { locale } = await params
+  const { tab } = await searchParams
+  const initialTab = tab === 'archive' || tab === 'credits' ? tab : 'status'
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -68,6 +72,7 @@ export default async function AccountPage({
       creditTransactions={creditTx ?? []}
       serviceRequests={serviceRequests ?? []}
       locale={locale as 'tr' | 'en'}
+      initialTab={initialTab}
     />
   )
 }
