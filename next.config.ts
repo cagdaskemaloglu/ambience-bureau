@@ -9,6 +9,10 @@ const nextConfig: NextConfig = {
   // package-lock.json bulunduğunda, Next.js bazen workspace root'u
   // yanlışlıkla oraya çekiyor. Bu satır, doğru kökü (bu proje) sabitler.
   outputFileTracingRoot: path.join(__dirname),
+  // Belge üretimi (PDF) için kullanılan puppeteer-core / chromium-min,
+  // Next.js'in server bundling'ine dahil edilmesin — native binary
+  // çözümlemesini bozuyor (bkz. src/lib/documents/generatePdf.ts).
+  serverExternalPackages: ['puppeteer-core', '@sparticuz/chromium-min'],
   images: {
     remotePatterns: [
       {
