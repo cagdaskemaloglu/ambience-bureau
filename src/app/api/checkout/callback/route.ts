@@ -5,6 +5,11 @@ import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
 import { generateOrderDocuments } from '@/lib/documents/generateOrderDocuments'
 
+// Puppeteer cold start + 3 PDF üretimi 10sn'lik varsayılan Vercel süresini
+// aşabiliyor. Hobby planında üst sınır 60sn, Pro'da daha yüksek olabilir —
+// planına göre bu değeri ayarla.
+export const maxDuration = 60
+
 /**
  * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar.
  */
