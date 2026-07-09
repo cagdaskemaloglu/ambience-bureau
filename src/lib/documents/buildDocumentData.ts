@@ -1,5 +1,5 @@
 import type { DocumentTemplateData } from './types'
-import { buildDossierQrImgTag } from './qr'
+import { buildDossierQrImgTag, buildAppStoreQrImgTag, buildGooglePlayQrImgTag } from './qr'
 
 const CATEGORY_LABELS: Record<string, { tr: string; en: string }> = {
   pendant: { tr: '[ASILI ÜNİTE]', en: '[PENDANT UNIT]' },
@@ -21,9 +21,7 @@ function formatDate(dateStr: string | null | undefined, locale: 'tr' | 'en'): st
 }
 
 function productImagePlaceholder(locale: 'tr' | 'en'): string {
-  return locale === 'tr'
-    ? '&nbsp;&nbsp;&nbsp;[ 3D ÇİZİM BURAYA GELECEK ]'
-    : '&nbsp;&nbsp;&nbsp;[ PLACE THE 3D DRAWING HERE ]'
+  return locale === 'tr' ? '3D ÇİZİM BURAYA GELECEK' : 'PLACE THE 3D DRAWING HERE'
 }
 
 export interface BuildDocumentDataParams {
@@ -69,8 +67,8 @@ export async function buildDocumentData(params: BuildDocumentDataParams): Promis
   if (orderItem.item_type === 'custom') {
     const imgUrl = customDesign?.snapshot_url
     productImageBlock = imgUrl
-      ? `<img src="${imgUrl}" style="width:100%;max-height:230px;object-fit:contain;" />`
-      : productImagePlaceholder(locale)
+      ? `<img src="${imgUrl}" style="width:100%;height:100%;object-fit:contain;" />`
+      : `<span class="placeholder-text">${productImagePlaceholder(locale)}</span>`
     netWeight = '—'
     firmwareVersion = DEFAULT_FIRMWARE
     classification = locale === 'tr' ? 'ÖZEL SİCİL VARLIĞI' : 'CUSTOM REGISTRY ASSET'
@@ -79,8 +77,8 @@ export async function buildDocumentData(params: BuildDocumentDataParams): Promis
   } else {
     const imgUrl = product?.images?.[0]?.asset?.url
     productImageBlock = imgUrl
-      ? `<img src="${imgUrl}" style="width:100%;max-height:230px;object-fit:contain;" />`
-      : productImagePlaceholder(locale)
+      ? `<img src="${imgUrl}" style="width:100%;height:100%;object-fit:contain;" />`
+      : `<span class="placeholder-text">${productImagePlaceholder(locale)}</span>`
     netWeight = product?.netWeightKg ? `${product.netWeightKg} KG` : '—'
     firmwareVersion = product?.firmwareVersion || DEFAULT_FIRMWARE
     classification = locale === 'tr' ? 'AYDINLATMA VARLIĞI' : 'LIGHTING ASSET'
@@ -94,7 +92,11 @@ export async function buildDocumentData(params: BuildDocumentDataParams): Promis
   }
 
   const dossierUrl = `${baseUrl}/${locale}/dossier/${orderItem.certificate_no}`
-  const dossierQrImg = await buildDossierQrImgTag(dossierUrl)
+  const [dossierQrImg, appStoreQrImg, googlePlayQrImg] = await Promise.all([
+    buildDossierQrImgTag(dossierUrl),
+    buildAppStoreQrImgTag(),
+    buildGooglePlayQrImgTag(),
+  ])
 
   return {
     certificateNo: orderItem.certificate_no,
@@ -108,5 +110,7 @@ export async function buildDocumentData(params: BuildDocumentDataParams): Promis
     netWeight,
     productImageBlock,
     dossierQrImg,
+    appStoreQrImg,
+    googlePlayQrImg,
   }
 }

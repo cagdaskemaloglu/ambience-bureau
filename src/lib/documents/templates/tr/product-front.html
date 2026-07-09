@@ -3,64 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <title>Ürün Kartı - Ön Yüz</title>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cutive+Mono&family=Caveat:wght@600&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A5;
-            margin: 15mm 12mm;
-            background-color: #f4ebd9;
+            margin: 14mm 12mm;
+            background-color: #ffffff;
         }
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Cutive Mono', 'Courier New', Courier, monospace;
             color: #1a1a1a;
             margin: 0;
             padding: 0;
             font-size: 9pt;
-            line-height: 1.2;
         }
-        pre {
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 0;
-            white-space: pre-wrap;
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding-bottom: 8px;
+            border-bottom: 1.5px solid #1a1a1a;
+        }
+        .archive-label {
+            margin: 12px 0 10px;
+            font-size: 8pt;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .image-box {
+            width: 100%;
+            height: 190px;
+            border: 1px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .placeholder-text {
+            font-size: 8pt;
+            color: #888;
+            text-align: center;
+            padding: 0 20px;
+        }
+        .info-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-row {
+            display: table-row;
+        }
+        .info-row .k, .info-row .v {
+            display: table-cell;
+            padding: 4px 0;
+            border-bottom: 1px dotted #999;
+            vertical-align: top;
+        }
+        .info-row .k {
+            width: 40%;
+            font-size: 8pt;
+            color: #555;
+            text-transform: uppercase;
+        }
+        .info-row .v {
+            font-size: 9pt;
         }
         .handwritten {
             font-family: 'Caveat', cursive;
             color: #b91c1c;
-            font-size: 13pt;
+            font-size: 14pt;
             font-weight: 600;
+        }
+        .notice {
+            margin-top: 16px;
+            padding-top: 10px;
+            border-top: 1px solid #1a1a1a;
+            font-size: 7.5pt;
+            line-height: 1.4;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-<pre>
-AMBİYANS BÜROSU                                         FORM REF: CR-02
-MEKANSAL FOTON REGÜLASYONU DAİRESİ                       DURUM: ONAYLANDI
------------------------------------------------------------------------
+<div class="top-row">
+    <span>AMBİYANS BÜROSU — FORM REF: CR-02</span>
+    <span>DURUM: ONAYLANDI</span>
+</div>
 
-[ GÖRSEL KAYIT // ARŞİV DOSYASI ]
+<div class="archive-label">[ Görsel Kayıt // Arşiv Dosyası ]</div>
 
-+-----------------------------------+   SİCİL NO:      #<span class="handwritten">{{registryNo}}</span>
-|{{productImageBlock}}|
-|                                   |   CİHAZ:         {{productName}}
-|                                   |
-|                                   |   SINIFLANDIRMA: {{classification}}
-|                                   |                  {{assetSubtype}}
-|                                   |
-|                                   |   YAZILIM SÜRÜMÜ:{{firmwareVersion}}
-|                                   |
-|                                   |   NET AĞIRLIK:   {{netWeight}}
-|                                   |
-|                                   |   ÜRETİCİ:       BÜRO LABORATUVARLARI
-|                                   |
-|                                   |   MÜHÜR ALANI:   [ ISLAK KAŞE ]
-+-----------------------------------+
+<div class="image-box">{{productImageBlock}}</div>
 
------------------------------------------------------------------------
-RESMİ BİLDİRİ: BU CİHAZ, ORTAMDAKİ FOTON YOĞUNLUĞUNU VE ODANIN
-PSİKOLOJİK HACMİNİ RESMİ OLARAK DÜZENLEMEK ÜZERE SİCİLE KAYDEDİLMİŞTİR.
-</pre>
+<div class="info-grid">
+    <div class="info-row"><div class="k">Sicil No</div><div class="v"><span class="handwritten">#{{registryNo}}</span></div></div>
+    <div class="info-row"><div class="k">Cihaz</div><div class="v">{{productName}}</div></div>
+    <div class="info-row"><div class="k">Sınıflandırma</div><div class="v">{{classification}} {{assetSubtype}}</div></div>
+    <div class="info-row"><div class="k">Yazılım Sürümü</div><div class="v">{{firmwareVersion}}</div></div>
+    <div class="info-row"><div class="k">Net Ağırlık</div><div class="v">{{netWeight}}</div></div>
+    <div class="info-row"><div class="k">Üretici</div><div class="v">BÜRO LABORATUVARLARI</div></div>
+    <div class="info-row"><div class="k">Mühür Alanı</div><div class="v">[ ISLAK KAŞE ]</div></div>
+</div>
+
+<div class="notice">
+    Resmi Bildiri: Bu cihaz, ortamdaki foton yoğunluğunu ve odanın psikolojik
+    hacmini resmi olarak düzenlemek üzere sicile kaydedilmiştir.
+</div>
 
 </body>
 </html>

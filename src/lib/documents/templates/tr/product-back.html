@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <title>Ürün Kartı - Arka Yüz</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cutive+Mono&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A5;
             margin: 15mm 12mm;
-            background-color: #f4ebd9;
+            background-color: #ffffff;
         }
         body {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Cutive Mono', 'Courier New', Courier, monospace;
             color: #1a1a1a;
             margin: 0;
             padding: 0;
@@ -82,12 +83,12 @@ BLOKE EDİLİR. GÜVENLİK SİCİLİ YEREL AĞ ŞİFRENİZİ ASLA BULUTA KAYDETM
 <div class="qr-row">
   <div class="qr-col">
     [ MOBİL UYGULAMAYI İNDİR ]<br>
-    <div class="qr-box">[ QR ]</div>
+    <div class="qr-box">{{appStoreQrImg}}</div>
     APP STORE
   </div>
   <div class="qr-col">
     &nbsp;<br>
-    <div class="qr-box">[ QR ]</div>
+    <div class="qr-box">{{googlePlayQrImg}}</div>
     GOOGLE PLAY
   </div>
   <div class="qr-col">

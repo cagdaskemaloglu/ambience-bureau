@@ -80,3 +80,4 @@ export async function mergeHtmlPagesToPdf(browser: Browser, htmlPages: string[])
   const mergedBytes = await merged.save()
   return Buffer.from(mergedBytes)
 }
+

@@ -16,7 +16,9 @@ export interface DocumentTemplateData {
   assetSubtype: string
   netWeight: string          // ör. "4.82 KG"
   productImageBlock: string  // <img> tag'i ya da boş bırakma metni (HTML parçası)
-  dossierQrImg: string       // <img> tag'i (QR kod, data URL)
+  dossierQrImg: string       // <img> tag'i (QR kod, data URL) — dijital ürün kimliği
+  appStoreQrImg: string      // <img> tag'i — statik App Store QR (public/documents/)
+  googlePlayQrImg: string    // <img> tag'i — statik Google Play QR (public/documents/)
 }
 
 export interface OrderDocumentRecord {

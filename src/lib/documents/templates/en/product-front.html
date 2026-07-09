@@ -3,70 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <title>Product Card - Front View</title>
-    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cutive+Mono&family=Caveat:wght@600&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A5;
-            margin: 15mm 12mm;
-            background-color: #f4ebd9;
+            margin: 14mm 12mm;
+            background-color: #ffffff;
         }
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Courier New', Courier, monospace;
+            font-family: 'Cutive Mono', 'Courier New', Courier, monospace;
             color: #1a1a1a;
             margin: 0;
             padding: 0;
             font-size: 9pt;
-            line-height: 1.2;
         }
-        pre {
-            font-family: 'Courier New', Courier, monospace;
-            margin: 0;
-            padding: 0;
-            white-space: pre-wrap;
+        .top-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 8pt;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding-bottom: 8px;
+            border-bottom: 1.5px solid #1a1a1a;
+        }
+        .archive-label {
+            margin: 12px 0 10px;
+            font-size: 8pt;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .image-box {
+            width: 100%;
+            height: 190px;
+            border: 1px solid #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            margin-bottom: 14px;
+        }
+        .placeholder-text {
+            font-size: 8pt;
+            color: #888;
+            text-align: center;
+            padding: 0 20px;
+        }
+        .info-grid {
+            display: table;
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .info-row {
+            display: table-row;
+        }
+        .info-row .k, .info-row .v {
+            display: table-cell;
+            padding: 4px 0;
+            border-bottom: 1px dotted #999;
+            vertical-align: top;
+        }
+        .info-row .k {
+            width: 38%;
+            font-size: 8pt;
+            color: #555;
+            text-transform: uppercase;
+        }
+        .info-row .v {
+            font-size: 9pt;
         }
         .handwritten {
             font-family: 'Caveat', cursive;
             color: #b91c1c;
-            font-size: 13pt;
+            font-size: 14pt;
             font-weight: 600;
         }
-        .drawing-box {
-            display: inline-block;
-            width: 100%;
-            max-height: 140px;
-            object-fit: contain;
+        .notice {
+            margin-top: 16px;
+            padding-top: 10px;
+            border-top: 1px solid #1a1a1a;
+            font-size: 7.5pt;
+            line-height: 1.4;
+            text-transform: uppercase;
         }
     </style>
 </head>
 <body>
 
-<pre>
-THE AMBIENCE BUREAU                                     FORM REF: CR-02
-DEPARTMENT OF SPATIAL PHOTON REGULATION                 STATUS: ISSUED
------------------------------------------------------------------------
+<div class="top-row">
+    <span>THE AMBIENCE BUREAU — FORM REF: CR-02</span>
+    <span>STATUS: ISSUED</span>
+</div>
 
-[ VISUAL RECORD // ARCHIVE FILE ]
+<div class="archive-label">[ Visual Record // Archive File ]</div>
 
-+-----------------------------------+   REGISTRY NO:   #<span class="handwritten">{{registryNo}}</span>
-|{{productImageBlock}}|
-|                                   |   ASSET:         {{productName}}
-|                                   |
-|                                   |   CLASSIF:       {{classification}}
-|                                   |                  {{assetSubtype}}
-|                                   |
-|                                   |   FIRMWARE:      {{firmwareVersion}}
-|                                   |
-|                                   |   NET WEIGHT:    {{netWeight}}
-|                                   |
-|                                   |   MANUFACTURER:  BUREAU LABS
-|                                   |
-|                                   |   STAMP AREA:    [ INK STAMP ]
-+-----------------------------------+
+<div class="image-box">{{productImageBlock}}</div>
 
------------------------------------------------------------------------
-OFFICIAL NOTICE: THIS ASSET IS OFFICIALLY REGISTERED TO REGULATE THE 
-PHOTON DENSITY AND PSYCHOLOGICAL VOLUME OF ARCHITECTURAL SPACES.
-</pre>
+<div class="info-grid">
+    <div class="info-row"><div class="k">Registry No</div><div class="v"><span class="handwritten">#{{registryNo}}</span></div></div>
+    <div class="info-row"><div class="k">Asset</div><div class="v">{{productName}}</div></div>
+    <div class="info-row"><div class="k">Classif.</div><div class="v">{{classification}} {{assetSubtype}}</div></div>
+    <div class="info-row"><div class="k">Firmware</div><div class="v">{{firmwareVersion}}</div></div>
+    <div class="info-row"><div class="k">Net Weight</div><div class="v">{{netWeight}}</div></div>
+    <div class="info-row"><div class="k">Manufacturer</div><div class="v">BUREAU LABS</div></div>
+    <div class="info-row"><div class="k">Stamp Area</div><div class="v">[ INK STAMP ]</div></div>
+</div>
+
+<div class="notice">
+    Official Notice: This asset is officially registered to regulate the photon
+    density and psychological volume of architectural spaces.
+</div>
 
 </body>
 </html>

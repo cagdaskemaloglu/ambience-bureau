@@ -6,7 +6,12 @@ const TEMPLATES_DIR = path.join(process.cwd(), 'src/lib/documents/templates')
 
 // Bu alanlar zaten HTML parçası (img tag vb.) olarak üretiliyor —
 // bunlar escape EDİLMEZ, diğer her şey düz metin olarak escape edilir.
-const RAW_HTML_KEYS: Array<keyof DocumentTemplateData> = ['productImageBlock', 'dossierQrImg']
+const RAW_HTML_KEYS: Array<keyof DocumentTemplateData> = [
+  'productImageBlock',
+  'dossierQrImg',
+  'appStoreQrImg',
+  'googlePlayQrImg',
+]
 
 function escapeHtml(value: string): string {
   return value
