@@ -14,6 +14,15 @@ async function launchBrowser(): Promise<Browser> {
   const isServerless = !!process.env.VERCEL || process.env.NODE_ENV === 'production'
 
   if (isServerless) {
+    // @sparticuz/chromium-min, "AWS Lambda içinde miyim?" kontrolünü
+    // AWS_EXECUTION_ENV / AWS_LAMBDA_JS_RUNTIME env değişkenlerine bakarak yapıyor.
+    // Vercel bu değişkenleri set etmiyor (native AWS Lambda değil) — bu yüzden
+    // paket kendi kendine "Lambda'da değilim" sanıp libnss3.so'yu içeren
+    // al2023.tar.br'ı hiç açmıyor ve LD_LIBRARY_PATH'ı hiç ayarlamıyor.
+    // Kütüphanenin kendisi zaten Netlify gibi platformlar için bu değişkeni
+    // manuel set etmeyi destekliyor — aynı yolu Vercel için de kullanıyoruz.
+    process.env.AWS_LAMBDA_JS_RUNTIME ??= 'nodejs20.x'
+
     const chromium = (await import('@sparticuz/chromium-min')).default
     const puppeteer = await import('puppeteer-core')
     return puppeteer.launch({
@@ -71,4 +80,3 @@ export async function mergeHtmlPagesToPdf(browser: Browser, htmlPages: string[])
   const mergedBytes = await merged.save()
   return Buffer.from(mergedBytes)
 }
-
