@@ -363,11 +363,15 @@ function OrderRow({ order, locale, onUpdateStatus }: {
               </span>
               <span>{order.shipping_name}</span>
             </div>
-            <div>
+            <div className="col-span-2">
               <span className="font-mono text-[9px] uppercase text-bureau-muted block">
                 {tr ? 'Adres' : 'Address'}
               </span>
-              <span>{order.shipping_address1}, {order.shipping_city}</span>
+              <span>
+                {[order.shipping_address1, order.shipping_address2, order.shipping_city, order.shipping_postal, order.shipping_country]
+                  .filter(Boolean)
+                  .join(', ')}
+              </span>
             </div>
             <div>
               <span className="font-mono text-[9px] uppercase text-bureau-muted block">
