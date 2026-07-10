@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { generateOrderDocuments } from '@/lib/documents/generateOrderDocuments'
+import { getAllCollections } from '@/lib/queries'
 
 // Puppeteer cold start + 3 PDF üretimi 10sn'lik varsayılan Vercel süresini
 // aşabiliyor. Hobby planında üst sınır 60sn, Pro'da daha yüksek olabilir.
@@ -30,9 +31,10 @@ export async function GET(request: Request) {
     .from('orders')
     .select(`
       *,
+      profiles ( full_name, phone, email ),
       order_items (
         *,
-        custom_designs ( snapshot_url, design_data )
+        custom_designs ( snapshot_url, design_data, collection_key )
       )
     `, { count: 'exact' })
     .order('created_at', { ascending: false })
@@ -45,7 +47,36 @@ export async function GET(request: Request) {
   const { data, error, count } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ orders: data, total: count, page, limit })
+  // Custom Registry kalemlerinde koleksiyon adını göstermek için Sanity'den
+  // key -> isim eşlemesini çekip her kaleme ekliyoruz.
+  let collectionNameByKey: Record<string, { tr: string; en: string }> = {}
+  try {
+    const collections = await getAllCollections()
+    collectionNameByKey = Object.fromEntries(
+      (collections ?? []).map((c: any) => {
+        const key = c.key?.current ?? c.key
+        const nameArr = (c.name ?? []) as Array<{ locale: string; value: string }>
+        const tr = nameArr.find((n) => n.locale === 'tr')?.value ?? key
+        const en = nameArr.find((n) => n.locale === 'en')?.value ?? tr
+        return [key, { tr, en }]
+      })
+    )
+  } catch (err) {
+    console.error('[admin/orders GET] Koleksiyon adları alınamadı:', err)
+  }
+
+  const ordersWithCollectionNames = (data ?? []).map((order: any) => ({
+    ...order,
+    order_items: (order.order_items ?? []).map((item: any) => {
+      const key = item.custom_designs?.collection_key
+      return {
+        ...item,
+        collectionName: key ? collectionNameByKey[key] ?? null : null,
+      }
+    }),
+  }))
+
+  return NextResponse.json({ orders: ordersWithCollectionNames, total: count, page, limit })
 }
 
 // PATCH: sipariş durumunu güncelle

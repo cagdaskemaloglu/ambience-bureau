@@ -369,6 +369,20 @@ function OrderRow({ order, locale, onUpdateStatus }: {
               </span>
               <span>{order.shipping_address1}, {order.shipping_city}</span>
             </div>
+            <div>
+              <span className="font-mono text-[9px] uppercase text-bureau-muted block">
+                {tr ? 'Sipariş Telefonu' : 'Order Phone'}
+              </span>
+              <span>{order.shipping_phone || '—'}</span>
+            </div>
+            {order.user_id && (
+              <div>
+                <span className="font-mono text-[9px] uppercase text-bureau-muted block">
+                  {tr ? 'Hesap Telefonu' : 'Account Phone'}
+                </span>
+                <span>{order.profiles?.phone || '—'}</span>
+              </div>
+            )}
             {order.guest_email && (
               <div>
                 <span className="font-mono text-[9px] uppercase text-bureau-muted block">Email</span>
@@ -385,7 +399,9 @@ function OrderRow({ order, locale, onUpdateStatus }: {
 
           {/* Ürünler */}
           <div className="mb-4 space-y-2">
-            {(order.order_items ?? []).map((item: any) => (
+            {(order.order_items ?? []).map((item: any) => {
+              const dossierReady = ['processing', 'shipped', 'delivered'].includes(order.status) && item.certificate_no
+              return (
               <div key={item.id} className="flex items-start gap-3 border border-bureau-rule p-2">
                 {item.custom_designs?.snapshot_url && (
                   <img src={item.custom_designs.snapshot_url} alt={item.product_name}
@@ -394,6 +410,11 @@ function OrderRow({ order, locale, onUpdateStatus }: {
                 <div className="min-w-0 flex-1">
                   <p className="font-mono text-[10px] text-bureau-muted">{item.registry_no}</p>
                   <p className="text-[12px] font-semibold uppercase">{item.product_name}</p>
+                  {item.collectionName && (
+                    <p className="font-mono text-[9.5px] uppercase tracking-wide text-bureau-amber">
+                      {tr ? 'Koleksiyon' : 'Collection'}: {item.collectionName[locale] ?? item.collectionName.tr}
+                    </p>
+                  )}
                   {item.custom_designs?.design_data?.parts && (
                     <div className="mt-1">
                       {item.custom_designs.design_data.parts.map((p: any, i: number) => (
@@ -403,12 +424,23 @@ function OrderRow({ order, locale, onUpdateStatus }: {
                       ))}
                     </div>
                   )}
+                  {dossierReady && (
+                    <a
+                      href={`/${locale}/dossier/${item.certificate_no}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-block font-mono text-[9.5px] uppercase tracking-wide text-bureau-black underline hover:text-bureau-amber"
+                    >
+                      → {tr ? 'Ürün Kimlik Sayfası' : 'Product Identity Page'}
+                    </a>
+                  )}
                 </div>
                 <span className="font-mono text-[11px] font-semibold">
                   {formatPrice(item.total_price / 100, currency, intlLocale)}
                 </span>
               </div>
-            ))}
+              )
+            })}
           </div>
 
           {/* Durum güncelleme */}
