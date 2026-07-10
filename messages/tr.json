@@ -1,10 +1,10 @@
 {
   "nav": {
-    "customRegistry": "Custom Registry",
-    "registry": "Registry",
-    "controlProtocol": "Control Protocol",
-    "bureau": "Bureau",
-    "archive": "Archive",
+    "customRegistry": "Özel Tahsis",
+    "registry": "Envanter",
+    "controlProtocol": "Kontrol Protokolü",
+    "bureau": "Büro",
+    "archive": "Arşiv",
     "cart": "Cart",
     "cartEmpty": "Cart (00)",
     "login": "Giriş",
