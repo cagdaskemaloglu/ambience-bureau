@@ -20,6 +20,7 @@ const NAV_ITEMS = [
 
 const ACCOUNT_TABS = [
   { href: '/account' as const, labelTr: 'Durum', labelEn: 'Status' },
+  { href: '/account?tab=orders' as const, labelTr: 'Siparişlerim', labelEn: 'My Orders' },
   { href: '/account?tab=archive' as const, labelTr: 'Ürün Arşivi', labelEn: 'Object Archive' },
   { href: '/account?tab=credits' as const, labelTr: 'Kredi Geçmişi', labelEn: 'Credit Log' },
 ] as const
@@ -51,6 +52,12 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
       // Auth değişikliklerini dinle — login/logout anında güncelle
       const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         setUser(session?.user ?? null)
+        // Oturum hangi yoldan kapanırsa kapansın (buton, token süresi
+        // dolması, başka bir sekme vb.) sepetin temizlendiğinden emin ol —
+        // signOut() içindeki temizlemeden bağımsız, ikinci bir güvence.
+        if (_event === 'SIGNED_OUT') {
+          useCartStore.getState().clearCart()
+        }
       })
       return () => subscription.unsubscribe()
     })

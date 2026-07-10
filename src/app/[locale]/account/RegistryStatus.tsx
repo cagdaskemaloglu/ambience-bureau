@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter, Link } from '@/i18n/navigation'
 import { signOut } from '@/lib/supabase/auth'
 
-type TabKey = 'status' | 'archive' | 'credits'
+type TabKey = 'status' | 'orders' | 'archive' | 'credits'
 
 const WARRANTY_MONTHS = 24
 
@@ -26,6 +26,18 @@ const ORDER_STATUS: Record<string, { tr: string; en: string; color: string }> = 
   shipped:    { tr: 'Kargoda',   en: 'Shipped',    color: 'text-purple-600' },
   delivered:  { tr: 'Teslim Edildi', en: 'Delivered', color: 'text-green-600' },
   cancelled:  { tr: 'İptal',     en: 'Cancelled',  color: 'text-red-600' },
+}
+
+// Sipariş takibi görsel adımları — 'cancelled' bu çizgide ayrı gösteriliyor.
+const ORDER_TRACK_STEPS: Array<{ key: string; tr: string; en: string }> = [
+  { key: 'pending', tr: 'Alındı', en: 'Received' },
+  { key: 'processing', tr: 'İşleniyor', en: 'Processing' },
+  { key: 'shipped', tr: 'Kargoda', en: 'Shipped' },
+  { key: 'delivered', tr: 'Teslim Edildi', en: 'Delivered' },
+]
+
+function orderStepIndex(status: string): number {
+  return ORDER_TRACK_STEPS.findIndex((s) => s.key === status)
 }
 
 const SERVICE_STATUS: Record<string, { tr: string; en: string }> = {
@@ -55,6 +67,63 @@ export function RegistryStatus({
   const tr = locale === 'tr'
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab)
   const [signingOut, setSigningOut] = useState(false)
+
+  // ── Profil düzenleme ──
+  const [editingProfile, setEditingProfile] = useState(false)
+  const [savingProfile, setSavingProfile] = useState(false)
+  const [profileError, setProfileError] = useState<string | null>(null)
+  const [profileForm, setProfileForm] = useState({
+    fullName: profile?.full_name ?? '',
+    phone: profile?.phone ?? '',
+    addressLine1: profile?.address_line1 ?? '',
+    addressLine2: profile?.address_line2 ?? '',
+    city: profile?.city ?? '',
+    postalCode: profile?.postal_code ?? '',
+  })
+
+  function startEditingProfile() {
+    setProfileForm({
+      fullName: profile?.full_name ?? '',
+      phone: profile?.phone ?? '',
+      addressLine1: profile?.address_line1 ?? '',
+      addressLine2: profile?.address_line2 ?? '',
+      city: profile?.city ?? '',
+      postalCode: profile?.postal_code ?? '',
+    })
+    setProfileError(null)
+    setEditingProfile(true)
+  }
+
+  async function handleSaveProfile() {
+    setSavingProfile(true)
+    setProfileError(null)
+    try {
+      const res = await fetch('/api/account/update-profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fullName: profileForm.fullName,
+          phone: profileForm.phone,
+          addressLine1: profileForm.addressLine1,
+          addressLine2: profileForm.addressLine2,
+          city: profileForm.city,
+          postalCode: profileForm.postalCode,
+        }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => null)
+        throw new Error(data?.error ?? 'Update failed')
+      }
+      setEditingProfile(false)
+      router.refresh()
+    } catch (err) {
+      setProfileError(
+        tr ? 'Kaydedilemedi, lütfen tekrar deneyin.' : 'Could not save, please try again.'
+      )
+    } finally {
+      setSavingProfile(false)
+    }
+  }
 
   // Header'daki "Sicilim" dropdown'ından ?tab=... değişince
   // (aynı route içinde kalındığı için component yeniden mount olmuyor,
@@ -131,6 +200,7 @@ export function RegistryStatus({
       <div className="mb-5 flex border-b border-bureau-black">
         {([
           { key: 'status', label: tr ? 'Durum' : 'Status' },
+          { key: 'orders', label: tr ? 'Siparişlerim' : 'My Orders' },
           { key: 'archive', label: tr ? 'Ürün Arşivi' : 'Object Archive' },
           { key: 'credits', label: tr ? 'Kredi Geçmişi' : 'Credit Log' },
         ] as const).map(tab => (
@@ -156,11 +226,10 @@ export function RegistryStatus({
               { label: tr ? 'Hesap Durumu' : 'Account Status', value: 'CERTIFIED' },
               { label: 'Account ID', value: `#${profile?.account_id ?? '—'}` },
               { label: tr ? 'E-posta' : 'Email', value: profile?.email },
-              { label: tr ? 'Ad Soyad' : 'Full Name', value: profile?.full_name || '—' },
               { label: tr ? 'Toplam Sipariş' : 'Total Orders', value: String(orders.length) },
               { label: tr ? 'Büro Kredisi' : 'Bureau Credits', value: `${bureauCredits.toFixed(2)} BC ${creditSymbol}` },
-            ].map((row, i) => (
-              <div key={i} className={`flex items-center ${i < 5 ? 'border-b border-bureau-rule' : ''}`}>
+            ].map((row, i, arr) => (
+              <div key={i} className={`flex items-center ${i < arr.length - 1 ? 'border-b border-bureau-rule' : ''}`}>
                 <span className="w-[45%] border-r border-bureau-rule px-4 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
                   {row.label}
                 </span>
@@ -169,6 +238,104 @@ export function RegistryStatus({
                 </span>
               </div>
             ))}
+          </div>
+
+          {/* Düzenlenebilir kimlik bilgileri (Ad Soyad / Telefon / Adres) */}
+          <div className="border border-bureau-black">
+            <div className="flex items-center justify-between border-b border-bureau-rule bg-bureau-surface px-4 py-2">
+              <span className="font-mono text-[9.5px] uppercase tracking-widest text-bureau-muted">
+                {tr ? 'Kimlik & Teslimat Bilgileri' : 'Identity & Delivery Details'}
+              </span>
+              {!editingProfile && (
+                <button
+                  onClick={startEditingProfile}
+                  className="font-mono text-[9.5px] uppercase tracking-wider text-bureau-amber hover:underline"
+                >
+                  {tr ? 'Düzenle' : 'Edit'}
+                </button>
+              )}
+            </div>
+
+            {editingProfile ? (
+              <div className="space-y-3 p-4">
+                <ProfileField
+                  label={tr ? 'Ad Soyad' : 'Full Name'}
+                  value={profileForm.fullName}
+                  onChange={(v) => setProfileForm((f) => ({ ...f, fullName: v }))}
+                />
+                <ProfileField
+                  label={tr ? 'Telefon' : 'Phone'}
+                  value={profileForm.phone}
+                  onChange={(v) => setProfileForm((f) => ({ ...f, phone: v }))}
+                  type="tel"
+                />
+                <ProfileField
+                  label={tr ? 'Adres Satırı 1' : 'Address Line 1'}
+                  value={profileForm.addressLine1}
+                  onChange={(v) => setProfileForm((f) => ({ ...f, addressLine1: v }))}
+                />
+                <ProfileField
+                  label={tr ? 'Adres Satırı 2 (opsiyonel)' : 'Address Line 2 (optional)'}
+                  value={profileForm.addressLine2}
+                  onChange={(v) => setProfileForm((f) => ({ ...f, addressLine2: v }))}
+                />
+                <div className="grid grid-cols-2 gap-3">
+                  <ProfileField
+                    label={tr ? 'Şehir' : 'City'}
+                    value={profileForm.city}
+                    onChange={(v) => setProfileForm((f) => ({ ...f, city: v }))}
+                  />
+                  <ProfileField
+                    label={tr ? 'Posta Kodu' : 'Postal Code'}
+                    value={profileForm.postalCode}
+                    onChange={(v) => setProfileForm((f) => ({ ...f, postalCode: v }))}
+                  />
+                </div>
+
+                {profileError && (
+                  <p className="text-[11px] text-red-600">{profileError}</p>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={handleSaveProfile}
+                    disabled={savingProfile}
+                    className="btn-bureau flex-1 disabled:opacity-50"
+                  >
+                    {savingProfile ? (tr ? 'Kaydediliyor...' : 'Saving...') : (tr ? 'Kaydet' : 'Save')}
+                  </button>
+                  <button
+                    onClick={() => setEditingProfile(false)}
+                    disabled={savingProfile}
+                    className="flex-1 border border-bureau-rule py-2.5 font-mono text-[10px] uppercase tracking-wider text-bureau-muted transition-colors hover:border-bureau-black hover:text-bureau-black disabled:opacity-50"
+                  >
+                    {tr ? 'Vazgeç' : 'Cancel'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                {[
+                  { label: tr ? 'Ad Soyad' : 'Full Name', value: profile?.full_name || '—' },
+                  { label: tr ? 'Telefon' : 'Phone', value: profile?.phone || '—' },
+                  {
+                    label: tr ? 'Adres' : 'Address',
+                    value: [profile?.address_line1, profile?.address_line2, profile?.city, profile?.postal_code]
+                      .filter(Boolean)
+                      .join(', ') || '—',
+                  },
+                ].map((row, i, arr) => (
+                  <div key={i} className={`flex items-center ${i < arr.length - 1 ? 'border-b border-bureau-rule' : ''}`}>
+                    <span className="w-[45%] border-r border-bureau-rule px-4 py-2.5 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
+                      {row.label}
+                    </span>
+                    <span className="px-4 py-2.5 font-mono text-[11px] text-bureau-black">
+                      {row.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <button
@@ -181,17 +348,96 @@ export function RegistryStatus({
         </div>
       )}
 
+      {/* Orders tab — sipariş bazlı takip (görsel durum çubuğu) */}
+      {activeTab === 'orders' && (
+        <div className="space-y-4">
+          {orders.length === 0 ? (
+            <div className="border border-dashed border-bureau-rule p-8 text-center">
+              <p className="font-mono text-[10px] uppercase tracking-widest text-bureau-subtle">
+                {tr ? 'Henüz siparişiniz yok.' : 'You have no orders yet.'}
+              </p>
+            </div>
+          ) : (
+            orders.map((order: any) => {
+              const isCancelled = order.status === 'cancelled'
+              const stepIdx = orderStepIndex(order.status)
+              const itemCount = (order.order_items ?? []).length
+              return (
+                <div key={order.id} className="border border-bureau-black">
+                  <div className="flex items-center justify-between border-b border-bureau-rule bg-bureau-surface px-4 py-2.5">
+                    <span className="font-mono text-[10px] uppercase tracking-widest text-bureau-black">
+                      {order.order_number}
+                    </span>
+                    <span className={`font-mono text-[10px] uppercase tracking-widest ${ORDER_STATUS[order.status]?.color ?? 'text-bureau-muted'}`}>
+                      {tr ? ORDER_STATUS[order.status]?.tr : ORDER_STATUS[order.status]?.en ?? order.status}
+                    </span>
+                  </div>
+
+                  <div className="px-4 py-4">
+                    <p className="mb-4 font-mono text-[9.5px] uppercase tracking-wider text-bureau-muted">
+                      {new Date(order.created_at).toLocaleDateString(tr ? 'tr-TR' : 'en-GB')}
+                      {'  •  '}
+                      {itemCount} {tr ? (itemCount === 1 ? 'ürün' : 'ürün') : (itemCount === 1 ? 'item' : 'items')}
+                    </p>
+
+                    {isCancelled ? (
+                      <div className="border border-red-200 bg-red-50 px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-red-600">
+                        {tr ? 'Bu sipariş iptal edildi.' : 'This order was cancelled.'}
+                      </div>
+                    ) : (
+                      <div className="flex items-center">
+                        {ORDER_TRACK_STEPS.map((step, i) => {
+                          const reached = stepIdx >= i
+                          const isLast = i === ORDER_TRACK_STEPS.length - 1
+                          return (
+                            <div key={step.key} className="flex flex-1 items-center last:flex-none">
+                              <div className="flex flex-col items-center">
+                                <div
+                                  className={`h-2.5 w-2.5 rounded-full ${
+                                    reached ? 'bg-bureau-amber' : 'bg-bureau-rule'
+                                  }`}
+                                />
+                                <span
+                                  className={`mt-1.5 whitespace-nowrap font-mono text-[8.5px] uppercase tracking-wide ${
+                                    reached ? 'text-bureau-black' : 'text-bureau-subtle'
+                                  }`}
+                                >
+                                  {tr ? step.tr : step.en}
+                                </span>
+                              </div>
+                              {!isLast && (
+                                <div
+                                  className={`mx-1 h-[2px] flex-1 ${
+                                    stepIdx > i ? 'bg-bureau-amber' : 'bg-bureau-rule'
+                                  }`}
+                                />
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+
       {/* Archive tab */}
       {activeTab === 'archive' && (
         <div className="space-y-4">
-          {orders.length === 0 ? (
+          {orders.filter((o: any) => ['processing', 'shipped', 'delivered'].includes(o.status)).length === 0 ? (
             <div className="border border-dashed border-bureau-rule p-8 text-center">
               <p className="font-mono text-[10px] uppercase tracking-widest text-bureau-subtle">
                 {tr ? 'Henüz satın alınan nesne yok.' : 'No objects acquired yet.'}
               </p>
             </div>
           ) : (
-            orders.flatMap((order: any) =>
+            orders
+              .filter((o: any) => ['processing', 'shipped', 'delivered'].includes(o.status))
+              .flatMap((order: any) =>
               (order.order_items ?? []).map((item: any) => {
                 const warranty = order.paid_at ? warrantyProgress(order.paid_at) : null
                 return (
@@ -320,6 +566,32 @@ export function RegistryStatus({
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+function ProfileField({
+  label,
+  value,
+  onChange,
+  type = 'text',
+}: {
+  label: string
+  value: string
+  onChange: (v: string) => void
+  type?: string
+}) {
+  return (
+    <div>
+      <label className="mb-1 block font-mono text-[9px] uppercase tracking-wider text-bureau-muted">
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full border border-bureau-rule px-3 py-2 font-mono text-[12px] outline-none focus:border-bureau-amber"
+      />
     </div>
   )
 }

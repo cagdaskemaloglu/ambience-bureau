@@ -12,7 +12,9 @@ export default async function AccountPage({
 }) {
   const { locale } = await params
   const { tab } = await searchParams
-  const initialTab = tab === 'archive' || tab === 'credits' ? tab : 'status'
+  const initialTab = ['archive', 'credits', 'orders'].includes(tab ?? '')
+    ? (tab as 'archive' | 'credits' | 'orders')
+    : 'status'
   const supabase = await createSupabaseServerClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -39,7 +41,6 @@ export default async function AccountPage({
       )
     `)
     .eq('user_id', user.id)
-    .in('status', ['processing', 'shipped', 'delivered'])
     .order('created_at', { ascending: false })
 
   // snapshot_url'i order_item seviyesine taşı

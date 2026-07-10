@@ -1,4 +1,5 @@
 import { createSupabaseClient } from './client'
+import { useCartStore } from '@/lib/store/cart'
 
 // ── Üyelik İşlemleri (Client-side) ────────────────────────
 
@@ -41,9 +42,18 @@ export async function signInWithMagicLink(email: string, locale: string = 'tr') 
 export async function signOut() {
   const supabase = createSupabaseClient()
   const result = await supabase.auth.signOut()
-  // Sepet ve kredi bilgisini temizle
-  const { useCartStore } = await import('@/lib/store/cart')
+
+  // Sepet ve kredi bilgisini temizle. Önceden burada dinamik import
+  // (`await import(...)`) kullanılıyordu — zustand persist middleware'inin
+  // localStorage'dan yeniden yükleme (rehydration) zamanlamasıyla çakışıp
+  // temizlenen state'in üzerine eski veriyi geri yazma riski taşıyordu.
+  // Statik import + state'i sıfırlama + storage'ı doğrudan silme (çift
+  // güvence) ile bu riski ortadan kaldırıyoruz.
   useCartStore.getState().clearCart()
+  if (typeof window !== 'undefined') {
+    window.localStorage.removeItem('tab-cart-storage')
+  }
+
   return result
 }
 
