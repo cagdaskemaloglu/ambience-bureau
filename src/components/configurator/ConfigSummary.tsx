@@ -123,7 +123,7 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
               {locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
             </span>
             <span className="font-mono text-[11px] text-bureau-subtle">
-              {formatPrice(locale === 'tr' ? 1200 : 33, currency, intlLocale)}
+              {formatPrice(locale === 'tr' ? 2000 : 45, currency, intlLocale)}
             </span>
           </div>
         )}
