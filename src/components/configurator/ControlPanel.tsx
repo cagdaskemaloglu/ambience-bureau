@@ -8,6 +8,8 @@ import { getLocalizedValue } from '@/lib/sanity'
 
 const IOT_PRICE_TRY = 1200
 const IOT_PRICE_USD = 33
+const HARDWARE_BASE_TRY = 1000
+const HARDWARE_BASE_USD = 25
 
 export function ControlPanel() {
   const locale = useLocale()
@@ -25,7 +27,10 @@ export function ControlPanel() {
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
 
   const bodyAtMax = body.length >= MAX_BODY_LAYERS
-  const iotPrice = locale === 'tr' ? `₺${IOT_PRICE_TRY.toLocaleString('tr-TR')}` : `$${IOT_PRICE_USD}`
+  const hardwareFeeLabel =
+    locale === 'tr'
+      ? `Donanım Tahsisi: ₺${(iotEnabled ? IOT_PRICE_TRY : HARDWARE_BASE_TRY).toLocaleString('tr-TR')}`
+      : `Hardware Allocation: $${iotEnabled ? IOT_PRICE_USD : HARDWARE_BASE_USD}`
 
   if (availableParts.length === 0) {
     return (
@@ -46,7 +51,7 @@ export function ControlPanel() {
             <span className="block font-mono text-[10.5px] uppercase tracking-wide text-bureau-black">
               {locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
             </span>
-            <span className="font-mono text-[9.5px] text-bureau-muted">{iotPrice}</span>
+            <span className="font-mono text-[9.5px] text-bureau-muted">{hardwareFeeLabel}</span>
           </div>
           <button
             onClick={toggleIot}

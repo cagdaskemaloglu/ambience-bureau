@@ -170,9 +170,12 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     state.body.forEach(addSlotPrice)
     addSlotPrice(state.head)
 
-    if (state.iotEnabled) {
-      total += locale === 'tr' ? 1200 : 33
-    }
+    // Donanım Tahsisi (Hardware Allocation) — elektronik tesisat için her
+    // zaman eklenen bir kalem: IoT kapalıyken taban ücret, açıkken
+    // yükseltilmiş (akıllı cihaz) ücreti.
+    total += state.iotEnabled
+      ? (locale === 'tr' ? 1200 : 33)
+      : (locale === 'tr' ? 1000 : 25)
 
     return total
   },

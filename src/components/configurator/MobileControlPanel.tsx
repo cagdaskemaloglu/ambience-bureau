@@ -36,7 +36,10 @@ export function MobileControlPanel({
   const bodyAtMax = body.length >= MAX_BODY_LAYERS
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
-  const iotPrice = locale === 'tr' ? '₺1.200' : '$33'
+  const iotPrice =
+    locale === 'tr'
+      ? `Donanım Tahsisi: ₺${(iotEnabled ? 1200 : 1000).toLocaleString('tr-TR')}`
+      : `Hardware Allocation: $${iotEnabled ? 33 : 25}`
 
   return (
     <div className="flex flex-col">
