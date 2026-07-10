@@ -61,6 +61,7 @@ export async function createOrder(params: {
   shippingAmount: number
   totalAmount: number
   bureauCreditsUsed?: number
+  locale?: 'tr' | 'en'
   shippingInfo: {
     name: string
     phone: string
@@ -94,6 +95,7 @@ export async function createOrder(params: {
       shipping_amount: params.shippingAmount,
       total_amount: params.totalAmount,
       bureau_credits_used: params.bureauCreditsUsed ?? 0,
+      locale: params.locale ?? 'tr',
       status: 'pending',
       shipping_name: params.shippingInfo.name,
       shipping_phone: params.shippingInfo.phone,
@@ -138,7 +140,7 @@ export async function createOrder(params: {
 
 export async function updateOrderStatus(
   orderId: string,
-  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded',
+  status: 'pending' | 'received' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded',
   paymentInfo?: { iyzicoPaymentId?: string; iyzicoToken?: string; paidAt?: string }
 ) {
   const supabase = createSupabaseAdminClient() as any

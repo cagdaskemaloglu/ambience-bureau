@@ -7,6 +7,7 @@
 
 export type OrderStatus =
   | 'pending'
+  | 'received'
   | 'processing'
   | 'shipped'
   | 'delivered'
@@ -81,6 +82,9 @@ export interface Database {
           notes: string | null
           bureau_credits_used: number
           credits_earned: number
+          locale: string
+          tracking_number: string | null
+          admin_note: string | null
           created_at: string
           updated_at: string
         }
@@ -102,12 +106,15 @@ export interface Database {
           shipping_postal?: string | null
           shipping_country?: string | null
           notes?: string | null
+          locale?: string
         }
         Update: Partial<Database['public']['Tables']['orders']['Insert']> & {
           iyzico_payment_id?: string | null
           iyzico_token?: string | null
           paid_at?: string | null
           status?: OrderStatus
+          tracking_number?: string | null
+          admin_note?: string | null
         }
       }
 

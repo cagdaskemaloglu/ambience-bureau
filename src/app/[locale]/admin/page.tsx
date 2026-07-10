@@ -5,7 +5,8 @@ import { useLocale } from 'next-intl'
 import { formatPrice } from '@/lib/sanity'
 
 const STATUS_LABELS: Record<string, { tr: string; en: string; color: string }> = {
-  pending:    { tr: 'Bekliyor',     en: 'Pending',    color: 'text-yellow-600' },
+  pending:    { tr: 'Ödeme Bekleniyor', en: 'Awaiting Payment', color: 'text-yellow-600' },
+  received:   { tr: 'Alındı',      en: 'Received',   color: 'text-teal-600' },
   processing: { tr: 'İşleniyor',   en: 'Processing', color: 'text-blue-600' },
   shipped:    { tr: 'Kargoda',      en: 'Shipped',    color: 'text-purple-600' },
   delivered:  { tr: 'Teslim',       en: 'Delivered',  color: 'text-green-600' },
@@ -217,7 +218,7 @@ export default function AdminPage() {
               {ordersTotal} {tr ? 'sipariş' : 'orders'}
             </span>
             <div className="flex gap-2">
-              {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
+              {['all', 'pending', 'received', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
                 <button
                   key={s}
                   onClick={() => setStatusFilter(s)}
@@ -419,7 +420,7 @@ function OrderRow({ order, locale, onUpdateStatus }: {
               placeholder={tr ? 'Takip no (opsiyonel)' : 'Tracking number (optional)'}
               className="border border-bureau-rule px-2 py-1 font-mono text-[10px] outline-none focus:border-bureau-black"
             />
-            {['processing', 'shipped', 'delivered', 'cancelled'].map(s => (
+            {['received', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
               <button
                 key={s}
                 onClick={() => onUpdateStatus(order.id, s, tracking || undefined)}

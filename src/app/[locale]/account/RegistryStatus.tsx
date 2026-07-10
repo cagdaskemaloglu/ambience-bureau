@@ -21,16 +21,20 @@ function warrantyProgress(paidAt: string): { daysLeft: number; percent: number; 
 }
 
 const ORDER_STATUS: Record<string, { tr: string; en: string; color: string }> = {
-  pending:    { tr: 'Bekliyor',   en: 'Pending',    color: 'text-yellow-600' },
+  pending:    { tr: 'Ödeme Bekleniyor', en: 'Awaiting Payment', color: 'text-yellow-600' },
+  received:   { tr: 'Alındı',    en: 'Received',   color: 'text-teal-600' },
   processing: { tr: 'İşleniyor', en: 'Processing', color: 'text-blue-600' },
   shipped:    { tr: 'Kargoda',   en: 'Shipped',    color: 'text-purple-600' },
   delivered:  { tr: 'Teslim Edildi', en: 'Delivered', color: 'text-green-600' },
   cancelled:  { tr: 'İptal',     en: 'Cancelled',  color: 'text-red-600' },
+  refunded:   { tr: 'İade Edildi', en: 'Refunded',  color: 'text-gray-500' },
 }
 
-// Sipariş takibi görsel adımları — 'cancelled' bu çizgide ayrı gösteriliyor.
+// Sipariş takibi görsel adımları. 'pending' (ödeme bekleniyor) bu çizginin
+// DIŞINDA ayrıca gösteriliyor — henüz ödeme tamamlanmadığı için takip
+// sürecine dahil değil. 'cancelled'/'refunded' de ayrı gösteriliyor.
 const ORDER_TRACK_STEPS: Array<{ key: string; tr: string; en: string }> = [
-  { key: 'pending', tr: 'Alındı', en: 'Received' },
+  { key: 'received', tr: 'Alındı', en: 'Received' },
   { key: 'processing', tr: 'İşleniyor', en: 'Processing' },
   { key: 'shipped', tr: 'Kargoda', en: 'Shipped' },
   { key: 'delivered', tr: 'Teslim Edildi', en: 'Delivered' },
@@ -92,6 +96,26 @@ export function RegistryStatus({
     })
     setProfileError(null)
     setEditingProfile(true)
+  }
+
+  // ── Sipariş takibi: "Teslim Aldım" ──
+  const [confirmingDeliveryId, setConfirmingDeliveryId] = useState<string | null>(null)
+
+  async function handleConfirmDelivery(orderId: string) {
+    setConfirmingDeliveryId(orderId)
+    try {
+      const res = await fetch('/api/account/confirm-delivery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId }),
+      })
+      if (!res.ok) throw new Error('Confirm delivery failed')
+      router.refresh()
+    } catch (err) {
+      alert(tr ? 'Bir hata oluştu, lütfen tekrar deneyin.' : 'Something went wrong, please try again.')
+    } finally {
+      setConfirmingDeliveryId(null)
+    }
   }
 
   async function handleSaveProfile() {
@@ -359,7 +383,8 @@ export function RegistryStatus({
             </div>
           ) : (
             orders.map((order: any) => {
-              const isCancelled = order.status === 'cancelled'
+              const isCancelled = order.status === 'cancelled' || order.status === 'refunded'
+              const isAwaitingPayment = order.status === 'pending'
               const stepIdx = orderStepIndex(order.status)
               const itemCount = (order.order_items ?? []).length
               return (
@@ -380,42 +405,68 @@ export function RegistryStatus({
                       {itemCount} {tr ? (itemCount === 1 ? 'ürün' : 'ürün') : (itemCount === 1 ? 'item' : 'items')}
                     </p>
 
-                    {isCancelled ? (
+                    {isAwaitingPayment ? (
+                      <div className="border border-yellow-200 bg-yellow-50 px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-yellow-700">
+                        {tr ? 'Ödemeniz henüz onaylanmadı.' : 'Your payment has not been confirmed yet.'}
+                      </div>
+                    ) : isCancelled ? (
                       <div className="border border-red-200 bg-red-50 px-3 py-2 font-mono text-[10px] uppercase tracking-wide text-red-600">
-                        {tr ? 'Bu sipariş iptal edildi.' : 'This order was cancelled.'}
+                        {order.status === 'refunded'
+                          ? (tr ? 'Bu sipariş iade edildi.' : 'This order was refunded.')
+                          : (tr ? 'Bu sipariş iptal edildi.' : 'This order was cancelled.')}
                       </div>
                     ) : (
-                      <div className="flex items-center">
-                        {ORDER_TRACK_STEPS.map((step, i) => {
-                          const reached = stepIdx >= i
-                          const isLast = i === ORDER_TRACK_STEPS.length - 1
-                          return (
-                            <div key={step.key} className="flex flex-1 items-center last:flex-none">
-                              <div className="flex flex-col items-center">
-                                <div
-                                  className={`h-2.5 w-2.5 rounded-full ${
-                                    reached ? 'bg-bureau-amber' : 'bg-bureau-rule'
-                                  }`}
-                                />
-                                <span
-                                  className={`mt-1.5 whitespace-nowrap font-mono text-[8.5px] uppercase tracking-wide ${
-                                    reached ? 'text-bureau-black' : 'text-bureau-subtle'
-                                  }`}
-                                >
-                                  {tr ? step.tr : step.en}
-                                </span>
+                      <>
+                        <div className="flex items-center">
+                          {ORDER_TRACK_STEPS.map((step, i) => {
+                            const reached = stepIdx >= i
+                            const isLast = i === ORDER_TRACK_STEPS.length - 1
+                            return (
+                              <div key={step.key} className="flex flex-1 items-center last:flex-none">
+                                <div className="flex flex-col items-center">
+                                  <div
+                                    className={`h-2.5 w-2.5 rounded-full ${
+                                      reached ? 'bg-bureau-amber' : 'bg-bureau-rule'
+                                    }`}
+                                  />
+                                  <span
+                                    className={`mt-1.5 whitespace-nowrap font-mono text-[8.5px] uppercase tracking-wide ${
+                                      reached ? 'text-bureau-black' : 'text-bureau-subtle'
+                                    }`}
+                                  >
+                                    {tr ? step.tr : step.en}
+                                  </span>
+                                </div>
+                                {!isLast && (
+                                  <div
+                                    className={`mx-1 h-[2px] flex-1 ${
+                                      stepIdx > i ? 'bg-bureau-amber' : 'bg-bureau-rule'
+                                    }`}
+                                  />
+                                )}
                               </div>
-                              {!isLast && (
-                                <div
-                                  className={`mx-1 h-[2px] flex-1 ${
-                                    stepIdx > i ? 'bg-bureau-amber' : 'bg-bureau-rule'
-                                  }`}
-                                />
-                              )}
-                            </div>
-                          )
-                        })}
-                      </div>
+                            )
+                          })}
+                        </div>
+
+                        {order.status === 'shipped' && (
+                          <button
+                            onClick={() => handleConfirmDelivery(order.id)}
+                            disabled={confirmingDeliveryId === order.id}
+                            className="btn-bureau mt-4 w-full disabled:opacity-50"
+                          >
+                            {confirmingDeliveryId === order.id
+                              ? (tr ? 'İşleniyor...' : 'Processing...')
+                              : (tr ? 'Teslim Aldım' : 'I Received This')}
+                          </button>
+                        )}
+
+                        {order.tracking_number && (
+                          <p className="mt-3 font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
+                            {tr ? 'Takip No' : 'Tracking No'}: {order.tracking_number}
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

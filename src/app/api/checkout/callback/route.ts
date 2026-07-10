@@ -3,12 +3,6 @@ import { retrieveCheckoutForm } from '@/lib/iyzico/client'
 import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
-import { generateOrderDocuments } from '@/lib/documents/generateOrderDocuments'
-
-// Puppeteer cold start + 3 PDF üretimi 10sn'lik varsayılan Vercel süresini
-// aşabiliyor. Hobby planında üst sınır 60sn, Pro'da daha yüksek olabilir —
-// planına göre bu değeri ayarla.
-export const maxDuration = 60
 
 /**
  * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar.
@@ -48,20 +42,16 @@ export async function POST(request: Request) {
     }
 
     if (result.paymentStatus === 'SUCCESS') {
-      await updateOrderStatus(order.id, 'processing', {
+      // NOT: Durum artık doğrudan 'processing' değil 'received' oluyor.
+      // Sertifika/Ürün Kartı/Garanti belgeleri BURADA üretilmiyor —
+      // müşterinin ödeme sonrası bekleme süresini kısaltmak için, admin
+      // siparişi panelden 'processing'e aldığında üretiliyor
+      // (bkz. src/app/api/admin/orders/route.ts).
+      await updateOrderStatus(order.id, 'received', {
         iyzicoPaymentId: result.paymentId,
         iyzicoToken: token,
         paidAt: new Date().toISOString(),
       })
-
-      // Sertifika, Ürün Kartı ve Garanti Belgesi PDF'lerini üret — başarısız
-      // olsa da ödeme/onay akışını bloklamaz, sadece loglanır.
-      try {
-        const freshOrder = await getOrderByNumber(orderNumber)
-        await generateOrderDocuments(freshOrder, locale)
-      } catch (docError) {
-        console.error('[iyzico callback] Belge üretim hatası:', docError)
-      }
 
       // E-posta gönderimi — başarısız olsa da ödeme akışını bloklamaz.
       // Hem üye hem misafir siparişler için doğru e-posta adresini çözümler.

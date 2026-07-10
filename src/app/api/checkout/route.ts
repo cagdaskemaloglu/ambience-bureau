@@ -101,6 +101,7 @@ export async function POST(request: Request) {
       shippingAmount: shippingMinor,
       totalAmount: totalMinor,
       bureauCreditsUsed: creditsUsedMinor / 100,
+      locale,
       shippingInfo,
       items: items.map((item) => ({
         itemType: item.type,
