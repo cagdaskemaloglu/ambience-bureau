@@ -38,8 +38,12 @@ export function MobileControlPanel({
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
   const iotPrice =
     locale === 'tr'
-      ? `Donanım Tahsisi: ₺${(iotEnabled ? 1200 : 1000).toLocaleString('tr-TR')}`
-      : `Hardware Allocation: $${iotEnabled ? 33 : 25}`
+      ? iotEnabled
+        ? `Donanım Tahsisi: ₺${(1000 + 1200).toLocaleString('tr-TR')} (₺1.000 + ₺1.200 IoT)`
+        : `Donanım Tahsisi: ₺${(1000).toLocaleString('tr-TR')}`
+      : iotEnabled
+        ? `Hardware Allocation: $${25 + 33} ($25 + $33 IoT)`
+        : `Hardware Allocation: $25`
 
   return (
     <div className="flex flex-col">

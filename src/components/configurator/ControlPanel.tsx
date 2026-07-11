@@ -29,8 +29,12 @@ export function ControlPanel() {
   const bodyAtMax = body.length >= MAX_BODY_LAYERS
   const hardwareFeeLabel =
     locale === 'tr'
-      ? `Donanım Tahsisi: ₺${(iotEnabled ? IOT_PRICE_TRY : HARDWARE_BASE_TRY).toLocaleString('tr-TR')}`
-      : `Hardware Allocation: $${iotEnabled ? IOT_PRICE_USD : HARDWARE_BASE_USD}`
+      ? iotEnabled
+        ? `Donanım Tahsisi: ₺${(HARDWARE_BASE_TRY + IOT_PRICE_TRY).toLocaleString('tr-TR')} (₺${HARDWARE_BASE_TRY.toLocaleString('tr-TR')} + ₺${IOT_PRICE_TRY.toLocaleString('tr-TR')} IoT)`
+        : `Donanım Tahsisi: ₺${HARDWARE_BASE_TRY.toLocaleString('tr-TR')}`
+      : iotEnabled
+        ? `Hardware Allocation: $${HARDWARE_BASE_USD + IOT_PRICE_USD} ($${HARDWARE_BASE_USD} + $${IOT_PRICE_USD} IoT)`
+        : `Hardware Allocation: $${HARDWARE_BASE_USD}`
 
   if (availableParts.length === 0) {
     return (
