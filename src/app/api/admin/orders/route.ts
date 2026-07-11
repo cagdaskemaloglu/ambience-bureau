@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
+import { resolveOrderRecipientEmail } from '@/lib/supabase/queries'
 import { generateOrderDocuments } from '@/lib/documents/generateOrderDocuments'
 import { getAllCollections } from '@/lib/queries'
+import { sendOrderProcessingEmail, sendOrderShippedEmail } from '@/lib/email/sendOrderStatusUpdate'
 
 // Puppeteer cold start + 3 PDF üretimi 10sn'lik varsayılan Vercel süresini
 // aşabiliyor. Hobby planında üst sınır 60sn, Pro'da daha yüksek olabilir.
@@ -127,6 +129,33 @@ export async function PATCH(request: Request) {
     } catch (docError) {
       console.error('[admin/orders PATCH] Belge üretim hatası:', docError)
     }
+  }
+
+  // Durum e-postaları — dil, ödeme para birimine göre belirlenir (USD -> EN,
+  // TRY -> TR). Başarısız olsa da durum güncellemesini etkilemez.
+  const alreadyShipped = ['shipped', 'delivered'].includes(existing?.status)
+  try {
+    const recipientEmail = await resolveOrderRecipientEmail(data)
+    if (recipientEmail) {
+      if (status === 'processing' && !alreadyProcessed) {
+        await sendOrderProcessingEmail({
+          to: recipientEmail,
+          orderNumber: data.order_number,
+          customerName: data.shipping_name ?? '',
+          currency: data.currency,
+        })
+      } else if (status === 'shipped' && !alreadyShipped) {
+        await sendOrderShippedEmail({
+          to: recipientEmail,
+          orderNumber: data.order_number,
+          customerName: data.shipping_name ?? '',
+          currency: data.currency,
+          trackingNumber: data.tracking_number ?? trackingNumber ?? null,
+        })
+      }
+    }
+  } catch (emailError) {
+    console.error('[admin/orders PATCH] Durum e-postası gönderilemedi:', emailError)
   }
 
   return NextResponse.json({ order: data })

@@ -97,8 +97,14 @@ export async function POST(request: Request) {
             })
           )
 
+          // E-posta dili, checkout'taki site dilinden (locale) BAĞIMSIZ olarak
+          // ödeme para birimine göre belirlenir: USD -> EN, TRY -> TR. Bu,
+          // admin panelinden gönderilen durum e-postalarıyla (processing/
+          // shipped) aynı kuralı takip eder.
+          const emailLocale: 'tr' | 'en' = order.currency === 'USD' ? 'en' : 'tr'
+
           const emailParams = {
-            locale,
+            locale: emailLocale,
             to: recipientEmail,
             orderNumber: order.order_number,
             customerName: order.shipping_name ?? '',
