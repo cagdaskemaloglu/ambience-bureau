@@ -35,15 +35,16 @@ export function MobileControlPanel({
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   const bodyAtMax = body.length >= MAX_BODY_LAYERS
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
+  const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
   const iotPrice =
     locale === 'tr'
       ? iotEnabled
-        ? `Donanım Tahsisi: ₺${(1000 + 1200).toLocaleString('tr-TR')} (₺1.000 + ₺1.200 IoT)`
-        : `Donanım Tahsisi: ₺${(1000).toLocaleString('tr-TR')}`
+        ? `Donanım Tahsisi: ₺${(hardwareFees.baseTRY + hardwareFees.iotTRY).toLocaleString('tr-TR')} (₺${hardwareFees.baseTRY.toLocaleString('tr-TR')} + ₺${hardwareFees.iotTRY.toLocaleString('tr-TR')} IoT)`
+        : `Donanım Tahsisi: ₺${hardwareFees.baseTRY.toLocaleString('tr-TR')}`
       : iotEnabled
-        ? `Hardware Allocation: $${25 + 33} ($25 + $33 IoT)`
-        : `Hardware Allocation: $25`
+        ? `Hardware Allocation: $${hardwareFees.baseUSD + hardwareFees.iotUSD} ($${hardwareFees.baseUSD} + $${hardwareFees.iotUSD} IoT)`
+        : `Hardware Allocation: $${hardwareFees.baseUSD}`
 
   return (
     <div className="flex flex-col">

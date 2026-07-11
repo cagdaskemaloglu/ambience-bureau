@@ -109,6 +109,10 @@ export interface Collection {
   name: LocalizedString[]
   description?: LocalizedString[]
   coverImage?: SanityImage
+  hardwareBaseFeeTRY?: number
+  hardwareBaseFeeUSD?: number
+  iotFeeTRY?: number
+  iotFeeUSD?: number
 }
 
 // ── Lamba Parçası (Konfigüratör) ──────────────────────────

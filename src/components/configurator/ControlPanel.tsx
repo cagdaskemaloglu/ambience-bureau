@@ -6,10 +6,7 @@ import { SlotPicker } from './SlotPicker'
 import { MaterialPicker } from './MaterialPicker'
 import { getLocalizedValue } from '@/lib/sanity'
 
-const IOT_PRICE_TRY = 1200
-const IOT_PRICE_USD = 33
-const HARDWARE_BASE_TRY = 1000
-const HARDWARE_BASE_USD = 25
+
 
 export function ControlPanel() {
   const locale = useLocale()
@@ -18,6 +15,7 @@ export function ControlPanel() {
   const body = useConfiguratorStore((s) => s.body)
   const head = useConfiguratorStore((s) => s.head)
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
+  const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
   const toggleSinglePart = useConfiguratorStore((s) => s.toggleSinglePart)
   const addBodyPart = useConfiguratorStore((s) => s.addBodyPart)
   const removeBodyLayer = useConfiguratorStore((s) => s.removeBodyLayer)
@@ -30,11 +28,11 @@ export function ControlPanel() {
   const hardwareFeeLabel =
     locale === 'tr'
       ? iotEnabled
-        ? `Donanım Tahsisi: ₺${(HARDWARE_BASE_TRY + IOT_PRICE_TRY).toLocaleString('tr-TR')} (₺${HARDWARE_BASE_TRY.toLocaleString('tr-TR')} + ₺${IOT_PRICE_TRY.toLocaleString('tr-TR')} IoT)`
-        : `Donanım Tahsisi: ₺${HARDWARE_BASE_TRY.toLocaleString('tr-TR')}`
+        ? `Donanım Tahsisi: ₺${(hardwareFees.baseTRY + hardwareFees.iotTRY).toLocaleString('tr-TR')} (₺${hardwareFees.baseTRY.toLocaleString('tr-TR')} + ₺${hardwareFees.iotTRY.toLocaleString('tr-TR')} IoT)`
+        : `Donanım Tahsisi: ₺${hardwareFees.baseTRY.toLocaleString('tr-TR')}`
       : iotEnabled
-        ? `Hardware Allocation: $${HARDWARE_BASE_USD + IOT_PRICE_USD} ($${HARDWARE_BASE_USD} + $${IOT_PRICE_USD} IoT)`
-        : `Hardware Allocation: $${HARDWARE_BASE_USD}`
+        ? `Hardware Allocation: $${hardwareFees.baseUSD + hardwareFees.iotUSD} ($${hardwareFees.baseUSD} + $${hardwareFees.iotUSD} IoT)`
+        : `Hardware Allocation: $${hardwareFees.baseUSD}`
 
   if (availableParts.length === 0) {
     return (

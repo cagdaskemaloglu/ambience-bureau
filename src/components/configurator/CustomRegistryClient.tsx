@@ -64,7 +64,13 @@ export function CustomRegistryClient({
     setIsLoadingParts(true)
     try {
       const parts: LampPart[] = await getLampPartsByCollection(key)
-      setCollection(key, parts)
+      const selectedCollection = collections.find((c) => c.key?.current === key)
+      setCollection(key, parts, {
+        baseTRY: selectedCollection?.hardwareBaseFeeTRY,
+        baseUSD: selectedCollection?.hardwareBaseFeeUSD,
+        iotTRY: selectedCollection?.iotFeeTRY,
+        iotUSD: selectedCollection?.iotFeeUSD,
+      })
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
     } finally {

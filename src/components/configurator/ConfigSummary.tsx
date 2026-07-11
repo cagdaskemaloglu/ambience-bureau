@@ -15,6 +15,7 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
   const isComplete = useConfiguratorStore((s) => s.isComplete)
   const removeBodyLayer = useConfiguratorStore((s) => s.removeBodyLayer)
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
+  const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
 
   const total = getTotalPrice(locale as 'tr' | 'en')
   const complete = isComplete()
@@ -128,7 +129,8 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
           </span>
           <span className="font-mono text-[11px] text-bureau-subtle">
             {formatPrice(
-              (locale === 'tr' ? 1000 : 25) + (iotEnabled ? (locale === 'tr' ? 1200 : 33) : 0),
+              (locale === 'tr' ? hardwareFees.baseTRY : hardwareFees.baseUSD) +
+                (iotEnabled ? (locale === 'tr' ? hardwareFees.iotTRY : hardwareFees.iotUSD) : 0),
               currency,
               intlLocale
             )}

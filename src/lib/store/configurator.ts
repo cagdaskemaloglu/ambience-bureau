@@ -8,10 +8,27 @@ interface SlotSelection {
   materialId: string | null
 }
 
+interface HardwareFees {
+  baseTRY: number
+  baseUSD: number
+  iotTRY: number
+  iotUSD: number
+}
+
+// Sanity'de bir koleksiyonun ücret alanları boşsa (henüz doldurulmadıysa)
+// kullanılacak varsayılanlar.
+const DEFAULT_HARDWARE_FEES: HardwareFees = {
+  baseTRY: 1600,
+  baseUSD: 40,
+  iotTRY: 1200,
+  iotUSD: 30,
+}
+
 interface ConfiguratorStore {
   // ── State ────────────────────────────────────────────────
   collectionKey: string | null
   availableParts: LampPart[] // Sanity'den çekilen, aktif koleksiyonun tüm parçaları
+  hardwareFees: HardwareFees // Aktif koleksiyonun Donanım Tahsisi/IoT ücretleri (Sanity'den)
 
   base: SlotSelection
   body: SlotSelection[] // sırayla istiflenir, en fazla MAX_BODY_LAYERS adet
@@ -23,7 +40,7 @@ interface ConfiguratorStore {
   iotEnabled: boolean
 
   // ── Actions ──────────────────────────────────────────────
-  setCollection: (key: string, parts: LampPart[]) => void
+  setCollection: (key: string, parts: LampPart[], hardwareFees?: Partial<HardwareFees>) => void
   clearCollection: () => void
 
   /** Base/Head için: aynı parçaya tekrar tıklanırsa seçim kalkar (toggle). */
@@ -57,6 +74,7 @@ const initialSlotState: SlotSelection = { partId: null, materialId: null }
 export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   collectionKey: null,
   availableParts: [],
+  hardwareFees: DEFAULT_HARDWARE_FEES,
 
   base: { ...initialSlotState },
   body: [], // boş başlar — kullanıcı tıkladıkça katman eklenir
@@ -67,20 +85,31 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   lightEnabled: true,
   iotEnabled: true,
 
-  setCollection: (key, parts) =>
+  setCollection: (key, parts, hardwareFees) => {
+    // Object.assign yerine tek tek kontrol: Sanity'den bir alan boş/undefined
+    // gelirse (henüz doldurulmadıysa) varsayılanın üzerine yazılmasın.
+    const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
+    if (hardwareFees) {
+      for (const k of Object.keys(merged) as Array<keyof HardwareFees>) {
+        if (typeof hardwareFees[k] === 'number') merged[k] = hardwareFees[k] as number
+      }
+    }
     set({
       collectionKey: key,
       availableParts: parts,
+      hardwareFees: merged,
       // Koleksiyon değişince seçimleri sıfırla
       base: { ...initialSlotState },
       body: [],
       head: { ...initialSlotState },
-    }),
+    })
+  },
 
   clearCollection: () =>
     set({
       collectionKey: null,
       availableParts: [],
+      hardwareFees: DEFAULT_HARDWARE_FEES,
       base: { ...initialSlotState },
       body: [],
       head: { ...initialSlotState },
@@ -171,11 +200,11 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     addSlotPrice(state.head)
 
     // Donanım Tahsisi (Hardware Allocation) — taban ücret her zaman eklenir;
-    // IoT açıksa bunun ÜZERİNE ek IoT ücreti de eklenir (1000+1200=2200 TL,
-    // 25+33=58 USD gibi) — birbirinin yerine geçmiyor, üst üste ekleniyor.
-    total += locale === 'tr' ? 1000 : 25
+    // IoT açıksa bunun ÜZERİNE ek IoT ücreti de eklenir. Tutarlar koleksiyona
+    // göre Sanity'den gelir (state.hardwareFees) — kod değişikliği gerekmez.
+    total += locale === 'tr' ? state.hardwareFees.baseTRY : state.hardwareFees.baseUSD
     if (state.iotEnabled) {
-      total += locale === 'tr' ? 1200 : 33
+      total += locale === 'tr' ? state.hardwareFees.iotTRY : state.hardwareFees.iotUSD
     }
 
     return total
