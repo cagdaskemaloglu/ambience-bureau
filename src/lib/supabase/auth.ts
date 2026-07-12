@@ -3,13 +3,24 @@ import { useCartStore } from '@/lib/store/cart'
 
 // ── Üyelik İşlemleri (Client-side) ────────────────────────
 
-export async function signUpWithEmail(email: string, password: string, fullName?: string) {
+export async function signUpWithEmail(
+  email: string,
+  password: string,
+  fullName?: string,
+  locale: 'tr' | 'en' = 'tr'
+) {
   const supabase = createSupabaseClient()
   return supabase.auth.signUp({
     email,
     password,
     options: {
-      data: { full_name: fullName ?? '' },
+      // `locale` burada user_metadata'ya yazılıyor — Supabase Dashboard'daki
+      // "Confirm signup" e-posta şablonunda {{ .Data.locale }} olarak
+      // okunup TR/EN metni seçmek için kullanılıyor.
+      data: { full_name: fullName ?? '', locale },
+      // Onay linkine tıklandığında kullanıcı, kaydolduğu dildeki
+      // "E-postanız Onaylandı" sayfasına yönlensin.
+      emailRedirectTo: `${window.location.origin}/${locale}/auth/verified`,
     },
   })
 }

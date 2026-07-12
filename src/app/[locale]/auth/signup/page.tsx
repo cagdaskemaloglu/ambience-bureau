@@ -28,7 +28,7 @@ export default function SignupPage() {
     setLoading(true)
     setError(null)
 
-    const { error } = await signUpWithEmail(email, password, fullName)
+    const { error } = await signUpWithEmail(email, password, fullName, locale as 'tr' | 'en')
     if (error) {
       setError(error.message)
     } else {
