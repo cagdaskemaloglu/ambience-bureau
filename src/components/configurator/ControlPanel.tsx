@@ -80,11 +80,13 @@ export function ControlPanel() {
           parts={availableParts}
           isPartSelected={(partId) => base.partId === partId}
           onPartClick={(partId) => toggleSinglePart('base', partId)}
+          dataTutorial="picker-base"
         />
         <MaterialPicker
           part={getSelectedPart('base')}
           selectedMaterialId={base.materialId}
           onSelectMaterial={(materialId) => selectMaterial('base', materialId)}
+          dataTutorial="material-base"
         />
       </div>
 
@@ -96,6 +98,7 @@ export function ControlPanel() {
           getPartCount={getBodyPartCount}
           onPartClick={(partId) => addBodyPart(partId)}
           disabled={bodyAtMax}
+          dataTutorial="picker-body"
         />
         {body.length > 0 && (
           <div className="mt-3 space-y-2">
@@ -111,6 +114,7 @@ export function ControlPanel() {
                     </span>
                     <button
                       onClick={() => removeBodyLayer(idx)}
+                      data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
                       className="font-mono text-[10px] text-bureau-subtle hover:text-bureau-amber"
                     >
                       ✕
@@ -135,6 +139,7 @@ export function ControlPanel() {
           parts={availableParts}
           isPartSelected={(partId) => head.partId === partId}
           onPartClick={(partId) => toggleSinglePart('head', partId)}
+          dataTutorial="picker-head"
         />
         <MaterialPicker
           part={getSelectedPart('head')}

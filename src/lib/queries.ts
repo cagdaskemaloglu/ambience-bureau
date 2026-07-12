@@ -260,7 +260,11 @@ export async function getAllLampCollections() {
         key,
         ${LOCALIZED_FIELD('name')},
         ${LOCALIZED_FIELD('description')},
-        "coverImage": coverImage{${IMAGE_FRAGMENT}}
+        "coverImage": coverImage{${IMAGE_FRAGMENT}},
+        hardwareBaseFeeTRY,
+        hardwareBaseFeeUSD,
+        iotFeeTRY,
+        iotFeeUSD
       }`,
     {},
     { next: { tags: ['configurator-collections'] } }

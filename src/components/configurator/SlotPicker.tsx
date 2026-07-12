@@ -25,6 +25,7 @@ export function SlotPicker({
   getPartCount,
   onPartClick,
   disabled,
+  dataTutorial,
 }: {
   slotType: SlotType
   parts: LampPart[]
@@ -34,6 +35,8 @@ export function SlotPicker({
   getPartCount?: (partId: string) => number
   onPartClick: (partId: string) => void
   disabled?: boolean
+  /** Tutorial overlay'inin bu bileşeni hedefleyebilmesi için opsiyonel işaret. */
+  dataTutorial?: string
 }) {
   const locale = useLocale()
   const slotsOfType = parts.filter((p) => p.slotType === slotType)
@@ -50,7 +53,7 @@ export function SlotPicker({
   }
 
   return (
-    <div>
+    <div data-tutorial={dataTutorial}>
       <div className="mb-2 flex items-center justify-between">
         <span className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted">
           {label}

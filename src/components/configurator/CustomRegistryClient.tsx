@@ -12,6 +12,7 @@ import { CollectionPicker } from './CollectionPicker'
 import { ControlPanel } from './ControlPanel'
 import { MobileControlPanel } from './MobileControlPanel'
 import { ConfigSummary } from './ConfigSummary'
+import { CustomRegistryTutorial } from './CustomRegistryTutorial'
 import type { Collection, LampPart } from '@/types'
 
 const ConfiguratorCanvas = dynamic(
@@ -22,9 +23,12 @@ const ConfiguratorCanvas = dynamic(
 export function CustomRegistryClient({
   collections,
   initialCollectionKey,
+  showTutorial = false,
 }: {
   collections: Collection[]
   initialCollectionKey?: string
+  /** Misafirlere ve Custom Registry'den daha önce sipariş vermemiş üyelere gösterilir. */
+  showTutorial?: boolean
 }) {
   const locale = useLocale()
   const router = useRouter()
@@ -192,12 +196,13 @@ export function CustomRegistryClient({
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
+      <CustomRegistryTutorial locale={locale as 'tr' | 'en'} active={showTutorial} />
 
       {/* ── DESKTOP: yan yana ── */}
       <div className="hidden min-h-0 flex-1 border-r border-bureau-black lg:flex">
         <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
       </div>
-      <div className="hidden w-[400px] flex-shrink-0 flex-col overflow-y-auto p-4 lg:flex">
+      <div className="hidden w-[400px] flex-shrink-0 flex-col overflow-y-auto p-4 lg:flex" id="tutorial-scope">
         {!collectionKey ? (
           <div>
             <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">

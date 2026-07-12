@@ -8,17 +8,20 @@ export function MaterialPicker({
   part,
   selectedMaterialId,
   onSelectMaterial,
+  dataTutorial,
 }: {
   part: LampPart | undefined
   selectedMaterialId: string | null
   onSelectMaterial: (materialId: string) => void
+  /** Tutorial overlay'inin bu bileşeni hedefleyebilmesi için opsiyonel işaret. */
+  dataTutorial?: string
 }) {
   const locale = useLocale()
 
   if (!part) return null
 
   return (
-    <div className="mt-3">
+    <div className="mt-3" data-tutorial={dataTutorial}>
       <span className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted">
         {locale === 'tr' ? 'Malzeme' : 'Material'}
       </span>

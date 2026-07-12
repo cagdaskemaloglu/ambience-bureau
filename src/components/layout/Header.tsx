@@ -38,6 +38,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
   const [mobileSubOpen, setMobileSubOpen] = useState(false)
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false)
   const [accountMobileSubOpen, setAccountMobileSubOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
   const [user, setUser] = useState<any>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const accountDropdownRef = useRef<HTMLDivElement>(null)
@@ -95,6 +96,20 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   const displayCount = mounted ? cartCount : 0
   const otherLocale = locale === 'tr' ? 'en' : 'tr'
+
+  async function handleSignOut() {
+    setSigningOut(true)
+    try {
+      await signOut()
+      setAccountDropdownOpen(false)
+      setAccountMobileSubOpen(false)
+      setMenuOpen(false)
+      router.push('/')
+      router.refresh()
+    } finally {
+      setSigningOut(false)
+    }
+  }
 
   function switchLocale() {
     router.replace(pathname, { locale: otherLocale })
@@ -274,6 +289,13 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                         {locale === 'tr' ? tab.labelTr : tab.labelEn}
                       </Link>
                     ))}
+                    <button
+                      onClick={handleSignOut}
+                      disabled={signingOut}
+                      className="block w-full border-t border-bureau-rule px-3.5 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-red-600 transition-colors hover:bg-bureau-surface disabled:opacity-50"
+                    >
+                      {signingOut ? '...' : (locale === 'tr' ? 'Çıkış Yap' : 'Sign Out')}
+                    </button>
                   </div>
                 )}
               </div>
@@ -432,6 +454,13 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                         {locale === 'tr' ? tab.labelTr : tab.labelEn}
                       </Link>
                     ))}
+                    <button
+                      onClick={handleSignOut}
+                      disabled={signingOut}
+                      className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-red-600 disabled:opacity-50"
+                    >
+                      {signingOut ? '...' : (locale === 'tr' ? 'Çıkış Yap' : 'Sign Out')}
+                    </button>
                   </div>
                 )}
               </div>

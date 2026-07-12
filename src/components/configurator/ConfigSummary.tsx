@@ -151,6 +151,7 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
         <button
           onClick={onRegister}
           disabled={!complete}
+          data-tutorial="register-design-btn"
           className={`btn-bureau w-full ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
         >
           {locale === 'tr' ? 'Tasarımı Kaydet' : 'Register Design'}
