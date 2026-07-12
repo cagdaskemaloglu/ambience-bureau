@@ -141,7 +141,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             />
             <div>
               <div className="text-sm font-semibold tracking-[0.12em] uppercase text-bureau-black sm:text-base">
-                The Ambience Bureau
+                THE AMBIENCE BUREAU
               </div>
               <div className="hidden mt-1 font-mono text-[10px] tracking-widest text-bureau-muted uppercase sm:block">
                 REGULATION OF SPATIAL PHOTONS // EST. 2026

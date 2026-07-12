@@ -92,11 +92,13 @@ export function MobileControlPanel({
           parts={availableParts}
           isPartSelected={(id) => base.partId === id}
           onPartClick={(id) => toggleSinglePart('base', id)}
+          dataTutorial="picker-base"
         />
         <MaterialPicker
           part={getSelectedPart('base')}
           selectedMaterialId={base.materialId}
           onSelectMaterial={(m) => selectMaterial('base', m)}
+          dataTutorial="material-base"
         />
       </Section>
 
@@ -111,6 +113,7 @@ export function MobileControlPanel({
           getPartCount={getBodyPartCount}
           onPartClick={(id) => addBodyPart(id)}
           disabled={bodyAtMax}
+          dataTutorial="picker-body"
         />
         {body.map((slot, idx) => {
           const part = availableParts.find((p) => p.partId === slot.partId)
@@ -123,6 +126,7 @@ export function MobileControlPanel({
                 </span>
                 <button
                   onClick={() => removeBodyLayer(idx)}
+                  data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
                   className="font-mono text-[9px] text-bureau-subtle hover:text-bureau-amber"
                 >
                   ✕
@@ -145,6 +149,7 @@ export function MobileControlPanel({
           parts={availableParts}
           isPartSelected={(id) => head.partId === id}
           onPartClick={(id) => toggleSinglePart('head', id)}
+          dataTutorial="picker-head"
         />
         <MaterialPicker
           part={getSelectedPart('head')}

@@ -261,7 +261,7 @@ export function CustomRegistryClient({
             </div>
 
             {/* Parts paneli — alt %40 */}
-            <div className="min-h-0 flex-[2] overflow-y-auto">
+            <div className="min-h-0 flex-[2] overflow-y-auto" id="tutorial-scope-mobile">
               {isLoadingParts ? (
                 <div className="flex h-full items-center justify-center">
                   <span className="font-mono text-[11px] uppercase text-bureau-muted">

@@ -12,6 +12,7 @@ export function MobileSlotPicker({
   getPartCount,
   onPartClick,
   disabled,
+  dataTutorial,
 }: {
   slotType: SlotType
   parts: LampPart[]
@@ -19,6 +20,8 @@ export function MobileSlotPicker({
   getPartCount?: (partId: string) => number
   onPartClick: (partId: string) => void
   disabled?: boolean
+  /** Tutorial overlay'inin bu bileşeni hedefleyebilmesi için opsiyonel işaret. */
+  dataTutorial?: string
 }) {
   const locale = useLocale()
   const slotsOfType = parts.filter((p) => p.slotType === slotType)
@@ -32,7 +35,7 @@ export function MobileSlotPicker({
   }
 
   return (
-    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none">
+    <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-none" data-tutorial={dataTutorial}>
       {slotsOfType.map((part) => {
         const name = getLocalizedValue(part.name, locale, '—')
         const count = getPartCount?.(part.partId) ?? 0

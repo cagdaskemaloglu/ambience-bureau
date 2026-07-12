@@ -56,7 +56,8 @@ const STEPS: TutorialStep[] = [
   },
 ]
 
-const SCOPE_ID = 'tutorial-scope'
+const SCOPE_ID_DESKTOP = 'tutorial-scope'
+const SCOPE_ID_MOBILE = 'tutorial-scope-mobile'
 const PAD = 6 // hedefin etrafındaki spot ışığı boşluğu (px)
 
 interface Rect {
@@ -76,6 +77,16 @@ function MouseClickIcon() {
   )
 }
 
+function TapIcon() {
+  return (
+    <svg width="26" height="30" viewBox="0 0 26 30" fill="none" className="flex-shrink-0">
+      <circle cx="13" cy="14" r="7" stroke="currentColor" strokeWidth="1.6" />
+      <circle cx="13" cy="14" r="2.2" fill="currentColor" />
+      <path d="M13 24 L13 29 M8 27 L18 27" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export function CustomRegistryTutorial({
   locale,
   active,
@@ -86,7 +97,7 @@ export function CustomRegistryTutorial({
   const collectionKey = useConfiguratorStore((s) => s.collectionKey)
   const [stepIndex, setStepIndex] = useState(0)
   const [dismissed, setDismissed] = useState(false)
-  const [isDesktop, setIsDesktop] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(true)
   const [rect, setRect] = useState<Rect | null>(null)
   const rafRef = useRef<number | null>(null)
   const attachedElRef = useRef<Element | null>(null)
@@ -104,14 +115,14 @@ export function CustomRegistryTutorial({
   }, [])
 
   const findTarget = useCallback((selector: string): HTMLElement | null => {
-    const scope = document.getElementById(SCOPE_ID)
+    const scope = document.getElementById(isDesktop ? SCOPE_ID_DESKTOP : SCOPE_ID_MOBILE)
     if (!scope) return null
     const el = scope.querySelector<HTMLElement>(`[data-tutorial="${selector}"]`)
     if (!el) return null
     // display:none / henüz DOM'a girmemiş elemanları ele
     if (el.offsetParent === null && el.getClientRects().length === 0) return null
     return el
-  }, [])
+  }, [isDesktop])
 
   const advance = useCallback(() => {
     setStepIndex((i) => {
@@ -126,7 +137,7 @@ export function CustomRegistryTutorial({
 
   // Aktif adımın hedefini bul, boyutunu takip et, tıklayınca ilerlet.
   useEffect(() => {
-    if (!active || dismissed || !isDesktop || !collectionKey) return
+    if (!active || dismissed || !collectionKey) return
 
     const step = STEPS[stepIndex]
     let cancelled = false
@@ -156,9 +167,9 @@ export function CustomRegistryTutorial({
         attachedElRef.current = null
       }
     }
-  }, [active, dismissed, isDesktop, collectionKey, stepIndex, findTarget, advance])
+  }, [active, dismissed, collectionKey, stepIndex, findTarget, advance])
 
-  if (!active || dismissed || !isDesktop || !collectionKey || !rect) return null
+  if (!active || dismissed || !collectionKey || !rect) return null
 
   const step = STEPS[stepIndex]
   const title = locale === 'tr' ? step.titleTr : step.titleEn
@@ -213,9 +224,11 @@ export function CustomRegistryTutorial({
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-bureau-muted">
-              <MouseClickIcon />
+              {isDesktop ? <MouseClickIcon /> : <TapIcon />}
               <span className="font-mono text-[9.5px] uppercase tracking-wide">
-                {locale === 'tr' ? 'İşaretli alana tıklayın' : 'Click the highlighted area'}
+                {isDesktop
+                  ? (locale === 'tr' ? 'İşaretli alana tıklayın' : 'Click the highlighted area')
+                  : (locale === 'tr' ? 'İşaretli alana dokunun' : 'Tap the highlighted area')}
               </span>
             </div>
             <button
