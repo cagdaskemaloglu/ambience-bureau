@@ -183,10 +183,13 @@ export function CustomRegistryTutorial({
   return (
     <>
       {/* Spot ışığının etrafındaki 4 karartma paneli — sadece delik dışını kaplar */}
-      <div style={{ position: 'fixed', zIndex: 9998, top: 0, left: 0, right: 0, height: Math.max(holeTop, 0), background: 'rgba(0,0,0,0.55)' }} />
-      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop + holeHeight, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)' }} />
-      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: 0, width: Math.max(holeLeft, 0), height: holeHeight, background: 'rgba(0,0,0,0.55)' }} />
-      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: holeLeft + holeWidth, right: 0, height: holeHeight, background: 'rgba(0,0,0,0.55)' }} />
+      {/* Spot ışığının etrafındaki 4 karartma paneli — mobilde sadece görsel
+          (scroll/dokunmayı engellemez); masaüstünde tıklamayı hedefe
+          yönlendirmek için engelleyici kalır. */}
+      <div style={{ position: 'fixed', zIndex: 9998, top: 0, left: 0, right: 0, height: Math.max(holeTop, 0), background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop + holeHeight, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: 0, width: Math.max(holeLeft, 0), height: holeHeight, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: holeLeft + holeWidth, right: 0, height: holeHeight, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
 
       {/* Hedefi çerçeveleyen amber halka */}
       <div
@@ -204,10 +207,16 @@ export function CustomRegistryTutorial({
         }}
       />
 
-      {/* Alt bilgi çubuğu */}
+      {/* Bilgi çubuğu — masaüstünde alt, mobilde ÜST (hedef alan ekranın alt
+          %40'ında olduğu için, kart oraya çakışıp scroll/dokunmayı
+          engellemesin diye) */}
       <div
         style={{ position: 'fixed', zIndex: 9999 }}
-        className="bottom-6 left-1/2 w-[min(92vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg"
+        className={
+          isDesktop
+            ? 'bottom-6 left-1/2 w-[min(92vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg'
+            : 'top-3 left-1/2 w-[min(94vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg'
+        }
       >
         <div className="flex items-center justify-between border-b border-bureau-rule bg-bureau-black px-4 py-2">
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/70">
