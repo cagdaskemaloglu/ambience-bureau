@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 
 interface TutorialStep {
-  selector: string // data-tutorial değeri (#tutorial-scope içinde aranır)
+  selector: string | null // null = son adım: belirli bir hedef yok, ekrana herhangi bir tıklama biter
   titleTr: string
   titleEn: string
   descTr: string
@@ -48,7 +48,7 @@ const STEPS: TutorialStep[] = [
     descEn: 'Add a HEAD model to complete your design.',
   },
   {
-    selector: 'register-design-btn',
+    selector: null,
     titleTr: 'Adım 6 — Sicile Kayıt',
     titleEn: 'Step 6 — Registration',
     descTr: 'Tasarımınız tamamlandı. Sipariş onay adımlarına geçmek için kaydedin.',
@@ -135,6 +135,15 @@ export function CustomRegistryTutorial({
     })
   }, [])
 
+  // Tutorial'dan çıkış — "Atla" veya son adımın tamamlanması. İkisinde de
+  // kullanıcının pratik amaçlı yaptığı taban/gövde/başlık seçimlerini
+  // sıfırlıyoruz (koleksiyon seçili kalır) ki gerçek tasarımına temiz bir
+  // sayfadan başlasın.
+  const handleDismiss = useCallback(() => {
+    useConfiguratorStore.getState().reset()
+    setDismissed(true)
+  }, [])
+
   // Aktif adımın hedefini bul, boyutunu takip et, tıklayınca ilerlet.
   useEffect(() => {
     if (!active || dismissed || !collectionKey) return
@@ -142,9 +151,18 @@ export function CustomRegistryTutorial({
     const step = STEPS[stepIndex]
     let cancelled = false
 
+    // Son adım: belirli bir hedef yok — ekranın herhangi bir yerine
+    // tıklamak tutorial'ı bitirir (ve tasarımı sıfırlar).
+    if (step.selector === null) {
+      setRect(null)
+      const handleAnyClick = () => handleDismiss()
+      document.addEventListener('click', handleAnyClick)
+      return () => document.removeEventListener('click', handleAnyClick)
+    }
+
     function poll() {
       if (cancelled) return
-      const el = findTarget(step.selector)
+      const el = findTarget(step.selector as string)
       if (el) {
         const r = el.getBoundingClientRect()
         setRect({ top: r.top, left: r.left, width: r.width, height: r.height })
@@ -167,56 +185,55 @@ export function CustomRegistryTutorial({
         attachedElRef.current = null
       }
     }
-  }, [active, dismissed, collectionKey, stepIndex, findTarget, advance])
+  }, [active, dismissed, collectionKey, stepIndex, findTarget, advance, handleDismiss])
 
-  if (!active || dismissed || !collectionKey || !rect) return null
+  if (!active || dismissed || !collectionKey) return null
 
   const step = STEPS[stepIndex]
+  const isFinalStep = step.selector === null
   const title = locale === 'tr' ? step.titleTr : step.titleEn
   const desc = locale === 'tr' ? step.descTr : step.descEn
 
-  const holeTop = rect.top - PAD
-  const holeLeft = rect.left - PAD
-  const holeWidth = rect.width + PAD * 2
-  const holeHeight = rect.height + PAD * 2
+  const holeTop = rect ? rect.top - PAD : 0
+  const holeLeft = rect ? rect.left - PAD : 0
+  const holeWidth = rect ? rect.width + PAD * 2 : 0
+  const holeHeight = rect ? rect.height + PAD * 2 : 0
 
   return (
     <>
-      {/* Spot ışığının etrafındaki 4 karartma paneli — sadece delik dışını kaplar */}
-      {/* Spot ışığının etrafındaki 4 karartma paneli — mobilde sadece görsel
-          (scroll/dokunmayı engellemez); masaüstünde tıklamayı hedefe
-          yönlendirmek için engelleyici kalır. */}
-      <div style={{ position: 'fixed', zIndex: 9998, top: 0, left: 0, right: 0, height: Math.max(holeTop, 0), background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
-      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop + holeHeight, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
-      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: 0, width: Math.max(holeLeft, 0), height: holeHeight, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
-      <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: holeLeft + holeWidth, right: 0, height: holeHeight, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+      {rect && (
+        <>
+          {/* Spot ışığının etrafındaki 4 karartma paneli — mobilde sadece
+              görsel (scroll/dokunmayı engellemez); masaüstünde tıklamayı
+              hedefe yönlendirmek için engelleyici kalır. */}
+          <div style={{ position: 'fixed', zIndex: 9998, top: 0, left: 0, right: 0, height: Math.max(holeTop, 0), background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+          <div style={{ position: 'fixed', zIndex: 9998, top: holeTop + holeHeight, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+          <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: 0, width: Math.max(holeLeft, 0), height: holeHeight, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
+          <div style={{ position: 'fixed', zIndex: 9998, top: holeTop, left: holeLeft + holeWidth, right: 0, height: holeHeight, background: 'rgba(0,0,0,0.55)', pointerEvents: isDesktop ? 'auto' : 'none' }} />
 
-      {/* Hedefi çerçeveleyen amber halka */}
-      <div
-        style={{
-          position: 'fixed',
-          zIndex: 9999,
-          top: holeTop,
-          left: holeLeft,
-          width: holeWidth,
-          height: holeHeight,
-          border: '2px solid #E6792E',
-          borderRadius: 4,
-          boxShadow: '0 0 0 4px rgba(230,121,46,0.25)',
-          pointerEvents: 'none',
-        }}
-      />
+          {/* Hedefi çerçeveleyen amber halka */}
+          <div
+            style={{
+              position: 'fixed',
+              zIndex: 9999,
+              top: holeTop,
+              left: holeLeft,
+              width: holeWidth,
+              height: holeHeight,
+              border: '2px solid #E6792E',
+              borderRadius: 4,
+              boxShadow: '0 0 0 4px rgba(230,121,46,0.25)',
+              pointerEvents: 'none',
+            }}
+          />
+        </>
+      )}
 
-      {/* Bilgi çubuğu — masaüstünde alt, mobilde ÜST (hedef alan ekranın alt
-          %40'ında olduğu için, kart oraya çakışıp scroll/dokunmayı
-          engellemesin diye) */}
+      {/* Bilgi çubuğu — hem masaüstünde hem mobilde ÜST (model/canvas
+          görünümünü kapatmasın, hedef alan zaten daha aşağıda) */}
       <div
         style={{ position: 'fixed', zIndex: 9999 }}
-        className={
-          isDesktop
-            ? 'bottom-6 left-1/2 w-[min(92vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg'
-            : 'top-3 left-1/2 w-[min(94vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg'
-        }
+        className="top-4 left-1/2 w-[min(92vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg"
       >
         <div className="flex items-center justify-between border-b border-bureau-rule bg-bureau-black px-4 py-2">
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/70">
@@ -235,16 +252,20 @@ export function CustomRegistryTutorial({
             <div className="flex items-center gap-2 text-bureau-muted">
               {isDesktop ? <MouseClickIcon /> : <TapIcon />}
               <span className="font-mono text-[9.5px] uppercase tracking-wide">
-                {isDesktop
-                  ? (locale === 'tr' ? 'İşaretli alana tıklayın' : 'Click the highlighted area')
-                  : (locale === 'tr' ? 'İşaretli alana dokunun' : 'Tap the highlighted area')}
+                {isFinalStep
+                  ? (locale === 'tr' ? 'Devam etmek için ekrana tıklayın' : 'Click anywhere to continue')
+                  : isDesktop
+                    ? (locale === 'tr' ? 'İşaretli alana tıklayın' : 'Click the highlighted area')
+                    : (locale === 'tr' ? 'İşaretli alana dokunun' : 'Tap the highlighted area')}
               </span>
             </div>
             <button
-              onClick={() => setDismissed(true)}
+              onClick={handleDismiss}
               className="font-mono text-[9.5px] uppercase tracking-wider text-bureau-subtle hover:text-bureau-black"
             >
-              {locale === 'tr' ? 'Atla ✕' : 'Skip ✕'}
+              {isFinalStep
+                ? (locale === 'tr' ? 'Bitir ✕' : 'Finish ✕')
+                : (locale === 'tr' ? 'Atla ✕' : 'Skip ✕')}
             </button>
           </div>
         </div>
