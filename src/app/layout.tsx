@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
+import { headers } from 'next/headers'
 import './globals.css'
 
 const inter = Inter({
@@ -34,14 +35,19 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
+  // middleware.ts, algılanan dili bu header'a yazıyor — <html lang="tr">
+  // artık İngilizce sayfalarda da yanlışlıkla "tr" kalmıyor.
+  const headersList = await headers()
+  const lang = headersList.get('x-locale') ?? 'tr'
+
   return (
     <html
-      lang="tr"
+      lang={lang}
       suppressHydrationWarning
       className={`${inter.variable} ${jetbrainsMono.variable}`}
     >
