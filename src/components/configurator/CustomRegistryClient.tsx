@@ -198,48 +198,60 @@ export function CustomRegistryClient({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
       <CustomRegistryTutorial locale={locale as 'tr' | 'en'} active={showTutorial} />
 
-      {/* ── DESKTOP: yan yana ── */}
-      <div className="hidden min-h-0 flex-1 border-r border-bureau-black lg:flex">
-        <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
-      </div>
-      <div className="hidden w-[400px] flex-shrink-0 flex-col overflow-y-auto p-4 lg:flex" id="tutorial-scope">
-        {!collectionKey ? (
-          <div>
-            <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
-              {locale === 'tr' ? 'Bir Koleksiyon Seçin' : 'Select a Collection'}
-            </h2>
-            <CollectionPicker collections={collections} activeKey={collectionKey} onSelect={handleSelectCollection} />
+      {/* ── DESKTOP: yan yana + altta sabit fiyat/kaydet çubuğu ── */}
+      <div className="hidden min-h-0 flex-1 flex-col lg:flex">
+        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <div className="flex min-h-0 flex-1 border-r border-bureau-black">
+            <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
           </div>
-        ) : isLoadingParts ? (
-          <div className="flex h-40 items-center justify-center">
-            <span className="font-mono text-[11px] uppercase text-bureau-muted">
-              {locale === 'tr' ? 'Yükleniyor...' : 'Loading...'}
-            </span>
-          </div>
-        ) : (
-          <div className="space-y-5">
-            <button onClick={clearCollection} className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted hover:text-bureau-amber">
-              ← {locale === 'tr' ? 'Koleksiyonu Değiştir' : 'Change Collection'}
-            </button>
-            <ControlPanel />
-            <ConfigSummary onRegister={handleRegisterDesign} />
-            {isSaving && (
-              <p className="text-center font-mono text-[11px] uppercase text-bureau-muted">
-                {locale === 'tr' ? 'Kaydediliyor...' : 'Saving...'}
-              </p>
-            )}
-            {saveError && <p className="text-center text-[12px] text-red-600">{saveError}</p>}
-            {saveSuccess && (
-              <div className="border border-bureau-amber bg-bureau-amber/5 p-3 text-center">
-                <p className="font-mono text-[11px] uppercase tracking-wide text-bureau-amber">
-                  {locale === 'tr' ? 'Kayıt Onaylandı' : 'Registration Confirmed'}
-                </p>
-                <p className="mt-1 text-[12px]">{saveSuccess}</p>
-                <button onClick={() => router.push('/cart')} className="btn-bureau-outline mt-3 w-full">
-                  {locale === 'tr' ? 'Sepete Git' : 'Go to Cart'}
+          <div className="flex w-[460px] flex-shrink-0 flex-col overflow-y-auto p-4" id="tutorial-scope">
+            {!collectionKey ? (
+              <div>
+                <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
+                  {locale === 'tr' ? 'Bir Koleksiyon Seçin' : 'Select a Collection'}
+                </h2>
+                <CollectionPicker collections={collections} activeKey={collectionKey} onSelect={handleSelectCollection} />
+              </div>
+            ) : isLoadingParts ? (
+              <div className="flex h-40 items-center justify-center">
+                <span className="font-mono text-[11px] uppercase text-bureau-muted">
+                  {locale === 'tr' ? 'Yükleniyor...' : 'Loading...'}
+                </span>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                <button onClick={clearCollection} className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted hover:text-bureau-amber">
+                  ← {locale === 'tr' ? 'Koleksiyonu Değiştir' : 'Change Collection'}
                 </button>
+                <ControlPanel />
               </div>
             )}
+          </div>
+        </div>
+
+        {/* Fiyat özeti + Kaydet — artık scroll'un DIŞINDA, her zaman görünür */}
+        {collectionKey && !isLoadingParts && (
+          <div className="flex-shrink-0 border-t border-bureau-black bg-white">
+            <div className="mx-auto w-full max-w-[720px] px-4 py-3">
+              <ConfigSummary onRegister={handleRegisterDesign} compact />
+              {isSaving && (
+                <p className="mt-2 text-center font-mono text-[11px] uppercase text-bureau-muted">
+                  {locale === 'tr' ? 'Kaydediliyor...' : 'Saving...'}
+                </p>
+              )}
+              {saveError && <p className="mt-2 text-center text-[12px] text-red-600">{saveError}</p>}
+              {saveSuccess && (
+                <div className="mt-2 border border-bureau-amber bg-bureau-amber/5 p-3 text-center">
+                  <p className="font-mono text-[11px] uppercase tracking-wide text-bureau-amber">
+                    {locale === 'tr' ? 'Kayıt Onaylandı' : 'Registration Confirmed'}
+                  </p>
+                  <p className="mt-1 text-[12px]">{saveSuccess}</p>
+                  <button onClick={() => router.push('/cart')} className="btn-bureau-outline mt-3 w-full">
+                    {locale === 'tr' ? 'Sepete Git' : 'Go to Cart'}
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -1,12 +1,21 @@
 'use client'
 
+import { useState } from 'react'
 import { useLocale } from 'next-intl'
 import { getLocalizedValue, formatPrice } from '@/lib/sanity'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import type { LampPart } from '@/types'
 
-export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
+export function ConfigSummary({
+  onRegister,
+  compact = false,
+}: {
+  onRegister: () => void
+  /** Masaüstü sabit alt çubuğu için: dar, tek satırlık görünüm + açılır detay. */
+  compact?: boolean
+}) {
   const locale = useLocale()
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const base = useConfiguratorStore((s) => s.base)
   const body = useConfiguratorStore((s) => s.body)
   const head = useConfiguratorStore((s) => s.head)
@@ -55,10 +64,24 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
 
   return (
     <div className="border border-bureau-black">
-      <div className="border-b border-bureau-black bg-bureau-surface px-4 py-2.5">
-        <span className="label-mono">FORM 104-B: DEVICE REGISTRY</span>
-      </div>
+      {compact ? (
+        <button
+          onClick={() => setDetailsOpen((v) => !v)}
+          className="flex w-full items-center justify-between border-b border-bureau-black bg-bureau-surface px-4 py-2"
+        >
+          <span className="label-mono">FORM 104-B: DEVICE REGISTRY</span>
+          <span className="font-mono text-[10px] text-bureau-muted">
+            {detailsOpen ? '▲ ' : '▼ '}
+            {locale === 'tr' ? 'Detaylar' : 'Details'}
+          </span>
+        </button>
+      ) : (
+        <div className="border-b border-bureau-black bg-bureau-surface px-4 py-2.5">
+          <span className="label-mono">FORM 104-B: DEVICE REGISTRY</span>
+        </div>
+      )}
 
+      {(!compact || detailsOpen) && (
       <div className="divide-y divide-dashed divide-bureau-rule">
         <div className="flex items-center justify-between px-4 py-2.5 text-[12px]">
           <span className="text-bureau-muted">{locale === 'tr' ? 'Taban' : 'Base'}</span>
@@ -137,33 +160,62 @@ export function ConfigSummary({ onRegister }: { onRegister: () => void }) {
           </span>
         </div>
       </div>
+      )}
 
-      <div className="flex items-center justify-between border-t border-bureau-black px-4 py-3">
-        <span className="font-mono text-[11px] uppercase tracking-wide">
-          {locale === 'tr' ? 'Toplam' : 'Total'}
-        </span>
-        <span className="font-mono text-[16px] font-semibold">
-          {formatPrice(total, currency, intlLocale)}
-        </span>
-      </div>
+      {compact ? (
+        <div className="flex items-center justify-between gap-4 px-4 py-3">
+          <div>
+            <span className="block font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
+              {locale === 'tr' ? 'Toplam' : 'Total'}
+            </span>
+            <span className="font-mono text-[18px] font-semibold">
+              {formatPrice(total, currency, intlLocale)}
+            </span>
+            {!complete && (
+              <p className="mt-0.5 text-[10.5px] text-bureau-muted">
+                {locale === 'tr' ? 'Tüm parçaları seçin.' : 'Select all parts.'}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={onRegister}
+            disabled={!complete}
+            data-tutorial="register-design-btn"
+            className={`btn-bureau flex-shrink-0 px-8 ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
+          >
+            {locale === 'tr' ? 'Tasarımı Kaydet' : 'Register Design'}
+          </button>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between border-t border-bureau-black px-4 py-3">
+            <span className="font-mono text-[11px] uppercase tracking-wide">
+              {locale === 'tr' ? 'Toplam' : 'Total'}
+            </span>
+            <span className="font-mono text-[16px] font-semibold">
+              {formatPrice(total, currency, intlLocale)}
+            </span>
+          </div>
 
-      <div className="p-4 pt-0">
-        <button
-          onClick={onRegister}
-          disabled={!complete}
-          data-tutorial="register-design-btn"
-          className={`btn-bureau w-full ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
-        >
-          {locale === 'tr' ? 'Tasarımı Kaydet' : 'Register Design'}
-        </button>
-        {!complete && (
-          <p className="mt-2 text-center text-[11px] text-bureau-muted">
-            {locale === 'tr'
-              ? 'Devam etmek için tüm parçaları seçin.'
-              : 'Select all parts to continue.'}
-          </p>
-        )}
-      </div>
+          <div className="p-4 pt-0">
+            <button
+              onClick={onRegister}
+              disabled={!complete}
+              data-tutorial="register-design-btn"
+              className={`btn-bureau w-full ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
+            >
+              {locale === 'tr' ? 'Tasarımı Kaydet' : 'Register Design'}
+            </button>
+            {!complete && (
+              <p className="mt-2 text-center text-[11px] text-bureau-muted">
+                {locale === 'tr'
+                  ? 'Devam etmek için tüm parçaları seçin.'
+                  : 'Select all parts to continue.'}
+              </p>
+            )}
+          </div>
+        </>
+      )}
     </div>
   )
 }

@@ -20,12 +20,20 @@ export function MaterialPicker({
 
   if (!part) return null
 
+  const selected = part.materials.find((m) => m.materialId === selectedMaterialId)
+  const selectedLabel = selected ? getLocalizedValue(selected.label, locale, selected.materialId) : ''
+  const selectedPriceMod = selected
+    ? locale === 'tr'
+      ? selected.priceModifierTRY
+      : selected.priceModifierUSD
+    : 0
+
   return (
-    <div className="mt-3" data-tutorial={dataTutorial}>
-      <span className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted">
-        {locale === 'tr' ? 'Malzeme' : 'Material'}
-      </span>
-      <div className="mt-2 flex flex-wrap gap-2">
+    <div className="mt-2" data-tutorial={dataTutorial}>
+      <div className="flex items-center gap-2">
+        <span className="font-mono text-[9px] uppercase tracking-wide text-bureau-muted">
+          {locale === 'tr' ? 'Renk' : 'Color'}
+        </span>
         {part.materials.map((material) => {
           const isSelected = selectedMaterialId === material.materialId
           const label = getLocalizedValue(material.label, locale, material.materialId)
@@ -34,31 +42,24 @@ export function MaterialPicker({
             <button
               key={material.materialId}
               onClick={() => onSelectMaterial(material.materialId)}
-              className={`flex items-center gap-2 border px-2.5 py-1.5 transition-colors ${
-                isSelected
-                  ? 'border-bureau-amber bg-bureau-amber/5'
-                  : 'border-bureau-rule hover:border-bureau-black'
+              className={`h-6 w-6 flex-shrink-0 rounded-full border-2 transition-transform ${
+                isSelected ? 'scale-110 border-bureau-amber' : 'border-bureau-rule hover:border-bureau-black'
               }`}
+              style={{ backgroundColor: material.color }}
               title={label}
-            >
-              <span
-                className="h-3.5 w-3.5 flex-shrink-0 border border-bureau-rule"
-                style={{ backgroundColor: material.color }}
-              />
-              <span className="text-[10.5px] uppercase leading-none">{label}</span>
-              {(locale === 'tr' ? material.priceModifierTRY : material.priceModifierUSD) > 0 && (
-                <span className="font-mono text-[9.5px] text-bureau-subtle">
-                  +{formatPrice(
-                    locale === 'tr' ? material.priceModifierTRY : material.priceModifierUSD,
-                    locale === 'tr' ? 'TRY' : 'USD',
-                    locale === 'tr' ? 'tr-TR' : 'en-US'
-                  )}
-                </span>
-              )}
-            </button>
+              aria-label={label}
+            />
           )
         })}
       </div>
+      {selected && (
+        <p className="mt-1 font-mono text-[9.5px] uppercase text-bureau-subtle">
+          {selectedLabel}
+          {selectedPriceMod > 0 && (
+            <> — +{formatPrice(selectedPriceMod, locale === 'tr' ? 'TRY' : 'USD', locale === 'tr' ? 'tr-TR' : 'en-US')}</>
+          )}
+        </p>
+      )}
     </div>
   )
 }

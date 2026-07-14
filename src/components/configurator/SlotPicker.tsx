@@ -64,7 +64,7 @@ export function SlotPicker({
           </span>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
         {slotsOfType.map((part) => {
           const name = getLocalizedValue(part.name, locale, '—')
           const count = getPartCount?.(part.partId) ?? 0
@@ -75,7 +75,7 @@ export function SlotPicker({
               key={part.partId}
               onClick={() => onPartClick(part.partId)}
               disabled={disabled}
-              className={`relative flex flex-col items-center gap-1.5 border p-2 transition-colors ${
+              className={`relative flex flex-col items-center gap-1 border p-1.5 transition-colors ${
                 selected
                   ? 'border-bureau-amber bg-bureau-amber/5'
                   : 'border-bureau-rule hover:border-bureau-black'
@@ -83,26 +83,26 @@ export function SlotPicker({
               title={name}
             >
               {count > 1 && (
-                <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-bureau-amber font-mono text-[9px] text-white">
+                <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-bureau-amber font-mono text-[8px] text-white">
                   ×{count}
                 </span>
               )}
-              <div className="flex h-9 w-9 items-center justify-center overflow-hidden bg-bureau-surface">
+              <div className="flex h-7 w-7 items-center justify-center overflow-hidden bg-bureau-surface">
                 {part.thumbnail ? (
                   <Image
                     src={part.thumbnail}
                     alt={name ?? ''}
-                    width={36}
-                    height={36}
+                    width={28}
+                    height={28}
                     className="h-full w-full object-cover"
                   />
                 ) : (
-                  <span className="font-mono text-[8px] text-bureau-subtle">
+                  <span className="font-mono text-[7px] text-bureau-subtle">
                     {part.partId.slice(0, 3).toUpperCase()}
                   </span>
                 )}
               </div>
-              <span className="line-clamp-1 text-center text-[8.5px] uppercase leading-tight">
+              <span className="line-clamp-1 text-center text-[7.5px] uppercase leading-tight">
                 {name}
               </span>
             </button>
