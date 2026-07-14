@@ -198,13 +198,13 @@ export function CustomRegistryClient({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
       <CustomRegistryTutorial locale={locale as 'tr' | 'en'} active={showTutorial} />
 
-      {/* ── DESKTOP: yan yana + altta sabit fiyat/kaydet çubuğu ── */}
-      <div className="hidden min-h-0 flex-1 flex-col lg:flex">
-        <div className="flex min-h-0 flex-1 overflow-hidden">
-          <div className="flex min-h-0 flex-1 border-r border-bureau-black">
-            <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
-          </div>
-          <div className="flex w-[460px] flex-shrink-0 flex-col overflow-y-auto p-4" id="tutorial-scope">
+      {/* ── DESKTOP: yan yana; fiyat/kaydet çubuğu panelin kendi altında ── */}
+      <div className="hidden min-h-0 flex-1 lg:flex">
+        <div className="flex min-h-0 flex-1 border-r border-bureau-black">
+          <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
+        </div>
+        <div className="flex w-[460px] flex-shrink-0 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4" id="tutorial-scope">
             {!collectionKey ? (
               <div>
                 <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
@@ -227,12 +227,10 @@ export function CustomRegistryClient({
               </div>
             )}
           </div>
-        </div>
 
-        {/* Fiyat özeti + Kaydet — artık scroll'un DIŞINDA, her zaman görünür */}
-        {collectionKey && !isLoadingParts && (
-          <div className="flex-shrink-0 border-t border-bureau-black bg-white">
-            <div className="mx-auto w-full max-w-[720px] px-4 py-3">
+          {/* Fiyat özeti + Kaydet — scroll'un DIŞINDA, tek satır, panelin hemen altında */}
+          {collectionKey && !isLoadingParts && (
+            <div className="flex-shrink-0 border-t border-bureau-black bg-white p-3">
               <ConfigSummary onRegister={handleRegisterDesign} compact />
               {isSaving && (
                 <p className="mt-2 text-center font-mono text-[11px] uppercase text-bureau-muted">
@@ -252,8 +250,8 @@ export function CustomRegistryClient({
                 </div>
               )}
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* ── MOBİL: viewer üstte, panel altta ── */}
