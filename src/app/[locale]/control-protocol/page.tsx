@@ -1,9 +1,10 @@
+import { AppShowcase } from '@/components/control-protocol/AppShowcase'
+
 type PageProps = {
   params: {
     locale: string
   }
 }
-
 const content = {
   tr: {
     title: 'Kontrol Protokolü',
@@ -142,6 +143,8 @@ export default function ControlProtocolPage({
             </p>
 
           </div>
+
+          <AppShowcase locale={isTR ? 'tr' : 'en'} />
 
         </div>
       </section>
