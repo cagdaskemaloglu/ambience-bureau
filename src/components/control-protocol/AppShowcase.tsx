@@ -6,7 +6,8 @@ import Image from 'next/image'
 type Locale = 'tr' | 'en'
 
 interface ShowcaseItem {
-  image: string
+  imageTr: string
+  imageEn: string
   titleTr: string
   titleEn: string
   descTr: string
@@ -28,7 +29,8 @@ const GROUPS: ShowcaseGroup[] = [
     labelEn: 'Onboarding',
     items: [
       {
-        image: '/app-showcase/onboarding-1.png',
+        imageTr: '/app-showcase/tr/onboarding-1.png',
+        imageEn: '/app-showcase/en/onboarding-1.png',
         titleTr: 'İlk Tescil / Birimi Bul',
         titleEn: 'New Registration / Find Unit',
         descTr:
@@ -37,7 +39,8 @@ const GROUPS: ShowcaseGroup[] = [
           'When you first open the app, you\'re greeted with "New Registration" and "Find Unit" — choose whether you\'re registering a new device or searching for an existing one on your network.',
       },
       {
-        image: '/app-showcase/onboarding-2.png',
+        imageTr: '/app-showcase/tr/onboarding-2.png',
+        imageEn: '/app-showcase/en/onboarding-2.png',
         titleTr: 'Tescili Başlat → Wi-Fi Tanıtımı',
         titleEn: 'Start Registration → Wi-Fi Setup',
         descTr:
@@ -46,7 +49,8 @@ const GROUPS: ShowcaseGroup[] = [
           'Tapping "Start Registration" connects you to the temporary ESP32 network your device creates, then lets you introduce your own Wi-Fi network to it.',
       },
       {
-        image: '/app-showcase/onboarding-3.png',
+        imageTr: '/app-showcase/tr/onboarding-3.png',
+        imageEn: '/app-showcase/en/onboarding-3.png',
         titleTr: 'Birimi Bul → Cihaz Tarama',
         titleEn: 'Find Unit → Device Scan',
         descTr:
@@ -61,7 +65,8 @@ const GROUPS: ShowcaseGroup[] = [
     labelEn: 'Scene Control',
     items: [
       {
-        image: '/app-showcase/scene-control-1.png',
+        imageTr: '/app-showcase/tr/scene-control-1.png',
+        imageEn: '/app-showcase/en/scene-control-1.png',
         titleTr: 'Model & Aç/Kapa',
         titleEn: 'Model & On/Off',
         descTr:
@@ -70,14 +75,16 @@ const GROUPS: ShowcaseGroup[] = [
           'Your physical light appears on screen as a matching model — tap it to turn the light on or off directly.',
       },
       {
-        image: '/app-showcase/scene-control-2.png',
+        imageTr: '/app-showcase/tr/scene-control-2.png',
+        imageEn: '/app-showcase/en/scene-control-2.png',
         titleTr: 'Renk (Color)',
         titleEn: 'Color',
         descTr: 'Renk seçeneğiyle ışığın tonunu ve sıcaklığını dilediğiniz gibi ayarlayabilirsiniz.',
         descEn: 'The Color option lets you adjust the light\'s hue and warmth exactly how you like.',
       },
       {
-        image: '/app-showcase/scene-control-3.png',
+        imageTr: '/app-showcase/tr/scene-control-3.png',
+        imageEn: '/app-showcase/en/scene-control-3.png',
         titleTr: 'Sahneler',
         titleEn: 'Scenes',
         descTr:
@@ -86,7 +93,8 @@ const GROUPS: ShowcaseGroup[] = [
           'The Scenes option lets you trigger a wide range of pre-built light effects (dynamic atmospheres) with a single tap.',
       },
       {
-        image: '/app-showcase/scene-control-4.png',
+        imageTr: '/app-showcase/tr/scene-control-4.png',
+        imageEn: '/app-showcase/en/scene-control-4.png',
         titleTr: 'Otomasyon',
         titleEn: 'Automation',
         descTr:
@@ -101,14 +109,16 @@ const GROUPS: ShowcaseGroup[] = [
     labelEn: 'More Features',
     items: [
       {
-        image: '/app-showcase/feature-stats.png',
+        imageTr: '/app-showcase/tr/feature-stats.png',
+        imageEn: '/app-showcase/en/feature-stats.png',
         titleTr: 'İstatistikler',
         titleEn: 'Statistics',
         descTr: 'Kullandığınız ışıkların istatistikleri düzenli olarak tutulur — kullanım alışkanlıklarınızı görebilirsiniz.',
         descEn: 'Usage statistics for your lights are tracked continuously — see your usage patterns at a glance.',
       },
       {
-        image: '/app-showcase/feature-groups.png',
+        imageTr: '/app-showcase/tr/feature-groups.png',
+        imageEn: '/app-showcase/en/feature-groups.png',
         titleTr: 'Gruplandırma',
         titleEn: 'Grouping',
         descTr:
@@ -120,9 +130,13 @@ const GROUPS: ShowcaseGroup[] = [
   },
 ]
 
-function PhoneMockup({ src, alt }: { src: string; alt: string }) {
+function PhoneMockup({ src, alt, onClick }: { src: string; alt: string; onClick: () => void }) {
   return (
-    <div className="relative mx-auto w-[260px] flex-shrink-0 sm:w-[280px]">
+    <button
+      onClick={onClick}
+      aria-label={alt}
+      className="relative mx-auto w-[260px] flex-shrink-0 cursor-pointer sm:w-[280px]"
+    >
       {/* Dış çerçeve */}
       <div className="relative aspect-[9/19.5] rounded-[2.4rem] border-[3px] border-bureau-black bg-bureau-black p-2 shadow-xl">
         {/* Ekran */}
@@ -135,7 +149,7 @@ function PhoneMockup({ src, alt }: { src: string; alt: string }) {
       {/* Yan tuşlar (dekoratif) */}
       <div className="absolute -left-[3px] top-[86px] h-[46px] w-[3px] rounded-l bg-bureau-black" />
       <div className="absolute -right-[3px] top-[104px] h-[64px] w-[3px] rounded-r bg-bureau-black" />
-    </div>
+    </button>
   )
 }
 
@@ -146,10 +160,18 @@ export function AppShowcase({ locale }: { locale: Locale }) {
 
   const group = GROUPS[groupIdx]
   const activeItem = group.items[itemIdx]
+  const activeImage = tr ? activeItem.imageTr : activeItem.imageEn
 
   function selectGroup(idx: number) {
     setGroupIdx(idx)
     setItemIdx(0)
+  }
+
+  function handlePhoneClick() {
+    // Telefon ekranına tıklamak da (liste öğesine tıklamak gibi) hem
+    // bilgi metnini hem fotoğrafı bir sonraki adıma ilerletir — grubun
+    // sonuna gelince başa döner.
+    setItemIdx((i) => (i + 1) % group.items.length)
   }
 
   return (
@@ -182,14 +204,33 @@ export function AppShowcase({ locale }: { locale: Locale }) {
       </div>
 
       <div className="flex flex-col items-center gap-10 sm:flex-row sm:items-start sm:gap-12">
-        {/* Sol: telefon mockup */}
-        <PhoneMockup src={activeItem.image} alt={tr ? activeItem.titleTr : activeItem.titleEn} />
+        {/* Sol: telefon mockup + ilerleme göstergesi */}
+        <div className="flex flex-shrink-0 flex-col items-center gap-3">
+          <PhoneMockup
+            src={activeImage}
+            alt={tr ? activeItem.titleTr : activeItem.titleEn}
+            onClick={handlePhoneClick}
+          />
+          <div className="flex items-center gap-1.5">
+            {group.items.map((_, idx) => (
+              <span
+                key={idx}
+                className={`h-1.5 rounded-full transition-all ${
+                  idx === itemIdx ? 'w-5 bg-bureau-amber' : 'w-1.5 bg-bureau-rule'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-bureau-subtle">
+            {tr ? 'İlerlemek için ekrana dokunun' : 'Tap the screen to advance'}
+          </p>
+        </div>
 
         {/* Sağ: özellik listesi */}
         <div className="w-full flex-1 border border-bureau-black">
           {group.items.map((item, idx) => (
             <button
-              key={item.image}
+              key={item.imageTr}
               onClick={() => setItemIdx(idx)}
               className={`flex w-full gap-4 p-4 text-left transition-colors ${
                 idx !== group.items.length - 1 ? 'border-b border-dashed border-bureau-rule' : ''
