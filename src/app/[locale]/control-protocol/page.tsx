@@ -1,9 +1,9 @@
 import { AppShowcase } from '@/components/control-protocol/AppShowcase'
 
 type PageProps = {
-  params: {
+  params: Promise<{
     locale: string
-  }
+  }>
 }
 const content = {
   tr: {
@@ -53,10 +53,11 @@ const content = {
   },
 } as const
 
-export default function ControlProtocolPage({
+export default async function ControlProtocolPage({
   params,
 }: PageProps) {
-  const isTR = params.locale === 'tr'
+  const { locale } = await params
+  const isTR = locale === 'tr'
   const t = isTR ? content.tr : content.en
 
   return (
