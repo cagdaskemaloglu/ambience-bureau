@@ -2,13 +2,54 @@
 
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment, ContactShadows, GizmoHelper, GizmoViewport } from '@react-three/drei'
-import { Suspense } from 'react'
-import * as THREE from 'three'
+import { EffectComposer, Bloom } from '@react-three/postprocessing'
+import { Suspense, useEffect, useMemo } from 'react'
+import * as THREE from 'three'  
+
+// Beyaz lamba parçaları artık beyaz zeminde değil, "uzay mavisi" bir
+// gradient vitrin zemininde görüntüleniyor — hem kontrast/ayırt
+// edilebilirlik için hem de daha "canlı" bir sunum için.
+// Not: bureau-surface global bir token (24+ yerde kart/header arka planı
+// olarak kullanılıyor) — o yüzden ona dokunmadık, sadece bu viewer'a özel
+// yeni renkler tanımladık.
+const VIEWER_BG_TOP = '#060912' // derin uzay/gece göğü
+const VIEWER_BG_BOTTOM = '#1B2A4A' // ufuk çizgisi — daha canlı indigo-mavi
+// Wrapper div'in ilk boyanışı (WebGL context hazır olmadan önce) için CSS
+// karşılığı — flaş/beyaz an olmasın diye.
+const VIEWER_BG_CSS = `linear-gradient(to bottom, ${VIEWER_BG_TOP}, ${VIEWER_BG_BOTTOM})`
+
+/**
+ * Sahne arka planını düz renk yerine dikey bir gradient olarak render eder.
+ * ÖNEMLİ: Bu, gerçek WebGL canvas'ının bir parçası olarak çiziliyor (CSS
+ * değil) — çünkü ürün ekran görüntüsü özelliği (useScreenshot.ts) sadece
+ * canvas piksellerini yakalıyor. CSS gradient kullansaydık, ürün kartı ve
+ * sepetteki görsellerde arka plan hep düz/siyah çıkardı.
+ */
+function GradientBackground({ top, bottom }: { top: string; bottom: string }) {
+  const texture = useMemo(() => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 2
+    canvas.height = 256
+    const ctx = canvas.getContext('2d')!
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height)
+    gradient.addColorStop(0, top)
+    gradient.addColorStop(1, bottom)
+    ctx.fillStyle = gradient
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    const tex = new THREE.CanvasTexture(canvas)
+    tex.colorSpace = THREE.SRGBColorSpace
+    return tex
+  }, [top, bottom])
+
+  useEffect(() => () => texture.dispose(), [texture])
+
+  return <primitive attach="background" object={texture} />
+}
 
 function TechnicalGrid() {
   return (
     <gridHelper
-      args={[600, 30, '#cccccc', '#e8e8e8']}
+      args={[600, 30, '#3a4a6e', '#1a2438']}
       position={[0, 0, 0]}
       rotation={[0, 0, 0]}
     />
@@ -18,7 +59,7 @@ function TechnicalGrid() {
 function SceneLights() {
   return (
     <>
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.55} />
       <directionalLight
         position={[120, 200, 100]}
         intensity={1.1}
@@ -46,7 +87,7 @@ interface SceneProps {
 
 export function Scene({ children, cameraDistance = 750 }: SceneProps) {
   return (
-    <div className="relative h-full w-full bg-bureau-surface">
+    <div className="relative h-full w-full" style={{ background: VIEWER_BG_CSS }}>
       <Canvas
         shadows
         camera={{
@@ -57,13 +98,13 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
         }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, preserveDrawingBuffer: true }}
       >
-        <color attach="background" args={['#FAFAFA']} />
+        <GradientBackground top={VIEWER_BG_TOP} bottom={VIEWER_BG_BOTTOM} />
 
         <SceneLights />
         <TechnicalGrid />
 
         <Suspense fallback={null}>
-          <Environment preset="studio" environmentIntensity={0.5} />
+          <Environment preset="studio" environmentIntensity={0.6} />
           <ContactShadows
             position={[0, 0, 0]}
             opacity={0.3}
@@ -74,6 +115,25 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
         </Suspense>
 
         <Suspense fallback={null}>{children}</Suspense>
+
+        {/*
+          Bloom — lambanın kendi ışığının (LightSimulator.tsx) yakınındaki
+          parlak/aşırı-pozlanmış yüzeylerin yumuşakça "taşması". Işığın
+          kendisini temsil eden ayrı bir görsel obje YOK — bu efekt sadece
+          zaten var olan, gerçekten parlak pikselleri büyütüyor, yani ışık
+          mekanizması yine görünmez/gömülü kalıyor, sadece etkisi belirginleşiyor.
+          NOT: useScreenshot.ts, bu efektin de dahil olduğu en güncel kareyi
+          yakalayacak şekilde güncellendi (ayrıca bkz. o dosyadaki not).
+        */}
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={0.25}
+            luminanceSmoothing={0.9}
+            intensity={1.2}
+            mipmapBlur
+            radius={0.6}
+          />
+        </EffectComposer>
 
         <OrbitControls
           makeDefault
@@ -87,7 +147,7 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
 
         <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
           <GizmoViewport
-            axisColors={['#E6792E', '#1a1a1a', '#999999']}
+            axisColors={['#E6792E', '#EDEDED', '#999999']}
             labelColor="white"
           />
         </GizmoHelper>
