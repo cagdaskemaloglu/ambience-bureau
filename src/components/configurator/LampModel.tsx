@@ -48,9 +48,13 @@ function useResolvedSlots(): ResolvedSlot[] {
 function SlotMesh({
   item,
   onHeightCalculated,
+  glowColor,
+  targetGlowIntensity,
 }: {
   item: ResolvedSlot & { yOffset: number }
   onHeightCalculated: (key: string, height: number) => void
+  glowColor?: string
+  targetGlowIntensity?: number
 }) {
   return (
     <Suspense fallback={null}>
@@ -61,14 +65,24 @@ function SlotMesh({
         metalness={item.material.metalness}
         position={[0, item.yOffset, 0]}
         onHeightCalculated={(height) => onHeightCalculated(item.key, height)}
+        glowColor={glowColor}
+        targetGlowIntensity={targetGlowIntensity}
       />
     </Suspense>
   )
 }
 
+// Işık açıkken başlık (head) parçasının ne kadar parlayacağı — ACES tone
+// mapping altında Bloom eşiğini (bkz. Scene.tsx) rahatça aşacak, ama rengi
+// tamamen beyaza yıkamayacak ölçüde kalibre edildi.
+const MAX_HEAD_GLOW = 2.5
+
 export function LampModel() {
   const slots = useResolvedSlots()
   const [heights, setHeights] = useState<Record<string, number>>({})
+  const lightEnabled = useConfiguratorStore((s) => s.lightEnabled)
+  const lightBrightness = useConfiguratorStore((s) => s.lightBrightness)
+  const lightColor = useConfiguratorStore((s) => s.lightColor)
 
   const handleHeightCalculated = useCallback((key: string, height: number) => {
     setHeights((prev) => {
@@ -91,13 +105,18 @@ export function LampModel() {
 
   return (
     <group>
-      {positioned.map((item) => (
-        <SlotMesh
-          key={item.key}
-          item={item}
-          onHeightCalculated={handleHeightCalculated}
-        />
-      ))}
+      {positioned.map((item) => {
+        const isHead = item.key === 'head'
+        return (
+          <SlotMesh
+            key={item.key}
+            item={item}
+            onHeightCalculated={handleHeightCalculated}
+            glowColor={isHead ? lightColor : undefined}
+            targetGlowIntensity={isHead ? (lightEnabled ? lightBrightness * MAX_HEAD_GLOW : 0) : undefined}
+          />
+        )
+      })}
     </group>
   )
 }
