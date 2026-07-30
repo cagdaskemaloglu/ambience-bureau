@@ -57,6 +57,21 @@ export default async function BureauPage({
             <div className="space-y-5 font-mono text-[12px]">
               <div>
                 <p className="mb-1 text-[9.5px] uppercase tracking-wider text-bureau-subtle">
+                  {tr ? 'Yetkili Kişi' : 'Authorized Person'}
+                </p>
+                <p className="leading-relaxed text-bureau-black">
+                  Çağdaş Kemaloğlu<br />
+                  <a
+                    href="tel:+905317168548"
+                    className="text-bureau-black underline hover:text-bureau-amber transition-colors"
+                  >
+                    +90 531 716 85 48
+                  </a>
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-1 text-[9.5px] uppercase tracking-wider text-bureau-subtle">
                   {tr ? 'Atölye Adresi' : 'Workshop Address'}
                 </p>
                 <p className="leading-relaxed text-bureau-black">
