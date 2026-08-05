@@ -236,13 +236,15 @@ export async function getLampPartsByCollection(collectionKey: string) {
         ${LOCALIZED_FIELD('description')},
         "modelUrl": modelFile.asset->url,
         "thumbnail": thumbnail.asset->url,
-        materials[]{
-          materialId,
+        materials[]->{
+          "materialId": materialId.current,
           color,
           roughness,
           metalness,
           priceModifierTRY,
           priceModifierUSD,
+          isTranslucent,
+          opacity,
           ${LOCALIZED_FIELD('label')},
           "thumbnail": thumbnail.asset->url
         }

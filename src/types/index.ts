@@ -128,6 +128,8 @@ export interface LampMaterial {
   priceModifierUSD: number
   label?: LocalizedString[]
   thumbnail?: string // URL
+  isTranslucent?: boolean
+  opacity?: number // 0–1, sadece isTranslucent true ise anlamlı
 }
 
 export interface LampPart {

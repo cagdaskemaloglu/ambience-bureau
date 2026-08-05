@@ -79,68 +79,12 @@ export const lampPartSchema = defineType({
     defineField({
       name: 'materials',
       title: 'Available Materials',
+      description: 'Studio > Materials altında bir kere tanımlanan malzemelerden bu parça için geçerli olanları seçin.',
       type: 'array',
       of: [
         defineArrayMember({
-          type: 'object',
-          name: 'material',
-          fields: [
-            defineField({ name: 'materialId', title: 'Material ID', type: 'string', validation: (R) => R.required() }),
-            localizedStringField({ name: 'label', title: 'Label (display name)' }),
-            defineField({
-              name: 'color',
-              title: 'Color (hex)',
-              description: 'Hex renk kodu. Örn: #2A2A2A',
-              type: 'string',
-              validation: (R) => R.regex(/^#[0-9A-Fa-f]{6}$/, 'Geçerli hex renk kodu giriniz'),
-            }),
-            defineField({
-              name: 'roughness',
-              title: 'Roughness (0–1)',
-              type: 'number',
-              validation: (R) => R.min(0).max(1),
-              initialValue: 0.5,
-            }),
-            defineField({
-              name: 'metalness',
-              title: 'Metalness (0–1)',
-              type: 'number',
-              validation: (R) => R.min(0).max(1),
-              initialValue: 0,
-            }),
-            defineField({
-              name: 'priceModifierTRY',
-              title: 'Price Modifier — TRY (₺)',
-              description: 'Bu malzeme seçimi temel fiyata ne kadar ekler? 0 = fark yok',
-              type: 'number',
-              initialValue: 0,
-            }),
-            defineField({
-              name: 'priceModifierUSD',
-              title: 'Price Modifier — USD ($)',
-              description: 'Bu malzeme seçimi temel fiyata ne kadar ekler (USD)? 0 = fark yok',
-              type: 'number',
-              initialValue: 0,
-            }),
-            defineField({
-              name: 'thumbnail',
-              title: 'Material Thumbnail',
-              type: 'image',
-            }),
-          ],
-          preview: {
-            select: {
-              materialId: 'materialId',
-              color: 'color',
-              priceModifierTRY: 'priceModifierTRY',
-            },
-            prepare({ materialId, color, priceModifierTRY }) {
-              return {
-                title: materialId ?? '—',
-                subtitle: `${color ?? ''} ${priceModifierTRY ? `+₺${priceModifierTRY}` : ''}`,
-              }
-            },
-          },
+          type: 'reference',
+          to: [{ type: 'material' }],
         }),
       ],
       validation: (R) => R.required().min(1),

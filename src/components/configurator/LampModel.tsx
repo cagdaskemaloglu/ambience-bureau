@@ -63,6 +63,7 @@ function SlotMesh({
         color={item.material.color}
         roughness={item.material.roughness}
         metalness={item.material.metalness}
+        opacity={item.material.isTranslucent ? (item.material.opacity ?? 0.6) : undefined}
         position={[0, item.yOffset, 0]}
         onHeightCalculated={(height) => onHeightCalculated(item.key, height)}
         glowColor={glowColor}

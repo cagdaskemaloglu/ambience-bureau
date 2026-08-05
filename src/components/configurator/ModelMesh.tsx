@@ -13,6 +13,12 @@ interface ModelMeshProps {
   position?: [number, number, number]
   onHeightCalculated?: (height: number) => void
   /**
+   * Yarı saydam filament malzemeleri için (bkz. material.ts'teki
+   * isTranslucent/opacity alanları). Verilmezse (opak malzeme) tamamen
+   * dolgun render edilir.
+   */
+  opacity?: number
+  /**
    * Bu parçanın kendi ışık mekanizmasını barındırdığını (başlık/head)
    * belirtir — verilirse malzeme, hedef yoğunluğa doğru yumuşakça
    * (useFrame damp ile) parlayıp sönen bir "emissive" kazanır. Mesafeye
@@ -55,7 +61,7 @@ function useGlowMaterial(
   })
 }
 
-function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated, glowColor, targetGlowIntensity }: ModelMeshProps) {
+function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
   const geometry = useSTLGeometry(url)
   useReportHeight(geometry, onHeightCalculated)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
@@ -70,12 +76,14 @@ function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHei
         metalness={metalness}
         emissive="#000000"
         emissiveIntensity={0}
+        opacity={opacity ?? 1}
+        transparent={opacity !== undefined && opacity < 1}
       />
     </mesh>
   )
 }
 
-function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated, glowColor, targetGlowIntensity }: ModelMeshProps) {
+function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
   const geometry = useGLTFGeometry(url)
   useReportHeight(geometry, onHeightCalculated)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
@@ -90,6 +98,8 @@ function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHe
         metalness={metalness}
         emissive="#000000"
         emissiveIntensity={0}
+        opacity={opacity ?? 1}
+        transparent={opacity !== undefined && opacity < 1}
       />
     </mesh>
   )
