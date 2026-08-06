@@ -5,23 +5,55 @@ import { updateSupabaseSession } from '@/lib/supabase/middleware'
 
 const handleI18nRouting = createMiddleware(routing)
 
+// next-intl'in kendi cookie konvansiyonu — bir kere set edilince, bir
+// sonraki tüm istekler için Accept-Language'den DAHA ÖNCELİKLİ okunur.
+// Kullanıcı elle dil değiştirdiğinde de next-intl bu cookie'yi otomatik
+// günceller — yani geo-tespiti aşağıda SADECE bu cookie hiç yoksa
+// (gerçekten ilk ziyaret) devreye giriyor, sonraki ziyaretlerde veya
+// elle yapılan değişikliklerde tekrar araya girmiyor.
+const LOCALE_COOKIE = 'NEXT_LOCALE'
+
 /**
- * NOT: Next.js 16'da dosya konvansiyonu "middleware.ts" -> "proxy.ts" ve
- * export edilen fonksiyon adı "middleware" -> "proxy" olarak değişti.
- * (next-intl'in kendi createMiddleware() fonksiyonunun adı aynı kalıyor —
- * sadece BİZİM dışa aktardığımız fonksiyonun adı ve dosya adı değişti.)
- *
- * Bu dosya önceden hiç yoktu. Sonucu:
- *  1) "/" (çıplak kök domain) next-intl tarafından hiç yönetilmiyordu —
- *     localePrefix:'always' olduğu için muhtemelen 404 dönüyordu.
- *  2) src/lib/supabase/middleware.ts içindeki updateSupabaseSession hiçbir
- *     yerden çağrılmıyordu — tarayıcıdaki Supabase session cookie'leri
- *     otomatik yenilenmiyordu.
- *  3) <html lang="tr"> src/app/layout.tsx'te sabit kodluydu.
- * Bu dosya üçünü birden çözüyor.
+ * NOT: Bu proje önceden next-intl'in varsayılan davranışına göre dili
+ * TARAYICI DİLİNE (Accept-Language header) göre seçiyordu — ülkeye göre
+ * DEĞİL. "Türkiye'deki kullanıcıya Türkçe, dışarıdaki kullanıcıya
+ * İngilizce" kuralı için bunun yerine Vercel'in her isteğe otomatik
+ * eklediği `x-vercel-ip-country` header'ını (gerçek coğrafi konum)
+ * kullanıyoruz. Bu header sadece Vercel'de üretim ortamında mevcuttur —
+ * yerel geliştirmede (`next dev`) bulunmaz, o durumda sessizce eski
+ * (Accept-Language tabanlı) davranışa düşülür.
  */
+function resolveGeoLocale(request: NextRequest): 'tr' | 'en' | null {
+  const country = request.headers.get('x-vercel-ip-country')
+  if (!country) return null // Vercel dışı/yerel ortam — geo verisi yok
+  return country === 'TR' ? 'tr' : 'en'
+}
+
 export async function proxy(request: NextRequest) {
+  const hasLocaleCookie = request.cookies.has(LOCALE_COOKIE)
+  let geoLocale: 'tr' | 'en' | null = null
+
+  if (!hasLocaleCookie) {
+    geoLocale = resolveGeoLocale(request)
+    if (geoLocale) {
+      // next-intl'in middleware'i bu isteği işlerken cookie'yi Accept-
+      // Language'den önce okuyacak şekilde, gelen request'in cookie
+      // jar'ına şimdiden yazıyoruz.
+      request.cookies.set(LOCALE_COOKIE, geoLocale)
+    }
+  }
+
   const response = handleI18nRouting(request)
+
+  if (geoLocale) {
+    // Kararı response'a da yaz ki tarayıcı bunu kalıcı olarak saklasın —
+    // bir sonraki ziyarette tekrar geo-tespiti yapılmasın.
+    response.cookies.set(LOCALE_COOKIE, geoLocale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365, // 1 yıl
+      sameSite: 'lax',
+    })
+  }
 
   const firstSegment = request.nextUrl.pathname.split('/')[1]
   if ((routing.locales as readonly string[]).includes(firstSegment)) {
