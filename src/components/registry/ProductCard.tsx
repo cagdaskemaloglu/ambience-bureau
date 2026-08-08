@@ -4,6 +4,7 @@ import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import Image from 'next/image'
 import { urlFor, getLocalizedValue, formatPriceForLocale } from '@/lib/sanity'
+import { AddToCartMini } from './AddToCartMini'
 import type { ProductCard as ProductCardType } from '@/types'
 
 const STATUS_LABEL: Record<string, { tr: string; en: string }> = {
@@ -27,26 +28,29 @@ export function ProductCard({ product }: { product: ProductCardType }) {
   return (
     <Link
       href={`/registry/${product.slug.current}`}
-      className="group flex flex-col border-r border-b border-bureau-black p-5 no-underline transition-colors hover:bg-bureau-surface"
+      className="group flex flex-col border-r border-b border-bureau-black p-2.5 no-underline transition-colors hover:bg-bureau-surface"
     >
       {/* Top: serial + status */}
-      <div className="mb-3.5 flex items-start justify-between">
-        <span className="serial">REG. NO. {product.registryNo}</span>
-        <span className={statusClass}>● {statusLabel}</span>
+      <div className="mb-2 flex items-start justify-between">
+        <span className="serial text-[9px]">REG. NO. {product.registryNo}</span>
+        <span className={`${statusClass} text-[9px]`}>● {statusLabel}</span>
       </div>
 
-      {/* Image */}
-      <div className="mb-4.5 flex h-40 items-center justify-center border border-bureau-rule bg-bureau-surface">
+      {/* Image — 3:4 (portre) oranında: çektiğiniz fotoğrafların gerçek
+          oranı (3024×4032). Önceden sabit ve yatay (h-40) bir kutuydu,
+          bu da dikey fotoğrafların içinde küçücük kalıp devasa boş alan
+          bırakmasına yol açıyordu. */}
+      <div className="mb-2 flex aspect-[3/4] w-full items-center justify-center border border-bureau-rule bg-bureau-surface">
         {product.image ? (
           <Image
-            src={urlFor(product.image).width(280).height(220).fit('max').url()}
+            src={urlFor(product.image).width(600).height(800).fit('max').url()}
             alt={product.image.alt ?? name ?? ''}
-            width={280}
-            height={160}
-            className="h-full w-full object-contain p-3"
+            width={600}
+            height={800}
+            className="h-full w-full object-contain p-1.5"
           />
         ) : (
-          <span className="font-mono text-[11px] text-bureau-subtle uppercase">
+          <span className="font-mono text-[9px] text-bureau-subtle uppercase">
             No Image on Record
           </span>
         )}
@@ -54,27 +58,29 @@ export function ProductCard({ product }: { product: ProductCardType }) {
 
       {/* Meta */}
       <div className="flex-grow">
-        <h3 className="mb-1.5 text-[13.5px] font-semibold uppercase tracking-bureau">
+        <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-bureau">
           {name}
         </h3>
         {product.shortDescription && (
-          <p className="mb-3.5 text-[11.5px] leading-relaxed text-bureau-muted">
+          <p className="mb-2 text-[9.5px] leading-relaxed text-bureau-muted">
             {getLocalizedValue(product.shortDescription, locale, '')}
           </p>
         )}
       </div>
 
       {/* Foot: price + spec */}
-      <div className="mt-auto flex items-center justify-between border-t border-dashed border-bureau-rule pt-3">
-        <span className="font-mono text-[13px] font-semibold">
+      <div className="mt-auto flex items-center justify-between border-t border-dashed border-bureau-rule pt-2">
+        <span className="font-mono text-[11px] font-semibold">
           {formatPriceForLocale(product, locale)}
         </span>
         {product.photonOutput && (
-          <span className="font-mono text-[10.5px] text-bureau-subtle">
+          <span className="font-mono text-[9px] text-bureau-subtle">
             {product.photonOutput}
           </span>
         )}
       </div>
+
+      <AddToCartMini product={product} />
     </Link>
   )
 }
