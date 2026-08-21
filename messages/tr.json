@@ -13,7 +13,7 @@
   "docStrip": {
     "classification": "SINIFLANDIRMA: AÇIK KATALOG",
     "locale": "YEREL",
-    "objectsOnRecord": "KAYITLI NESNE"
+    "objectsOnRecord": "KAYITLI NESNELER"
   },
   "registry": {
     "section": "BÖLÜM 01",
@@ -29,7 +29,7 @@
       "wall": "Duvar Montajı",
       "desk": "Masa Birimi",
       "floor": "Zemin Sistemi",
-      "strip": "Şerit Eleman",
+      "strip": "Şerit Elemanı",
       "status": "Durum",
       "certified": "Sertifikalı (Mevcut)",
       "limited": "Sınırlı Seri",

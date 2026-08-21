@@ -130,15 +130,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
       <header className="relative z-40 flex-shrink-0 border-b border-bureau-black bg-white">
         <div className="flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
-          {/* Brand */}
+          {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
           <Link href="/" className="group no-underline flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-            <Image
-              src="/logo.png"
-              alt="The Ambience Bureau"
-              width={100}
-              height={100}
-              priority
-            />
             <div>
               <div className="text-sm font-semibold tracking-[0.12em] uppercase text-bureau-black sm:text-base">
                 THE AMBIENCE BUREAU

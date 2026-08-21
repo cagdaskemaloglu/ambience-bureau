@@ -105,3 +105,16 @@
     @apply font-mono text-[10px] tracking-wider uppercase font-semibold text-[#b03224];
   }
 }
+
+/* Yatay scroll edilen çubuklarda (mobil kategori/parça seçimi gibi)
+   scrollbar'ı gizler — halihazırda MobileSlotPicker.tsx'te kullanılıyordu
+   ama hiç tanımlanmamıştı, burada da düzeltildi. */
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+  }
+}
