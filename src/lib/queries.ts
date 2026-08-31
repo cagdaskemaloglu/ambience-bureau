@@ -22,6 +22,7 @@ const PRODUCT_CARD_FRAGMENT = `
   priceTRY,
   priceUSD,
   photonOutput,
+  isConfigurable,
   ${LOCALIZED_FIELD('name')},
   ${LOCALIZED_FIELD('shortDescription')},
   "image": images[0]{
@@ -33,8 +34,12 @@ const PRODUCT_CARD_FRAGMENT = `
 const PRODUCT_FULL_FRAGMENT = `
   ${PRODUCT_CARD_FRAGMENT},
   vatIncluded,
-  isConfigurable,
-  configuratorCollection,
+  "configuratorCollection": configuratorCollection->key.current,
+  configuratorParts[]{
+    slotType,
+    "partId": part->partId.current,
+    "materialId": material->materialId.current
+  },
   specs[]{key, value},
   compatibility,
   images[]{${IMAGE_FRAGMENT}},

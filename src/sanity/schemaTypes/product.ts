@@ -196,10 +196,98 @@ export const productSchema = defineType({
 
     defineField({
       name: 'configuratorCollection',
-      title: 'Configurator Collection Key',
-      description: 'Konfigüratörde hangi parça setini kullanacak? (örn: "totem", "waves")',
-      type: 'string',
+      title: 'Configurator Collection',
+      description: 'Bu ürün "Customize" ile açıldığında Custom Registry\'de hangi koleksiyon yüklenecek?',
+      type: 'reference',
+      to: [{ type: 'collection' }],
       hidden: ({ document }) => !document?.isConfigurable,
+      validation: (R) =>
+        R.custom((value, context) => {
+          const doc = context.document as { isConfigurable?: boolean } | undefined
+          if (doc?.isConfigurable && !value) return 'Configurable ürünler için koleksiyon seçilmeli'
+          return true
+        }),
+    }),
+
+    defineField({
+      name: 'configuratorParts',
+      title: 'Customize — Preset Parça/Malzeme Kombinasyonu',
+      description:
+        '"Customize" butonuna basıldığında Custom Registry\'de otomatik yüklenecek tam kombinasyon. Bir "Base", bir "Head" ve istenen sayıda "Body" katmanı ekleyin — Body katmanları buradaki SIRAYLA (yukarıdan aşağıya) istiflenir.',
+      type: 'array',
+      hidden: ({ document }) => !document?.isConfigurable,
+      validation: (R) =>
+        R.custom((value, context) => {
+          const doc = context.document as { isConfigurable?: boolean } | undefined
+          if (!doc?.isConfigurable) return true
+          const entries = (value ?? []) as Array<{ slotType?: string }>
+          if (!entries.some((e) => e.slotType === 'base')) return 'Bir "Base" satırı eklenmeli'
+          if (!entries.some((e) => e.slotType === 'head')) return 'Bir "Head" satırı eklenmeli'
+          return true
+        }),
+      of: [
+        defineArrayMember({
+          type: 'object',
+          name: 'configuratorPartEntry',
+          fields: [
+            defineField({
+              name: 'slotType',
+              title: 'Slot',
+              type: 'string',
+              options: {
+                list: [
+                  { title: 'Base (Taban)', value: 'base' },
+                  { title: 'Body (Gövde katmanı)', value: 'body' },
+                  { title: 'Head (Başlık)', value: 'head' },
+                ],
+                layout: 'radio',
+              },
+              validation: (R) => R.required(),
+            }),
+            defineField({
+              name: 'part',
+              title: 'Lamp Part',
+              type: 'reference',
+              to: [{ type: 'lampPart' }],
+              options: {
+                filter: ({ document }) => {
+                  const collectionId = (document as { configuratorCollection?: { _ref?: string } })
+                    ?.configuratorCollection?._ref
+                  if (!collectionId) return { filter: '' }
+                  return { filter: '$collectionId in collections[]._ref', params: { collectionId } }
+                },
+              },
+              validation: (R) => R.required(),
+            }),
+            defineField({
+              name: 'material',
+              title: 'Material',
+              type: 'reference',
+              to: [{ type: 'material' }],
+              options: {
+                filter: ({ parent }) => {
+                  const partId = (parent as { part?: { _ref?: string } })?.part?._ref
+                  if (!partId) return { filter: '' }
+                  return {
+                    filter: '_id in *[_type == "lampPart" && _id == $partId][0].materials[]._ref',
+                    params: { partId },
+                  }
+                },
+              },
+              validation: (R) => R.required(),
+            }),
+          ],
+          preview: {
+            select: { slotType: 'slotType', partRef: 'part._ref', materialRef: 'material._ref' },
+            prepare({ slotType, partRef, materialRef }) {
+              return {
+                title: `[${(slotType ?? '?').toUpperCase()}]`,
+                subtitle: `part: ${partRef ? partRef.slice(0, 8) : '—'}… / material: ${materialRef ? materialRef.slice(0, 8) : '—'}…`,
+              }
+            },
+          },
+        }),
+      ],
     }),
 
     // ── SEO ───────────────────────────────────────────────

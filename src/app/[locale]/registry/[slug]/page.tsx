@@ -11,6 +11,7 @@ import { getLocalizedValue, urlFor, formatPriceForLocale, getPriceForLocale } fr
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { SpecTable } from '@/components/product/SpecTable'
 import { AddToCartButton } from '@/components/product/AddToCartButton'
+import { CustomizeButton } from '@/components/product/CustomizeButton'
 import { RelatedProducts } from '@/components/product/RelatedProducts'
 import { Link } from '@/i18n/navigation'
 
@@ -148,6 +149,7 @@ export default async function ProductDetailPage({ params }: Props) {
 
           <div className="mb-6">
             <AddToCartButton product={product} />
+            <CustomizeButton slug={product.slug.current} isConfigurable={product.isConfigurable} />
           </div>
 
           <SpecTable
@@ -155,19 +157,6 @@ export default async function ProductDetailPage({ params }: Props) {
             compatibility={product.compatibility}
             photonOutput={product.photonOutput}
           />
-
-          {product.isConfigurable && (
-            <div className="mt-5 border border-bureau-amber bg-bureau-amber/5 p-4">
-              <p className="mb-2.5 text-[12px] leading-relaxed">
-                {locale === 'tr'
-                  ? 'Bu nesne özelleştirilebilir. Kendi konfigürasyonunuzu Custom Registry üzerinden oluşturun.'
-                  : 'This object is configurable. Build your own configuration via Custom Registry.'}
-              </p>
-              <Link href="/custom-registry" className="btn-bureau-amber w-full text-center">
-                Custom Registry →
-              </Link>
-            </div>
-          )}
         </div>
       </div>
 

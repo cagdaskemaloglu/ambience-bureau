@@ -39,9 +39,35 @@ interface ConfiguratorStore {
   lightEnabled: boolean
   iotEnabled: boolean
 
+  /**
+   * LampModel tarafından her gerçek geometri ölçümünde güncellenir —
+   * CameraFit'in gerçek stack yüksekliğine göre doğru mesafeyi
+   * hesaplayabilmesi için (50 birimlik tahminî yükseklik yerine).
+   */
+  stackTotalHeight: number
+  stackPartCount: number
+  setStackMetrics: (totalHeight: number, partCount: number) => void
+
+  /** "Kamerayı Sığdır" butonuna her basıldığında artar — CameraFit bunu izler. */
+  cameraFitRequestId: number
+  requestCameraFit: () => void
+
   // ── Actions ──────────────────────────────────────────────
   setCollection: (key: string, parts: LampPart[], hardwareFees?: Partial<HardwareFees>) => void
   clearCollection: () => void
+
+  /**
+   * Bir ürünün "Customize" butonundan gelen tam parça/malzeme kombinasyonunu
+   * yükler. Mevcut yarım kalmış tasarımın üzerine SORMADAN direkt yazılır
+   * (setCollection ile aynı davranış). Body katmanları preset dizisindeki
+   * sırayla istiflenir.
+   */
+  loadPreset: (
+    key: string,
+    parts: LampPart[],
+    hardwareFees: Partial<HardwareFees> | undefined,
+    preset: Array<{ slotType: SlotType; partId: string; materialId: string }>
+  ) => void
 
   /** Base/Head için: aynı parçaya tekrar tıklanırsa seçim kalkar (toggle). */
   toggleSinglePart: (slot: 'base' | 'head', partId: string) => void
@@ -85,6 +111,17 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   lightEnabled: true,
   iotEnabled: true,
 
+  stackTotalHeight: 0,
+  stackPartCount: 0,
+  setStackMetrics: (totalHeight, partCount) =>
+    set((state) => {
+      if (state.stackTotalHeight === totalHeight && state.stackPartCount === partCount) return state
+      return { stackTotalHeight: totalHeight, stackPartCount: partCount }
+    }),
+
+  cameraFitRequestId: 0,
+  requestCameraFit: () => set((state) => ({ cameraFitRequestId: state.cameraFitRequestId + 1 })),
+
   setCollection: (key, parts, hardwareFees) => {
     // Object.assign yerine tek tek kontrol: Sanity'den bir alan boş/undefined
     // gelirse (henüz doldurulmadıysa) varsayılanın üzerine yazılmasın.
@@ -102,6 +139,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       base: { ...initialSlotState },
       body: [],
       head: { ...initialSlotState },
+      stackTotalHeight: 0,
+      stackPartCount: 0,
     })
   },
 
@@ -113,7 +152,33 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       base: { ...initialSlotState },
       body: [],
       head: { ...initialSlotState },
+      stackTotalHeight: 0,
+      stackPartCount: 0,
     }),
+
+  loadPreset: (key, parts, hardwareFees, preset) => {
+    const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
+    if (hardwareFees) {
+      for (const k of Object.keys(merged) as Array<keyof HardwareFees>) {
+        if (typeof hardwareFees[k] === 'number') merged[k] = hardwareFees[k] as number
+      }
+    }
+
+    const baseEntry = preset.find((p) => p.slotType === 'base')
+    const headEntry = preset.find((p) => p.slotType === 'head')
+    const bodyEntries = preset.filter((p) => p.slotType === 'body').slice(0, MAX_BODY_LAYERS)
+
+    set({
+      collectionKey: key,
+      availableParts: parts,
+      hardwareFees: merged,
+      base: baseEntry ? { partId: baseEntry.partId, materialId: baseEntry.materialId } : { ...initialSlotState },
+      body: bodyEntries.map((b) => ({ partId: b.partId, materialId: b.materialId })),
+      head: headEntry ? { partId: headEntry.partId, materialId: headEntry.materialId } : { ...initialSlotState },
+      stackTotalHeight: 0,
+      stackPartCount: 0,
+    })
+  },
 
   toggleSinglePart: (slot, partId) => {
     const part = get().availableParts.find((p) => p.partId === partId)

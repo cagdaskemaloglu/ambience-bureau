@@ -53,7 +53,8 @@
       "certified": "Certified",
       "limited": "Limited Series",
       "decommissioned": "Decommissioned"
-    }
+    },
+    "customize": "Özelleştir"
   },
   "customRegistry": {
     "title": "Custom Registry",

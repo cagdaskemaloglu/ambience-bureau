@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useCallback, useMemo, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { ModelMesh } from './ModelMesh'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import type { LampPart } from '@/types'
@@ -101,6 +101,15 @@ export function LampModel() {
       return { ...slot, yOffset }
     })
   }, [slots, heights])
+
+  // CameraFit'in gerçek stack yüksekliğine göre doğru mesafeyi
+  // hesaplayabilmesi için ölçülen toplam yükseklik + parça sayısını
+  // store'a bildir (50 birimlik tahminî yükseklik yerine gerçek değer).
+  const setStackMetrics = useConfiguratorStore((s) => s.setStackMetrics)
+  useEffect(() => {
+    const totalHeight = positioned.reduce((sum, slot) => sum + (heights[slot.key] ?? 50), 0)
+    setStackMetrics(totalHeight, positioned.length)
+  }, [positioned, heights, setStackMetrics])
 
   if (positioned.length === 0) return null
 

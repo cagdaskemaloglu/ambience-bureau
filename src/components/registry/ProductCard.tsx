@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation'
 import Image from 'next/image'
 import { urlFor, getLocalizedValue, formatPriceForLocale } from '@/lib/sanity'
 import { AddToCartMini } from './AddToCartMini'
+import { CustomizeButtonMini } from './CustomizeButtonMini'
 import type { ProductCard as ProductCardType } from '@/types'
 
 const STATUS_LABEL: Record<string, { tr: string; en: string }> = {
@@ -81,6 +82,7 @@ export function ProductCard({ product }: { product: ProductCardType }) {
       </div>
 
       <AddToCartMini product={product} />
+      <CustomizeButtonMini slug={product.slug.current} isConfigurable={product.isConfigurable} />
     </Link>
   )
 }

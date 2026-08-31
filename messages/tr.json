@@ -53,7 +53,8 @@
       "certified": "Sertifikalı",
       "limited": "Sınırlı Seri",
       "decommissioned": "Hizmet Dışı"
-    }
+    },
+    "customize": "Özelleştir"
   },
   "customRegistry": {
     "title": "Özel Kayıt",
@@ -142,5 +143,6 @@
     "loading": "Yükleniyor...",
     "error": "Bir hata oluştu.",
     "backToRegistry": "Kayda Dön"
-  }
+  },
+  "customize": "Özelleştir"
 }

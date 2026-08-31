@@ -59,6 +59,7 @@ export interface ProductCard {
   priceTRY: number
   priceUSD: number
   photonOutput?: PhotonOutput
+  isConfigurable: boolean
   name: LocalizedString[]
   shortDescription?: LocalizedString[]
   image?: SanityImage
@@ -68,10 +69,16 @@ export interface ProductCard {
   }
 }
 
+export interface ProductConfiguratorPart {
+  slotType: SlotType
+  partId: string
+  materialId: string
+}
+
 export interface Product extends ProductCard {
   vatIncluded: boolean
-  isConfigurable: boolean
-  configuratorCollection?: string
+  configuratorCollection?: string // konfigüratördeki Collection.key (resolved)
+  configuratorParts?: ProductConfiguratorPart[] // "Customize" preset kombinasyonu
   specs?: ProductSpec[]
   compatibility?: ControlCompatibility[]
   images?: SanityImage[]

@@ -1,8 +1,34 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { getAllLampCollections } from '@/lib/queries'
+import { getAllLampCollections, getProductBySlug } from '@/lib/queries'
 import { CustomRegistryClient } from '@/components/configurator/CustomRegistryClient'
 import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase/server'
+import type { ProductConfiguratorPart } from '@/types'
+
+// "Customize" butonundan gelen ürün (?preset=<slug>) için Custom Registry'ye
+// aktarılacak veri: hangi koleksiyon + tam parça/malzeme kombinasyonu.
+// Sonuç durumu ayırt edilir ki sessizce boş koleksiyon seçim ekranına
+// düşülmesin — kullanıcıya/admin'e NEDEN görünsün (bkz. presetError).
+type PresetResult =
+  | { status: 'ok'; design: { collectionKey: string; parts: ProductConfiguratorPart[] } }
+  | { status: 'not-requested' }
+  | { status: 'not-found' } // preset=<slug> var ama böyle bir ürün yok
+  | { status: 'not-configurable' } // ürün var ama isConfigurable=false
+  | { status: 'incomplete' } // isConfigurable=true ama configuratorCollection/configuratorParts eksik
+
+async function getPresetDesign(slug: string | undefined): Promise<PresetResult> {
+  if (!slug) return { status: 'not-requested' }
+  const product = await getProductBySlug(slug)
+  if (!product) return { status: 'not-found' }
+  if (!product.isConfigurable) return { status: 'not-configurable' }
+  if (!product.configuratorCollection || !product.configuratorParts?.length) {
+    return { status: 'incomplete' }
+  }
+  return {
+    status: 'ok',
+    design: { collectionKey: product.configuratorCollection, parts: product.configuratorParts },
+  }
+}
 
 export async function generateMetadata({
   params,
@@ -50,13 +76,17 @@ export default async function CustomRegistryPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ collection?: string }>
+  searchParams: Promise<{ collection?: string; preset?: string }>
 }) {
   const { locale } = await params
-  const { collection } = await searchParams
+  const { collection, preset } = await searchParams
   const t = await getTranslations({ locale, namespace: 'customRegistry' })
   const collections = await getAllLampCollections()
-  const showTutorial = await shouldShowTutorial()
+  const presetResult = await getPresetDesign(preset)
+  const presetDesign = presetResult.status === 'ok' ? presetResult.design : null
+  // Bir ürünün tam kombinasyonuyla önceden doldurulmuş olarak açıldığında
+  // (Customize butonu) tutorial atlanır — zaten dolu bir tasarım var.
+  const showTutorial = presetDesign ? false : await shouldShowTutorial()
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
@@ -64,7 +94,13 @@ export default async function CustomRegistryPage({
         {t('subtitle')}
       </div>
       <div className="flex min-h-0 flex-1 overflow-hidden">
-        <CustomRegistryClient collections={collections} initialCollectionKey={collection} showTutorial={showTutorial} />
+        <CustomRegistryClient
+          collections={collections}
+          initialCollectionKey={collection}
+          presetDesign={presetDesign}
+          presetStatus={presetResult.status}
+          showTutorial={showTutorial}
+        />
       </div>
     </div>
   )

@@ -13,7 +13,7 @@ import { ControlPanel } from './ControlPanel'
 import { MobileControlPanel } from './MobileControlPanel'
 import { ConfigSummary } from './ConfigSummary'
 import { CustomRegistryTutorial } from './CustomRegistryTutorial'
-import type { Collection, LampPart } from '@/types'
+import type { Collection, LampPart, ProductConfiguratorPart } from '@/types'
 
 const ConfiguratorCanvas = dynamic(
   () => import('./ConfiguratorCanvas').then((m) => m.ConfiguratorCanvas),
@@ -23,10 +23,16 @@ const ConfiguratorCanvas = dynamic(
 export function CustomRegistryClient({
   collections,
   initialCollectionKey,
+  presetDesign,
+  presetStatus,
   showTutorial = false,
 }: {
   collections: Collection[]
   initialCollectionKey?: string
+  /** "Customize" butonundan gelen ürünün tam koleksiyon + parça/malzeme kombinasyonu. */
+  presetDesign?: { collectionKey: string; parts: ProductConfiguratorPart[] } | null
+  /** presetDesign neden null — kullanıcıya/admin'e sessizce boş ekran yerine sebep gösterilir. */
+  presetStatus?: 'ok' | 'not-requested' | 'not-found' | 'not-configurable' | 'incomplete'
   /** Misafirlere ve Custom Registry'den daha önce sipariş vermemiş üyelere gösterilir. */
   showTutorial?: boolean
 }) {
@@ -44,6 +50,7 @@ export function CustomRegistryClient({
 
   const collectionKey = useConfiguratorStore((s) => s.collectionKey)
   const setCollection = useConfiguratorStore((s) => s.setCollection)
+  const loadPreset = useConfiguratorStore((s) => s.loadPreset)
   const clearCollection = useConfiguratorStore((s) => s.clearCollection)
   const base = useConfiguratorStore((s) => s.base)
   const body = useConfiguratorStore((s) => s.body)
@@ -56,13 +63,35 @@ export function CustomRegistryClient({
   const addCartItem = useCartStore((s) => s.addItem)
   const openDrawer = useCartStore((s) => s.openDrawer)
 
-  // URL'den gelen koleksiyon key'i varsa otomatik seç
+  // presetStatus 'ok' değilse (ve preset gerçekten istenmişse) bunun NEDENİNİ
+  // kullanıcıya/admin'e göster — sessizce boş koleksiyon seçim ekranına
+  // düşmek, "Customize" butonunun neden çalışmadığını anlaşılmaz kılıyordu.
+  const presetNotice =
+    presetStatus === 'not-found'
+      ? locale === 'tr'
+        ? 'Bu ürün bulunamadı.'
+        : 'This product could not be found.'
+      : presetStatus === 'not-configurable'
+        ? locale === 'tr'
+          ? 'Bu ürün özelleştirmeye açık değil (Sanity: isConfigurable kapalı).'
+          : 'This product is not configurable (Sanity: isConfigurable is off).'
+        : presetStatus === 'incomplete'
+          ? locale === 'tr'
+            ? 'Bu ürün için Customize verisi eksik. Sanity\'de ürünün "Configurator Collection" ve "Configurator Preset Parça/Malzeme Kombinasyonu" alanlarını doldurup kaydedin.'
+            : 'Customize data is missing for this product. Fill in and save the product\'s "Configurator Collection" and "Configurator Preset Parts" fields in Sanity.'
+          : null
+
+  // "Customize" butonundan gelen tam ürün preset'i varsa öncelikli olarak
+  // onu yükle (Custom Registry'de düz koleksiyon seçiminden önce gelir).
+  // Yoksa URL'den gelen düz koleksiyon key'i varsa otomatik seç.
   useEffect(() => {
-    if (initialCollectionKey && initialCollectionKey !== collectionKey) {
+    if (presetDesign) {
+      handleLoadPresetDesign(presetDesign)
+    } else if (initialCollectionKey && initialCollectionKey !== collectionKey) {
       handleSelectCollection(initialCollectionKey)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialCollectionKey])
+  }, [presetDesign, initialCollectionKey])
 
   async function handleSelectCollection(key: string) {
     setIsLoadingParts(true)
@@ -77,6 +106,29 @@ export function CustomRegistryClient({
       })
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
+    } finally {
+      setIsLoadingParts(false)
+    }
+  }
+
+  async function handleLoadPresetDesign(design: { collectionKey: string; parts: ProductConfiguratorPart[] }) {
+    setIsLoadingParts(true)
+    try {
+      const parts: LampPart[] = await getLampPartsByCollection(design.collectionKey)
+      const selectedCollection = collections.find((c) => c.key?.current === design.collectionKey)
+      loadPreset(
+        design.collectionKey,
+        parts,
+        {
+          baseTRY: selectedCollection?.hardwareBaseFeeTRY,
+          baseUSD: selectedCollection?.hardwareBaseFeeUSD,
+          iotTRY: selectedCollection?.iotFeeTRY,
+          iotUSD: selectedCollection?.iotFeeUSD,
+        },
+        design.parts
+      )
+    } catch (err) {
+      console.error('Ürün kombinasyonu yüklenemedi:', err)
     } finally {
       setIsLoadingParts(false)
     }
@@ -207,6 +259,11 @@ export function CustomRegistryClient({
           <div className="flex-1 overflow-y-auto p-4" id="tutorial-scope">
             {!collectionKey ? (
               <div>
+                {presetNotice && (
+                  <div className="mb-3 border border-red-600 bg-red-50 p-3 text-[12px] leading-relaxed text-red-700">
+                    {presetNotice}
+                  </div>
+                )}
                 <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
                   {locale === 'tr' ? 'Bir Koleksiyon Seçin' : 'Select a Collection'}
                 </h2>
@@ -258,6 +315,11 @@ export function CustomRegistryClient({
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:hidden">
         {!collectionKey ? (
           <div className="flex-1 overflow-y-auto p-4">
+            {presetNotice && (
+              <div className="mb-3 border border-red-600 bg-red-50 p-3 text-[12px] leading-relaxed text-red-700">
+                {presetNotice}
+              </div>
+            )}
             <h2 className="mb-3 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
               {locale === 'tr' ? 'Bir Koleksiyon Seçin' : 'Select a Collection'}
             </h2>
