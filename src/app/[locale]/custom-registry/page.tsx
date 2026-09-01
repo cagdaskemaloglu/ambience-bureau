@@ -76,14 +76,33 @@ export default async function CustomRegistryPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ collection?: string; preset?: string }>
+  searchParams: Promise<{ collection?: string; preset?: string; capture?: string }>
 }) {
   const { locale } = await params
-  const { collection, preset } = await searchParams
-  const t = await getTranslations({ locale, namespace: 'customRegistry' })
+  const { collection, preset, capture } = await searchParams
+  const isCaptureMode = capture === '1'
   const collections = await getAllLampCollections()
   const presetResult = await getPresetDesign(preset)
   const presetDesign = presetResult.status === 'ok' ? presetResult.design : null
+
+  // Capture modu (bkz. scripts/generate-spin-frames.ts): sadece 3D canvas'ı
+  // TAM EKRAN, hiçbir yan panel/tutorial/header olmadan render eder — böylece
+  // Puppeteer'ın ayarladığı viewport boyutu birebir kare çözünürlüğü olur.
+  if (isCaptureMode) {
+    return (
+      <div style={{ position: 'fixed', inset: 0 }}>
+        <CustomRegistryClient
+          collections={collections}
+          presetDesign={presetDesign}
+          presetStatus={presetResult.status}
+          showTutorial={false}
+          captureMode
+        />
+      </div>
+    )
+  }
+
+  const t = await getTranslations({ locale, namespace: 'customRegistry' })
   // Bir ürünün tam kombinasyonuyla önceden doldurulmuş olarak açıldığında
   // (Customize butonu) tutorial atlanır — zaten dolu bir tasarım var.
   const showTutorial = presetDesign ? false : await shouldShowTutorial()

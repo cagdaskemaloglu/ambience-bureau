@@ -1,11 +1,11 @@
 'use client'
 
-import { useCallback, useRef } from 'react'
 import { Scene } from './Scene'
 import { LampModel } from './LampModel'
 import { LightSimulator } from './LightSimulator'
 import { CameraFit } from './CameraFit'
 import { CameraFitButton } from './CameraFitButton'
+import { SpinCaptureHook } from './SpinCaptureHook'
 import { LightControlsOverlay } from './LightControlsOverlay'
 import { ScreenshotCapture } from './ScreenshotCapture'
 
@@ -22,6 +22,7 @@ export function ConfiguratorCanvas({ onScreenshotReady }: ConfiguratorCanvasProp
         <LampModel />
         <LightSimulator />
         <CameraFit />
+        <SpinCaptureHook />
         {onScreenshotReady && (
           <ScreenshotCapture onReady={onScreenshotReady} />
         )}

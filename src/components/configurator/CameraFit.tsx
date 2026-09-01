@@ -4,8 +4,8 @@ import { useEffect, useRef } from 'react'
 import { useThree } from '@react-three/fiber'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 
-const DEFAULT_DISTANCE = 350
-const DEFAULT_TARGET_Y = 80
+export const DEFAULT_DISTANCE = 350
+export const DEFAULT_TARGET_Y = 80
 
 // İlk 3 parça (taban + gövde + başlık gibi standart bir kombinasyon) bu
 // mesafede rahatça ekrana sığıyor — bu yüzden eşik altında hiç yeniden
@@ -18,7 +18,15 @@ const VERTICAL_FOV_DEG = 40
 // Modelin üstünde/altında rahat bir boşluk payı bıraksın diye çarpan.
 const FIT_MARGIN = 1.35
 
-function distanceForHeight(totalHeight: number): number {
+// Orijinal sabit izometrik kamera açısı (position = d*0.6, d*0.45, d*0.6)
+// azimuth=45° / elevation≈27.94°'ye karşılık gelir. Bunu azimuth'u
+// parametreleştirerek koruyoruz (product spin kareleri için farklı
+// açılara ihtiyaç var — bkz. SpinCaptureHook.tsx) — azimuthDeg=45
+// verildiğinde eski davranışla BİREBİR aynı sonucu üretir.
+export const ISO_AZIMUTH_DEG = 45
+const ISO_ELEVATION_RAD = Math.atan2(0.45, Math.sqrt(0.6 ** 2 + 0.6 ** 2))
+
+export function distanceForHeight(totalHeight: number): number {
   if (totalHeight <= 0) return DEFAULT_DISTANCE
   const halfHeight = (totalHeight * FIT_MARGIN) / 2
   const halfFovRad = (VERTICAL_FOV_DEG * Math.PI) / 180 / 2
@@ -27,20 +35,29 @@ function distanceForHeight(totalHeight: number): number {
 }
 
 /**
- * Kamerayı, verilen mesafeye göre sabit izometrik açıyla (mevcut tasarımla
- * aynı 0.6/0.45/0.6 oranı) konumlandırır ve stack'in dikey ortasına bakar.
+ * Kamerayı, verilen mesafe + azimuth açısına göre (sabit izometrik
+ * yükseklik açısıyla) konumlandırır ve stack'in dikey ortasına bakar.
+ * azimuthDeg varsayılanı (45°) mevcut/orijinal sabit görünümle birebir
+ * aynıdır — SpinCaptureHook farklı açılar geçerek 360° kare üretir.
  */
-function positionCamera(
+export function positionCamera(
   camera: { position: { set: (x: number, y: number, z: number) => void }; lookAt: (x: number, y: number, z: number) => void },
   controls: { target?: { set: (x: number, y: number, z: number) => void }; update?: () => void } | null,
   distance: number,
-  targetY: number
+  targetY: number,
+  azimuthDeg: number = ISO_AZIMUTH_DEG
 ) {
+  const azimuthRad = (azimuthDeg * Math.PI) / 180
+  const horizontal = distance * Math.cos(ISO_ELEVATION_RAD)
+  const y = distance * Math.sin(ISO_ELEVATION_RAD)
+  const x = horizontal * Math.cos(azimuthRad)
+  const z = horizontal * Math.sin(azimuthRad)
+
   if (controls?.target) {
     controls.target.set(0, targetY, 0)
     controls.update?.()
   }
-  camera.position.set(distance * 0.6, distance * 0.45, distance * 0.6)
+  camera.position.set(x, y, z)
   camera.lookAt(0, targetY, 0)
 }
 

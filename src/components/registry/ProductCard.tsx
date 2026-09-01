@@ -2,10 +2,10 @@
 
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import Image from 'next/image'
-import { urlFor, getLocalizedValue, formatPriceForLocale } from '@/lib/sanity'
+import { getLocalizedValue, formatPriceForLocale } from '@/lib/sanity'
 import { AddToCartMini } from './AddToCartMini'
 import { CustomizeButtonMini } from './CustomizeButtonMini'
+import { ProductCardMedia } from './ProductCardMedia'
 import type { ProductCard as ProductCardType } from '@/types'
 
 const STATUS_LABEL: Record<string, { tr: string; en: string }> = {
@@ -38,24 +38,15 @@ export function ProductCard({ product }: { product: ProductCardType }) {
       </div>
 
       {/* Image — 3:4 (portre) oranında: çektiğiniz fotoğrafların gerçek
-          oranı (3024×4032). Önceden sabit ve yatay (h-40) bir kutuydu,
-          bu da dikey fotoğrafların içinde küçücük kalıp devasa boş alan
-          bırakmasına yol açıyordu. */}
-      <div className="mb-2 flex aspect-[3/4] w-full items-center justify-center border border-bureau-rule bg-bureau-surface">
-        {product.image ? (
-          <Image
-            src={urlFor(product.image).width(600).height(800).fit('max').url()}
-            alt={product.image.alt ?? name ?? ''}
-            width={600}
-            height={800}
-            className="h-full w-full object-contain p-1.5"
-          />
-        ) : (
-          <span className="font-mono text-[9px] text-bureau-subtle uppercase">
-            No Image on Record
-          </span>
-        )}
-      </div>
+          oranı (3024×4032). Configurable ürünlerde, görünüme girince
+          önceden üretilmiş 360° dönüş kareleriyle otomatik 3D'ye döner
+          (bkz. ProductCardMedia.tsx). */}
+      <ProductCardMedia
+        slug={product.slug.current}
+        isConfigurable={product.isConfigurable}
+        image={product.image}
+        alt={product.image?.alt ?? name ?? ''}
+      />
 
       {/* Meta */}
       <div className="flex-grow">

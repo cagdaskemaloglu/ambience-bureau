@@ -56,7 +56,12 @@ function TechnicalGrid() {
   )
 }
 
-function SceneLights() {
+function SceneLights({ highQuality = false }: { highQuality?: boolean }) {
+  // Gölge haritası çözünürlüğü SADECE capture modunda (bkz. Scene() içindeki
+  // isCaptureMode) artırılır — bu, product spin kareleri offline/önceden
+  // üretilirken kullanılır, canlı ziyaretçinin tarayıcısını hiç etkilemez.
+  // İnteraktif konfigüratörde performans aynı kalır (2048, değişmedi).
+  const shadowMapSize = highQuality ? 4096 : 2048
   return (
     <>
       <ambientLight intensity={0.55} />
@@ -64,8 +69,8 @@ function SceneLights() {
         position={[120, 200, 100]}
         intensity={1.1}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-camera-near={10}
         shadow-camera-far={500}
         shadow-camera-left={-150}
@@ -86,6 +91,12 @@ interface SceneProps {
 }
 
 export function Scene({ children, cameraDistance = 750 }: SceneProps) {
+  // Capture modunda (bkz. SpinCaptureHook.tsx) GizmoHelper (yön pusulası)
+  // gizlenir — bu bir HTML overlay değil, WebGL sahnesinin bir parçası,
+  // yani product spin kareleri toDataURL() ile yakalanırken görünürdü.
+  const isCaptureMode =
+    typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('capture') === '1'
+
   return (
     <div className="relative h-full w-full" style={{ background: VIEWER_BG_CSS }}>
       <Canvas
@@ -97,20 +108,27 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
           far: 3000,
         }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, preserveDrawingBuffer: true }}
+        // dpr (device pixel ratio) SADECE capture modunda yükseltilir — bu,
+        // sadece scripts/generate-spin-frames.ts'in headless Chrome'unda
+        // etkili olur (bkz. Puppeteer'ın deviceScaleFactor:2 ayarı). Normal
+        // ziyaretçiler için varsayılan [1,2] aralığı DEĞİŞMEDİ, yani canlı
+        // konfigüratörün performansı aynı kalır.
+        dpr={isCaptureMode ? [1, 3] : [1, 2]}
       >
         <GradientBackground top={VIEWER_BG_TOP} bottom={VIEWER_BG_BOTTOM} />
 
-        <SceneLights />
+        <SceneLights highQuality={isCaptureMode} />
         <TechnicalGrid />
 
         <Suspense fallback={null}>
-          <Environment preset="studio" environmentIntensity={0.6} />
+          <Environment preset="studio" environmentIntensity={0.6} resolution={isCaptureMode ? 1024 : 256} />
           <ContactShadows
             position={[0, 0, 0]}
             opacity={0.3}
             scale={400}
             blur={3}
             far={200}
+            resolution={isCaptureMode ? 1024 : 512}
           />
         </Suspense>
 
@@ -145,12 +163,14 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
           dampingFactor={0.08}
         />
 
-        <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
-          <GizmoViewport
-            axisColors={['#E6792E', '#EDEDED', '#999999']}
-            labelColor="white"
-          />
-        </GizmoHelper>
+        {!isCaptureMode && (
+          <GizmoHelper alignment="bottom-right" margin={[60, 60]}>
+            <GizmoViewport
+              axisColors={['#E6792E', '#EDEDED', '#999999']}
+              labelColor="white"
+            />
+          </GizmoHelper>
+        )}
       </Canvas>
     </div>
   )

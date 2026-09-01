@@ -26,6 +26,7 @@ export function CustomRegistryClient({
   presetDesign,
   presetStatus,
   showTutorial = false,
+  captureMode = false,
 }: {
   collections: Collection[]
   initialCollectionKey?: string
@@ -35,6 +36,13 @@ export function CustomRegistryClient({
   presetStatus?: 'ok' | 'not-requested' | 'not-found' | 'not-configurable' | 'incomplete'
   /** Misafirlere ve Custom Registry'den daha önce sipariş vermemiş üyelere gösterilir. */
   showTutorial?: boolean
+  /**
+   * Sadece scripts/generate-spin-frames.ts tarafından kullanılır (?capture=1).
+   * true olduğunda yan panel/tutorial/fiyat çubuğu YOK — sadece 3D canvas'ı
+   * tam ekran render eder, böylece Puppeteer'ın ayarladığı viewport boyutu
+   * birebir kare çözünürlüğü olur.
+   */
+  captureMode?: boolean
 }) {
   const locale = useLocale()
   const router = useRouter()
@@ -245,6 +253,17 @@ export function CustomRegistryClient({
     const timeout = setTimeout(() => setSaveSuccess(null), 5000)
     return () => clearTimeout(timeout)
   }, [saveSuccess])
+
+  // Capture modu: tüm hook'lar çağrıldıktan SONRA erken dönüş — sadece
+  // 3D canvas'ı tam ekran render eder, hiçbir yan panel/tutorial/fiyat
+  // çubuğu yok (bkz. scripts/generate-spin-frames.ts).
+  if (captureMode) {
+    return (
+      <div className="h-full w-full">
+        <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row">
