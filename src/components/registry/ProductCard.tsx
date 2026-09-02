@@ -29,7 +29,7 @@ export function ProductCard({ product }: { product: ProductCardType }) {
   return (
     <Link
       href={`/registry/${product.slug.current}`}
-      className="group flex flex-col border-r border-b border-bureau-black p-2.5 no-underline transition-colors hover:bg-bureau-surface"
+      className="group flex flex-col border border-bureau-black p-2.5 no-underline transition-colors hover:bg-bureau-surface"
     >
       {/* Top: serial + status */}
       <div className="mb-2 flex items-start justify-between">

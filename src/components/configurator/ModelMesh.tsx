@@ -5,13 +5,26 @@ import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useSTLGeometry, useGLTFGeometry, isGLTFUrl } from '@/lib/hooks/useModelGeometry'
 
+export interface PartDimensions {
+  width: number
+  height: number
+  depth: number
+  // Model, kendi yerel orijinine göre X/Z eksenlerinde ille de ortalanmış
+  // olmayabilir — toplam model bounding box'ını (LampModel.tsx'te) doğru
+  // hesaplayabilmek için ham min/max değerleri de taşıyoruz.
+  minX: number
+  maxX: number
+  minZ: number
+  maxZ: number
+}
+
 interface ModelMeshProps {
   url: string
   color: string
   roughness: number
   metalness: number
   position?: [number, number, number]
-  onHeightCalculated?: (height: number) => void
+  onDimensionsCalculated?: (dimensions: PartDimensions) => void
   /**
    * Yarı saydam filament malzemeleri için (bkz. material.ts'teki
    * isTranslucent/opacity alanları). Verilmezse (opak malzeme) tamamen
@@ -30,18 +43,25 @@ interface ModelMeshProps {
   targetGlowIntensity?: number
 }
 
-function useReportHeight(
+function useReportDimensions(
   geometry: THREE.BufferGeometry,
-  onHeightCalculated?: (height: number) => void
+  onDimensionsCalculated?: (dimensions: PartDimensions) => void
 ) {
   useEffect(() => {
-    if (!onHeightCalculated) return
+    if (!onDimensionsCalculated) return
     if (!geometry.boundingBox) geometry.computeBoundingBox()
     const box = geometry.boundingBox
     if (!box) return
-    const height = box.max.y - box.min.y
-    onHeightCalculated(height)
-  }, [geometry, onHeightCalculated])
+    onDimensionsCalculated({
+      width: box.max.x - box.min.x,
+      height: box.max.y - box.min.y,
+      depth: box.max.z - box.min.z,
+      minX: box.min.x,
+      maxX: box.max.x,
+      minZ: box.min.z,
+      maxZ: box.max.z,
+    })
+  }, [geometry, onDimensionsCalculated])
 }
 
 function useGlowMaterial(
@@ -61,9 +81,9 @@ function useGlowMaterial(
   })
 }
 
-function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
+function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onDimensionsCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
   const geometry = useSTLGeometry(url)
-  useReportHeight(geometry, onHeightCalculated)
+  useReportDimensions(geometry, onDimensionsCalculated)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
   useGlowMaterial(materialRef, glowColor, targetGlowIntensity)
 
@@ -83,9 +103,9 @@ function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHei
   )
 }
 
-function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onHeightCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
+function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onDimensionsCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
   const geometry = useGLTFGeometry(url)
-  useReportHeight(geometry, onHeightCalculated)
+  useReportDimensions(geometry, onDimensionsCalculated)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
   useGlowMaterial(materialRef, glowColor, targetGlowIntensity)
 

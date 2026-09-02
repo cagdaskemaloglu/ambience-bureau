@@ -46,7 +46,9 @@ interface ConfiguratorStore {
    */
   stackTotalHeight: number
   stackPartCount: number
-  setStackMetrics: (totalHeight: number, partCount: number) => void
+  stackWidth: number
+  stackDepth: number
+  setStackMetrics: (totalHeight: number, partCount: number, width: number, depth: number) => void
 
   /** "Kamerayı Sığdır" butonuna her basıldığında artar — CameraFit bunu izler. */
   cameraFitRequestId: number
@@ -113,10 +115,19 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
 
   stackTotalHeight: 0,
   stackPartCount: 0,
-  setStackMetrics: (totalHeight, partCount) =>
+  stackWidth: 0,
+  stackDepth: 0,
+  setStackMetrics: (totalHeight, partCount, width, depth) =>
     set((state) => {
-      if (state.stackTotalHeight === totalHeight && state.stackPartCount === partCount) return state
-      return { stackTotalHeight: totalHeight, stackPartCount: partCount }
+      if (
+        state.stackTotalHeight === totalHeight &&
+        state.stackPartCount === partCount &&
+        state.stackWidth === width &&
+        state.stackDepth === depth
+      ) {
+        return state
+      }
+      return { stackTotalHeight: totalHeight, stackPartCount: partCount, stackWidth: width, stackDepth: depth }
     }),
 
   cameraFitRequestId: 0,
@@ -141,6 +152,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       head: { ...initialSlotState },
       stackTotalHeight: 0,
       stackPartCount: 0,
+      stackWidth: 0,
+      stackDepth: 0,
     })
   },
 
@@ -154,6 +167,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       head: { ...initialSlotState },
       stackTotalHeight: 0,
       stackPartCount: 0,
+      stackWidth: 0,
+      stackDepth: 0,
     }),
 
   loadPreset: (key, parts, hardwareFees, preset) => {
@@ -177,6 +192,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       head: headEntry ? { partId: headEntry.partId, materialId: headEntry.materialId } : { ...initialSlotState },
       stackTotalHeight: 0,
       stackPartCount: 0,
+      stackWidth: 0,
+      stackDepth: 0,
     })
   },
 

@@ -42,6 +42,7 @@ export function ProductCardMedia({
   const [framesStatus, setFramesStatus] = useState<FramesStatus>('idle')
   const [view, setView] = useState<ViewMode>('photo')
   const [frameIndex, setFrameIndex] = useState(0)
+  const [isHovered, setIsHovered] = useState(false)
 
   // Kart viewport'a girince (biraz önceden) tetikle.
   useEffect(() => {
@@ -98,14 +99,15 @@ export function ProductCardMedia({
   // ziyaretçi siteye girince her zaman fotoğrafı görür, 3D'ye geçmek
   // istediğinde sol üstteki butona kendisi tıklar (bkz. handleToggle).
 
-  // 3D görünümdeyken ve ekrandayken yavaşça döndür.
+  // 3D görünümdeyken, ekrandayken VE mouse kartın üzerinde değilken
+  // yavaşça döndür — hover'da dönüş durur (kullanıcı modeli net görebilsin).
   useEffect(() => {
-    if (view !== '3d' || framesStatus !== 'ready' || !isInView) return
+    if (view !== '3d' || framesStatus !== 'ready' || !isInView || isHovered) return
     const interval = setInterval(() => {
       setFrameIndex((i) => (i + 1) % SPIN_FRAME_COUNT)
     }, ROTATE_INTERVAL_MS)
     return () => clearInterval(interval)
-  }, [view, framesStatus, isInView])
+  }, [view, framesStatus, isInView, isHovered])
 
   function handleToggle(e: React.MouseEvent) {
     // Kartın tamamı bir <Link> — bu butona tıklamak ürün detay sayfasına
@@ -120,7 +122,13 @@ export function ProductCardMedia({
   const showToggleButton = isConfigurable && framesStatus === 'ready'
 
   return (
-    <div ref={containerRef} className="relative mb-2 aspect-[3/4] w-full" style={{ perspective: '1200px' }}>
+    <div
+      ref={containerRef}
+      className="relative mb-2 aspect-[3/4] w-full"
+      style={{ perspective: '1200px' }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {showToggleButton && (
         <button
           onClick={handleToggle}
