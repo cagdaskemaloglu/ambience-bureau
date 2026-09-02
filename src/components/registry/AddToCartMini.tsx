@@ -61,7 +61,7 @@ export function AddToCartMini({ product }: { product: ProductCardType }) {
   return (
     <button
       onClick={handleAddToCart}
-      className="mt-1.5 w-full border border-bureau-black py-1.5 font-mono text-[9px] uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-black hover:text-white"
+      className="mt-1.5 w-full border border-bureau-black py-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-black hover:text-white"
     >
       {justAdded ? '✓ ' + (locale === 'tr' ? 'Eklendi' : 'Added') : t('addToCart')}
     </button>

@@ -79,11 +79,11 @@ export default async function RegistryPage({ params, searchParams }: Props) {
         </div>
       </div>
 
-      <Suspense fallback={<div className="h-[52px] border-b border-bureau-black md:h-[57px]" />}>
+      <Suspense fallback={<div className="h-[33px] md:h-[37px]" />}>
         <CategoryFilterBar count={products.length} />
       </Suspense>
 
-      <main className="px-5 py-6 md:px-9 md:py-9">
+      <main className="px-5 py-3 md:px-9 md:py-5">
         <ProductGrid products={products} />
       </main>
     </>

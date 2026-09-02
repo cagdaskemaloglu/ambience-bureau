@@ -12,8 +12,12 @@ export function Footer() {
   return (
     <footer className="hidden border-t border-bureau-black sm:block">
       <div className="flex items-center justify-between px-10 py-4">
-        <span className="font-mono text-[10px] tracking-widest text-bureau-subtle uppercase">
-          © 2026 The Ambience Bureau. {tr ? 'Tüm hakları saklıdır.' : 'All rights reserved.'}
+        <span className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase">
+          <span>© 2026</span>
+          <span className="font-sans text-lg font-black tracking-[0.12em] text-bureau-black sm:text-xl">
+            THE AMBIENCE BUREAU.
+          </span>
+          <span>{tr ? 'Tüm hakları saklıdır.' : 'All rights reserved.'}</span>
         </span>
 
         <div className="flex items-center gap-6">

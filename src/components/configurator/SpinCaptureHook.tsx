@@ -37,6 +37,14 @@ export function SpinCaptureHook() {
     if (typeof window === 'undefined') return
     if (new URLSearchParams(window.location.search).get('capture') !== '1') return
 
+    // Product spin kareleri SADECE standart sahne ışıklarıyla (ambient +
+    // directional + Environment) aydınlatılmalı — lambanın kendi ışığını
+    // simüle eden ekstra parlama/point light (bkz. LightSimulator.tsx ve
+    // LampModel.tsx'teki head glow) burada İSTENMİYOR. Bu, SADECE bu
+    // capture modunu etkiler; interaktif Custom Registry'de kullanıcı
+    // ışığı normal şekilde açıp kapatabilmeye devam eder.
+    useConfiguratorStore.setState({ lightEnabled: false })
+
     window.__spinCapture = {
       setAngle: (azimuthDeg: number) =>
         new Promise<void>((resolve) => {

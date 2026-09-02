@@ -132,13 +132,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
           <Link href="/" className="group no-underline flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-            <div>
-              <div className="text-sm font-semibold tracking-[0.12em] uppercase text-bureau-black sm:text-base">
-                THE AMBIENCE BUREAU
-              </div>
-              <div className="hidden mt-1 font-mono text-[10px] tracking-widest text-bureau-muted uppercase sm:block">
-                REGULATION OF SPATIAL PHOTONS // EST. 2026
-              </div>
+            <div className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black sm:text-xl">
+              THE AMBIENCE BUREAU
             </div>
           </Link>
 
@@ -158,7 +153,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               >
                 <Link
                   href="/custom-registry"
-                  className={`flex items-center gap-2 px-3.5 py-1.5 no-underline transition-colors ${
+                  className={`flex items-center gap-2 px-3.5 py-1.5 no-underline transition-colors font-semibold ${
                     isActive('/custom-registry') ? '' : 'hover:bg-bureau-black hover:text-bureau-white'
                   }`}
                 >
@@ -224,7 +219,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 className={`
                   font-mono text-[11px] tracking-wider uppercase no-underline
                   transition-opacity duration-150
-                  ${isActive(href) ? 'text-bureau-black font-semibold' : 'text-bureau-black opacity-70 hover:opacity-100'}
+                  ${isActive(href) ? 'text-bureau-black font-bold' : 'text-bureau-black font-semibold opacity-70 hover:opacity-100'}
                 `}
               >
                 {t(labelKey)}
@@ -302,7 +297,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="border border-bureau-black px-2.5 py-1 font-mono text-[10px] tracking-wider uppercase text-bureau-black transition-colors hover:bg-bureau-black hover:text-white no-underline"
+                  className="border border-bureau-black px-2.5 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-bureau-black transition-colors hover:bg-bureau-black hover:text-white no-underline"
                 >
                   {locale === 'tr' ? 'Kayıt Ol' : 'Register'}
                 </Link>
@@ -350,7 +345,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 width={40}
                 height={40}
               />
-              <div className="text-sm font-semibold tracking-[0.12em] uppercase text-bureau-black">
+              <div className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black">
                 The Ambience Bureau
               </div>
             </Link>
@@ -372,7 +367,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 <Link
                   href="/custom-registry"
                   onClick={() => setMenuOpen(false)}
-                  className={`flex flex-1 items-center gap-3 px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline ${
+                  className={`flex flex-1 items-center gap-3 px-5 py-5 font-mono text-[12px] font-semibold tracking-wider uppercase no-underline ${
                     isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'
                   }`}
                 >
@@ -481,8 +476,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 key={href}
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className={`block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline transition-colors ${
-                  isActive(href) ? 'text-bureau-amber font-semibold' : 'text-bureau-black'
+                className={`block px-5 py-5 font-mono text-[12px] font-semibold tracking-wider uppercase no-underline transition-colors ${
+                  isActive(href) ? 'text-bureau-amber font-bold' : 'text-bureau-black'
                 }`}
               >
                 {t(labelKey)}

@@ -33,29 +33,23 @@ export function CategoryFilterBar({ count }: { count: number }) {
   }
 
   return (
-    <div className="flex items-center justify-between gap-4 border-b border-bureau-black px-5 py-4 md:px-9">
-      <div className="scrollbar-none flex flex-1 items-center gap-6 overflow-x-auto md:justify-center md:gap-9">
-        {CATEGORIES.map(({ value, key }) => {
-          const isActive = value === undefined ? !activeCategory : activeCategory === value
-          return (
-            <button
-              key={key}
-              onClick={() => selectCategory(value)}
-              className={`flex-shrink-0 whitespace-nowrap border-b-2 pb-1.5 font-mono text-[11px] uppercase tracking-wider transition-colors ${
-                isActive
-                  ? 'border-bureau-amber text-bureau-black'
-                  : 'border-transparent text-bureau-muted hover:text-bureau-black'
-              }`}
-            >
-              {t(`filters.${key}` as never)}
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="hidden flex-shrink-0 whitespace-nowrap font-mono text-[10.5px] text-bureau-muted sm:block">
+    <div className="flex items-center justify-end gap-3 px-5 py-2 md:px-9">
+      <span className="whitespace-nowrap font-mono text-[10px] text-bureau-muted">
         {tDoc('objectsOnRecord')}: <span className="text-bureau-amber">{count}</span>
-      </div>
+      </span>
+
+      <select
+        value={activeCategory ?? ''}
+        onChange={(e) => selectCategory(e.target.value === '' ? undefined : e.target.value)}
+        aria-label={t('filters.category')}
+        className="border border-bureau-black bg-white px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-bureau-black transition-colors hover:border-bureau-amber focus:border-bureau-amber focus:outline-none"
+      >
+        {CATEGORIES.map(({ value, key }) => (
+          <option key={key} value={value ?? ''}>
+            {t(`filters.${key}` as never)}
+          </option>
+        ))}
+      </select>
     </div>
   )
 }

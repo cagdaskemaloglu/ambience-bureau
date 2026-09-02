@@ -34,7 +34,7 @@ export function CustomizeButtonMini({
       onClick={handleClick}
       disabled={!isConfigurable}
       aria-disabled={!isConfigurable}
-      className="mt-1.5 w-full border border-bureau-amber py-1.5 font-mono text-[9px] uppercase tracking-wide text-bureau-amber transition-colors enabled:hover:bg-bureau-amber enabled:hover:text-white disabled:cursor-not-allowed disabled:border-bureau-rule disabled:text-bureau-subtle"
+      className="mt-1.5 w-full border border-bureau-amber py-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-amber transition-colors enabled:hover:bg-bureau-amber enabled:hover:text-white disabled:cursor-not-allowed disabled:border-bureau-rule disabled:text-bureau-subtle"
     >
       {t('customize')}
     </button>
