@@ -26,3 +26,15 @@ export function getSpinFrameUrl(slug: string, frameIndex: number): string {
   const padded = String(frameIndex).padStart(2, '0')
   return `${supabasePublicBase()}/${slug}/${padded}.webp`
 }
+
+// Boy (mm) değeri — kareler gibi Supabase'e ayrı, küçük bir JSON dosyası
+// olarak yüklenir. UI rozeti olarak sabit (dönmeyen) şekilde gösterilir
+// (bkz. ProductCardMedia.tsx) — WebGL sahnesine YAKILMAZ, bu yüzden kart
+// döndükçe ölçü hep aynı yerde durur.
+export interface SpinMeta {
+  heightMm: number
+}
+
+export function getSpinMetaUrl(slug: string): string {
+  return `${supabasePublicBase()}/${slug}/meta.json`
+}

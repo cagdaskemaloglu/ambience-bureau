@@ -36,9 +36,13 @@ function Label({ position, mm }: { position: Vec3; mm: number }) {
  *  - Modelin SAĞINDA (alt/zemin seviyesinde): DERİNLİK (Z ekseni)
  *  - Modelin SOLUNDA (dikey): BOY (Y ekseni)
  *
- * Product spin kareleri üretilirken (?capture=1) gösterilmez — bu
- * annotasyonlar sadece interaktif tasarım deneyimine ait, kart
- * görselinde görünmemeli (bkz. isCaptureMode kontrolü).
+ * SADECE interaktif Custom Registry'de gösterilir. Product card spin
+ * kareleri üretilirken (?capture=1) HİÇ render edilmez — kamera her
+ * kareyi farklı açıdan çektiği için, sahneye "yakılan" bir ölçü de
+ * modelle birlikte dönüyormuş gibi görünürdü. Boy ölçüsü product
+ * card'da bunun yerine sabit bir HTML rozeti olarak gösteriliyor (bkz.
+ * ProductCardMedia.tsx + scripts/generate-spin-frames.ts'in ürettiği
+ * meta.json) — asla dönmez.
  */
 export function DimensionAnnotations() {
   const partCount = useConfiguratorStore((s) => s.stackPartCount)

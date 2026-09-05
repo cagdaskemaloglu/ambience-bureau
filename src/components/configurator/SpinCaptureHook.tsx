@@ -56,7 +56,7 @@ export function SpinCaptureHook() {
           // geçsin diye çift rAF bekliyoruz.
           requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
         }),
-      captureFrame: () => gl.domElement.toDataURL('image/webp', 0.97),
+      captureFrame: () => gl.domElement.toDataURL('image/webp', 0.98),
       getMetrics: () => ({ partCount: stackPartCount, totalHeight: stackTotalHeight }),
     }
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { urlFor } from '@/lib/sanity'
-import { SPIN_FRAME_COUNT, getSpinFrameUrl } from '@/lib/spinFrames'
+import { SPIN_FRAME_COUNT, getSpinFrameUrl, getSpinMetaUrl } from '@/lib/spinFrames'
 import type { SanityImage } from '@/types'
 
 // "Yavaş, sakin" bir dönüş hissi için: 24 kare × 190ms ≈ tur başına 4.6sn.
@@ -43,6 +43,7 @@ export function ProductCardMedia({
   const [view, setView] = useState<ViewMode>('photo')
   const [frameIndex, setFrameIndex] = useState(0)
   const [isHovered, setIsHovered] = useState(false)
+  const [heightMm, setHeightMm] = useState<number | null>(null)
 
   // Kart viewport'a girince (biraz önceden) tetikle.
   useEffect(() => {
@@ -95,6 +96,26 @@ export function ProductCardMedia({
     // BİLERİNTİLİ olarak dışarıda bırakıldı, yukarıdaki yorumu oku.
   }, [isConfigurable, isInView, slug])
 
+  // Boy (mm) değerini, kareler gibi Supabase'e ayrı yüklenen küçük bir
+  // meta.json dosyasından çek. Bu değer WebGL sahnesine YAKILMIYOR (bkz.
+  // DimensionAnnotations.tsx'teki not) — sabit bir HTML rozeti olarak
+  // gösterilir, kart döndükçe dönmez.
+  useEffect(() => {
+    if (!isConfigurable || !isInView) return
+    let cancelled = false
+    fetch(getSpinMetaUrl(slug))
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { heightMm?: number } | null) => {
+        if (!cancelled && typeof data?.heightMm === 'number') setHeightMm(data.heightMm)
+      })
+      .catch(() => {
+        // Sessizce yok say — meta.json yoksa rozet zaten gösterilmeyecek.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isConfigurable, isInView, slug])
+
   // Kareler hazır olunca da varsayılan görünüm FOTOĞRAF olarak kalır —
   // ziyaretçi siteye girince her zaman fotoğrafı görür, 3D'ye geçmek
   // istediğinde sol üstteki butona kendisi tıklar (bkz. handleToggle).
@@ -120,6 +141,11 @@ export function ProductCardMedia({
   // Kareler tamamen yüklenip doğrulanmadan buton gösterilmez — "unavailable"
   // durumunda (bu üründe kare üretilmemiş) buton hiç görünmez.
   const showToggleButton = isConfigurable && framesStatus === 'ready'
+  // Boy rozeti SADECE 3D görünümdeyken gösterilir. Flip'i sağlayan
+  // `transform: rotateY(...)` div'inin DIŞINDA, sabit bir kardeş eleman
+  // olarak render ediliyor — bu yüzden model/kare döndükçe rozet ASLA
+  // dönmez, hep aynı yerde sabit kalır.
+  const showHeightBadge = isConfigurable && view === '3d' && framesStatus === 'ready' && heightMm !== null
 
   return (
     <div
@@ -151,6 +177,28 @@ export function ProductCardMedia({
             </svg>
           )}
         </button>
+      )}
+
+      {showHeightBadge && (
+        // Custom Registry'deki BOY ölçü çizgisiyle aynı görsel dil (kesikli
+        // çizgi + ok başları + mm etiketi) — ama burada gerçek 3D sahneye
+        // YAKILMIYOR, sabit bir 2D SVG/HTML katmanı. Döndürülen flip div'inin
+        // DIŞINDA olduğu için model/kare döndükçe ASLA dönmez. Kartın SAĞ
+        // kenarında, dikey olarak ortalanmış şekilde duruyor.
+        <div className="pointer-events-none absolute inset-y-3 right-2.5 z-10 flex items-center gap-1">
+          <svg viewBox="0 0 14 100" preserveAspectRatio="none" className="h-full w-3 overflow-visible">
+            <line
+              x1="7" y1="7" x2="7" y2="93"
+              stroke="#5A6B8C" strokeWidth="1.2" strokeDasharray="4 3"
+              vectorEffect="non-scaling-stroke"
+            />
+            <polyline points="3,15 7,7 11,15" fill="none" stroke="#5A6B8C" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+            <polyline points="3,85 7,93 11,85" fill="none" stroke="#5A6B8C" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
+          </svg>
+          <span className="whitespace-nowrap border border-bureau-black/30 bg-white/85 px-1 py-0.5 font-mono text-[8px] tracking-wide text-bureau-muted backdrop-blur-sm">
+            {Math.round(heightMm!)} mm
+          </span>
+        </div>
       )}
 
       <div

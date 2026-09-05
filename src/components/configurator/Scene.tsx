@@ -56,12 +56,45 @@ function TechnicalGrid() {
   )
 }
 
-function SceneLights({ highQuality = false }: { highQuality?: boolean }) {
-  // Gölge haritası çözünürlüğü SADECE capture modunda (bkz. Scene() içindeki
-  // isCaptureMode) artırılır — bu, product spin kareleri offline/önceden
-  // üretilirken kullanılır, canlı ziyaretçinin tarayıcısını hiç etkilemez.
-  // İnteraktif konfigüratörde performans aynı kalır (2048, değişmedi).
-  const shadowMapSize = highQuality ? 4096 : 2048
+function SceneLights({ isCaptureMode = false }: { isCaptureMode?: boolean }) {
+  // Gölge haritası çözünürlüğü SADECE capture modunda artırılır — bu,
+  // product spin kareleri offline/önceden üretilirken kullanılır, canlı
+  // ziyaretçinin tarayıcısını hiç etkilemez. İnteraktif konfigüratörde
+  // performans aynı kalır (2048, değişmedi).
+  const shadowMapSize = isCaptureMode ? 4096 : 2048
+
+  if (isCaptureMode) {
+    // Product card spin kareleri İÇİN ÖZEL ışıklandırma: tek yönlü sert
+    // directional light, modelin karşı tarafını neredeyse tamamen
+    // gölgede bırakıyordu (kartta "bozukluk" gibi görünüyordu). Bunun
+    // yerine, ana ışığı (gölge dökmeye devam eden) ZAYIFLATIP karşı
+    // yönden neredeyse eşit güçte İKİNCİ bir directional light ekliyoruz
+    // — modelin her iki yanı da dengeli aydınlanıyor, sert tek taraflı
+    // gölge kalmıyor. SADECE capture'ı etkiler; interaktif sahnede
+    // (aşağıdaki else dalı) hiçbir şey değişmedi.
+    return (
+      <>
+        <ambientLight intensity={0.65} />
+        <directionalLight
+          position={[120, 200, 100]}
+          intensity={0.85}
+          castShadow
+          shadow-mapSize-width={shadowMapSize}
+          shadow-mapSize-height={shadowMapSize}
+          shadow-camera-near={10}
+          shadow-camera-far={500}
+          shadow-camera-left={-150}
+          shadow-camera-right={150}
+          shadow-camera-top={150}
+          shadow-camera-bottom={-150}
+          shadow-bias={-0.0005}
+          shadow-normalBias={0.02}
+        />
+        <directionalLight position={[-120, 160, -100]} intensity={0.7} />
+      </>
+    )
+  }
+
   return (
     <>
       <ambientLight intensity={0.55} />
@@ -117,18 +150,18 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
       >
         <GradientBackground top={VIEWER_BG_TOP} bottom={VIEWER_BG_BOTTOM} />
 
-        <SceneLights highQuality={isCaptureMode} />
+        <SceneLights isCaptureMode={isCaptureMode} />
         <TechnicalGrid />
 
         <Suspense fallback={null}>
-          <Environment preset="studio" environmentIntensity={0.6} resolution={isCaptureMode ? 1024 : 256} />
+          <Environment preset="studio" environmentIntensity={0.6} resolution={isCaptureMode ? 1536 : 256} />
           <ContactShadows
             position={[0, 0, 0]}
             opacity={0.3}
             scale={400}
             blur={3}
             far={200}
-            resolution={isCaptureMode ? 1024 : 512}
+            resolution={isCaptureMode ? 1536 : 512}
           />
         </Suspense>
 

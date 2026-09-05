@@ -55,7 +55,12 @@ const SPIN_FRAME_COUNT = 24 // src/lib/spinFrames.ts ile senkron tutulmalı
 const SPIN_FRAME_BUCKET = 'product-spins' // src/lib/spinFrames.ts ile senkron tutulmalı
 const ISO_AZIMUTH_DEG = 45 // src/components/configurator/CameraFit.tsx#ISO_AZIMUTH_DEG ile senkron tutulmalı
 // 3:4 (portre) — ürün fotoğraflarıyla aynı oran (bkz. ProductCard.tsx'teki
-// aspect-[3/4] ve urlFor(...).width(600).height(800))
+// aspect-[3/4] ve urlFor(...).width(600).height(800)).
+// deviceScaleFactor:2 ile birlikte Scene.tsx'in capture-modu dpr=[1,3]
+// ayarı devreye girer — kareler daha keskin/net render edilir. Bu SADECE
+// bu script'in headless Chrome'unda etkili olur, siteyi ziyaret eden
+// kullanıcıların performansını ETKİLEMEZ (kareler önceden üretilip
+// dosya olarak servis ediliyor).
 const VIEWPORT = { width: 1050, height: 1400, deviceScaleFactor: 2 }
 
 function parseArgs() {
@@ -86,11 +91,15 @@ async function ensureBucket(): Promise<void> {
   }
 }
 
-/** Model tamamen yüklenip kamera metrikleri stabilize olana kadar bekler. */
-async function waitForStableMetrics(page: Page, timeoutMs = 20000): Promise<void> {
+/** Model tamamen yüklenip kamera metrikleri stabilize olana kadar bekler; son (stabil) metrikleri döner. */
+async function waitForStableMetrics(
+  page: Page,
+  timeoutMs = 20000
+): Promise<{ partCount: number; totalHeight: number }> {
   const start = Date.now()
   let lastSnapshot = ''
   let stableCount = 0
+  let lastMetrics: { partCount: number; totalHeight: number } | null = null
 
   while (Date.now() - start < timeoutMs) {
     const metrics = await page.evaluate(() => {
@@ -99,10 +108,11 @@ async function waitForStableMetrics(page: Page, timeoutMs = 20000): Promise<void
     })
 
     if (metrics && metrics.partCount > 0) {
+      lastMetrics = metrics
       const snapshot = JSON.stringify(metrics)
       if (snapshot === lastSnapshot) {
         stableCount += 1
-        if (stableCount >= 2) return // iki ardışık ölçüm aynı → stabil kabul edildi
+        if (stableCount >= 2) return metrics // iki ardışık ölçüm aynı → stabil kabul edildi
       } else {
         stableCount = 0
       }
@@ -112,6 +122,7 @@ async function waitForStableMetrics(page: Page, timeoutMs = 20000): Promise<void
     await new Promise((resolve) => setTimeout(resolve, 350))
   }
 
+  if (lastMetrics) return lastMetrics // stabil olmadı ama en azından bir ölçüm var — devam et
   throw new Error('Model metrikleri zaman aşımı içinde stabilize olmadı (parçalar/malzemeler yüklenemedi mi?)')
 }
 
@@ -125,7 +136,7 @@ async function captureProduct(browser: Browser, baseUrl: string, slug: string): 
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 })
 
     await page.waitForFunction(() => !!(window as any).__spinCapture, { timeout: 15000 })
-    await waitForStableMetrics(page)
+    const { totalHeight } = await waitForStableMetrics(page)
 
     const admin = createSupabaseAdminClient() as any
     const azimuthStep = 360 / SPIN_FRAME_COUNT
@@ -148,7 +159,19 @@ async function captureProduct(browser: Browser, baseUrl: string, slug: string): 
 
       process.stdout.write(`\r  ${slug}: ${i + 1}/${SPIN_FRAME_COUNT} kare yüklendi   `)
     }
-    console.log(`\n  ✓ ${slug} tamamlandı`)
+
+    // Boy (mm) değeri — kare görsellerinin yanına küçük bir JSON dosyası
+    // olarak yüklenir. Product card'da bu değer, sahneye YAKILMAK yerine
+    // sabit bir HTML rozeti olarak gösteriliyor (bkz. ProductCardMedia.tsx)
+    // — kart döndükçe dönüp durmasın diye.
+    const metaBuffer = Buffer.from(JSON.stringify({ heightMm: Math.round(totalHeight) }), 'utf-8')
+    const { error: metaError } = await admin.storage.from(SPIN_FRAME_BUCKET).upload(`${slug}/meta.json`, metaBuffer, {
+      contentType: 'application/json',
+      upsert: true,
+    })
+    if (metaError) throw new Error(`Supabase meta.json upload hatası: ${metaError.message ?? metaError}`)
+
+    console.log(`\n  ✓ ${slug} tamamlandı (boy: ${Math.round(totalHeight)} mm)`)
   } finally {
     await page.close()
   }
