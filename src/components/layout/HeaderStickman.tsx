@@ -13,14 +13,16 @@ const REACH_OFFSET_X = 14 // adamın lambayı yakmak için durduğu nokta, lamba
 const LAMP_PLATFORM_OFFSET_Y = 11
 const JUMP_LANDING_GAP = 10 // zıplama sonrası inilen nokta, yazının bittiği yerin bu kadar SAĞINDA
 const GROUND_MARGIN = 6 // zemin çizgisi, header'ın alt kenarından bu kadar içeride
+const ARCHIVE_LAMPS_GAP = 24 // "Arşiv" yanındaki iki lamba arası mesafe
+const GAP_FROM_ARCHIVE = 22 // ilk ek lamba, Arşiv yazısının bittiği yerin bu kadar SAĞINDA
+const ARCHIVE_LAMP_REACH_OFFSET = 12 // adamın bu lambaları yakmak için durduğu, lambanın bu kadar SOLUNDAKİ nokta
 
 // ── Hız ────────────────────────────────────────────────────────────
-// TÜM düz yürüyüş segmentleri (girişten lambaya, yazının üstünden geçiş,
-// masaya kadar) AYNI px/sn hızını kullanır — böylece segmentler arasında
-// yürüme hızı ile adım (bacak/kol) animasyonu birbirinden kopmuyor.
-// Önceki versiyonda her segment için elle ayrı bir süre (ms) verilmişti,
-// bu da mesafe/süre oranı segmentler arasında farklı olduğu için "masaya
-// yürürken adımlar hıza göre yavaş kalıyor" sorununa yol açıyordu.
+// TÜM düz yürüyüş segmentleri AYNI px/sn hızını kullanır — böylece
+// segmentler arasında yürüme hızı ile adım (bacak/kol) animasyonu
+// birbirinden kopmuyor. Her segment için elle ayrı bir süre (ms)
+// vermek, mesafe/süre oranı segmentler arasında farklı olduğu için
+// "adımlar hıza göre yavaş/hızlı kalıyor" sorununa yol açıyordu.
 const WALK_SPEED_PX_PER_SEC = 16
 const CLIMB_SPEED_PX_PER_SEC = 10 // dikey tırmanma, yürümeden biraz daha yavaş/zahmetli
 const STEP_CYCLE_PX = 24 // bir tam adım (bacak sallanma) döngüsünün kapsadığı mesafe
@@ -45,6 +47,10 @@ type Phase =
   | 'climbing-to-text'
   | 'walking-across-top'
   | 'jumping-down'
+  | 'walking-to-lamp2'
+  | 'toggling2'
+  | 'walking-to-lamp3'
+  | 'toggling3'
   | 'walking-to-desk'
   | 'sitting'
   | 'seated'
@@ -60,14 +66,20 @@ interface Anchors {
   reachX: number // adamın lambayı yakmak için durduğu X
   brandRightX: number // "Ambience Bureau" yazısının bittiği X
   jumpLandingX: number // yazının bitiminden sonra aşağı atlayıp indiği X
+  archiveCenterX: number // "Arşiv" linkinin yatay ortası (referans olarak tutuluyor)
+  archiveRightX: number // "Arşiv" linkinin bittiği X — iki lamba buradan başlar
+  lamp2X: number // Arşiv'in yanındaki 1. ek lamba ("Yörüngesel Düzenleme" tarzı)
+  lamp3X: number // Arşiv'in yanındaki 2. ek lamba ("Eritilmiş Boru" tarzı)
+  reachLamp2X: number
+  reachLamp3X: number
   deskX: number
 }
 
 /**
- * Header'daki 2 sabit noktayı (marka yazısı, "Büro" linki) gerçek piksel
- * cinsinden ölçer — hem X hem Y. data-stickman-anchor="..." ile
- * işaretlenmiş elemanları arar (bkz. Header.tsx). `locale` değişince ve
- * pencere yeniden boyutlandığında yeniden ölçer.
+ * Header'daki 3 sabit noktayı (marka yazısı, "Büro" linki, "Arşiv" linki)
+ * gerçek piksel cinsinden ölçer — hem X hem Y. data-stickman-anchor="..."
+ * ile işaretlenmiş elemanları arar (bkz. Header.tsx). `locale` değişince
+ * ve pencere yeniden boyutlandığında yeniden ölçer.
  */
 function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale: string): Anchors | null {
   const [anchors, setAnchors] = useState<Anchors | null>(null)
@@ -84,11 +96,13 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
 
       const brandEl = header.querySelector('[data-stickman-anchor="brand"]')
       const buroEl = header.querySelector('[data-stickman-anchor="buro"]')
-      if (!brandEl || !buroEl) return
+      const arsivEl = header.querySelector('[data-stickman-anchor="arsiv"]')
+      if (!brandEl || !buroEl || !arsivEl) return
 
       const headerRect = header.getBoundingClientRect()
       const brandRect = brandEl.getBoundingClientRect()
       const buroRect = buroEl.getBoundingClientRect()
+      const arsivRect = arsivEl.getBoundingClientRect()
 
       const headerWidth = headerRect.width
       const headerHeight = headerRect.height
@@ -97,6 +111,10 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
       const lampY = brandRect.top - headerRect.top + brandRect.height / 2
       const brandTopY = brandRect.top - headerRect.top
       const brandRightX = brandRect.right - headerRect.left
+      const archiveCenterX = arsivRect.left - headerRect.left + arsivRect.width / 2
+      const archiveRightX = arsivRect.right - headerRect.left
+      const lamp2X = archiveRightX + GAP_FROM_ARCHIVE
+      const lamp3X = lamp2X + ARCHIVE_LAMPS_GAP
 
       setAnchors({
         headerWidth,
@@ -109,6 +127,12 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
         reachX: lampX + REACH_OFFSET_X,
         brandRightX,
         jumpLandingX: brandRightX + JUMP_LANDING_GAP,
+        archiveCenterX,
+        archiveRightX,
+        lamp2X,
+        lamp3X,
+        reachLamp2X: lamp2X - ARCHIVE_LAMP_REACH_OFFSET,
+        reachLamp3X: lamp3X - ARCHIVE_LAMP_REACH_OFFSET,
         deskX: buroRect.left - headerRect.left + buroRect.width / 2,
       })
     }
@@ -122,6 +146,7 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
           header,
           header.querySelector('[data-stickman-anchor="brand"]'),
           header.querySelector('[data-stickman-anchor="buro"]'),
+          header.querySelector('[data-stickman-anchor="arsiv"]'),
         ].filter((el): el is Element => el !== null)
       : []
 
@@ -151,15 +176,15 @@ function walkDuration(fromX: number, toX: number, fromY: number, toY: number) {
 /**
  * PROTOTİP. Header'ın TAMAMINI kaplayan (pointer-events-none) bir
  * bindirme: çubuk adam zeminde lambaya (marka yazısının solunda, bir
- * logo/marka işareti gibi duran) yürür, yükselip yakar, sonra "Ambience
+ * logo/marka işareti gibi duran) yürür, yükselip yakar, "Ambience
  * Bureau" yazısının ÜSTÜNDEN geçerek yürür, yazının bitiminde aşağı
- * zıplayıp zemine iner ve "Büro" linkinin hizasındaki masaya yürüyüp
- * arkasına oturur.
+ * zıplar, "Arşiv" linkinin yanındaki iki lambayı (ürünlerdeki gerçek
+ * tasarımlara benzeyen) da yakar, sonra "Büro" linkinin hizasındaki
+ * masaya yürüyüp arkasına oturur.
  *
- * TÜM düz yürüyüş segmentleri aynı px/sn hızını kullanır (bkz.
- * WALK_SPEED_PX_PER_SEC) — adım animasyonunun süresi de bu hıza göre
- * hesaplanır, böylece hangi segmentte olursa olsun adımlar gerçek
- * harekete göre senkronize kalır.
+ * TÜM düz yürüyüş segmentleri aynı px/sn hızını kullanır — adım
+ * animasyonunun süresi de bu hıza göre hesaplanır, böylece hangi
+ * segmentte olursa olsun adımlar gerçek harekete göre senkronize kalır.
  *
  * Konumlar Header.tsx'teki data-stickman-anchor işaretli elemanlardan
  * GERÇEK piksel olarak ölçülüyor. Header'ın tamamını kapladığı için
@@ -173,14 +198,18 @@ export function HeaderStickman({ locale }: { locale: string }) {
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [durationMs, setDurationMs] = useState(0)
   const [timingFn, setTimingFn] = useState<'linear' | 'ease-in'>('linear')
-  const [lampsOn, setLampsOn] = useState(false)
+  const [lamp1On, setLamp1On] = useState(false)
+  const [lamp2On, setLamp2On] = useState(false)
+  const [lamp3On, setLamp3On] = useState(false)
   const timeouts = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
     if (!anchors) return
     timeouts.current.forEach(clearTimeout)
     timeouts.current = []
-    setLampsOn(false)
+    setLamp1On(false)
+    setLamp2On(false)
+    setLamp3On(false)
     setPhase('walking-to-lamp')
     setTimingFn('linear')
 
@@ -191,8 +220,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
     let elapsed = 0
 
     const raf = requestAnimationFrame(() => {
-      const d = walkDuration(startX, anchors.lampX, anchors.groundY, anchors.groundY)
-      setDurationMs(d)
+      setDurationMs(walkDuration(startX, anchors.lampX, anchors.groundY, anchors.groundY))
       setPos({ x: anchors.lampX, y: anchors.groundY })
     })
     elapsed += walkDuration(startX, anchors.lampX, anchors.groundY, anchors.groundY)
@@ -205,24 +233,21 @@ export function HeaderStickman({ locale }: { locale: string }) {
     elapsed += walkDuration(anchors.lampX, anchors.reachX, anchors.groundY, anchors.lampPlatformY)
 
     const t2 = setTimeout(() => setPhase('toggling'), elapsed)
-    const t3 = setTimeout(() => setLampsOn(true), elapsed + TOGGLE_HOLD_MS * 0.4)
+    const t3 = setTimeout(() => setLamp1On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
     elapsed += TOGGLE_HOLD_MS
 
     // Lambayı yaktıktan sonra: "bir adım daha" yukarı çıkıp tam olarak
     // yazının ÜST kenarı (brandTopY) hizasına gelir.
-    const t4a = setTimeout(() => {
-      setPhase('climbing-to-text')
-      const d = Math.max(
-        EXTRA_CLIMB_MS_MIN,
-        walkDuration(anchors.reachX, anchors.reachX, anchors.lampPlatformY, anchors.brandTopY)
-      )
-      setDurationMs(d)
-      setPos({ x: anchors.reachX, y: anchors.brandTopY })
-    }, elapsed)
-    elapsed += Math.max(
+    const climbToTextMs = Math.max(
       EXTRA_CLIMB_MS_MIN,
       walkDuration(anchors.reachX, anchors.reachX, anchors.lampPlatformY, anchors.brandTopY)
     )
+    const t4a = setTimeout(() => {
+      setPhase('climbing-to-text')
+      setDurationMs(climbToTextMs)
+      setPos({ x: anchors.reachX, y: anchors.brandTopY })
+    }, elapsed)
+    elapsed += climbToTextMs
 
     // Sonra: yazının ÜSTÜNDEN (aynı yükseklikte) geçerek yürür.
     const t4 = setTimeout(() => {
@@ -241,19 +266,44 @@ export function HeaderStickman({ locale }: { locale: string }) {
     }, elapsed)
     elapsed += JUMP_MS
 
+    // "Arşiv" yanındaki 1. ek lambaya yürür ve yakar.
     const t6 = setTimeout(() => {
-      setPhase('walking-to-desk')
+      setPhase('walking-to-lamp2')
       setTimingFn('linear')
-      setDurationMs(walkDuration(anchors.jumpLandingX, anchors.deskX, anchors.groundY, anchors.groundY))
+      setDurationMs(walkDuration(anchors.jumpLandingX, anchors.reachLamp2X, anchors.groundY, anchors.groundY))
+      setPos({ x: anchors.reachLamp2X, y: anchors.groundY })
+    }, elapsed)
+    elapsed += walkDuration(anchors.jumpLandingX, anchors.reachLamp2X, anchors.groundY, anchors.groundY)
+
+    const t7 = setTimeout(() => setPhase('toggling2'), elapsed)
+    const t8 = setTimeout(() => setLamp2On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
+    elapsed += TOGGLE_HOLD_MS
+
+    // 2. ek lambaya (Arşiv'in hemen yanındaki diğer lamba) yürür ve yakar.
+    const t9 = setTimeout(() => {
+      setPhase('walking-to-lamp3')
+      setDurationMs(walkDuration(anchors.reachLamp2X, anchors.reachLamp3X, anchors.groundY, anchors.groundY))
+      setPos({ x: anchors.reachLamp3X, y: anchors.groundY })
+    }, elapsed)
+    elapsed += walkDuration(anchors.reachLamp2X, anchors.reachLamp3X, anchors.groundY, anchors.groundY)
+
+    const t10 = setTimeout(() => setPhase('toggling3'), elapsed)
+    const t11 = setTimeout(() => setLamp3On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
+    elapsed += TOGGLE_HOLD_MS
+
+    // Üç lamba da yandıktan sonra masaya (Büro hizası) yürüyüp oturur.
+    const t12 = setTimeout(() => {
+      setPhase('walking-to-desk')
+      setDurationMs(walkDuration(anchors.reachLamp3X, anchors.deskX, anchors.groundY, anchors.groundY))
       setPos({ x: anchors.deskX, y: anchors.groundY })
     }, elapsed)
-    elapsed += walkDuration(anchors.jumpLandingX, anchors.deskX, anchors.groundY, anchors.groundY)
+    elapsed += walkDuration(anchors.reachLamp3X, anchors.deskX, anchors.groundY, anchors.groundY)
 
-    const t7 = setTimeout(() => setPhase('sitting'), elapsed)
+    const t13 = setTimeout(() => setPhase('sitting'), elapsed)
     elapsed += SIT_TRANSITION_MS
-    const t8 = setTimeout(() => setPhase('seated'), elapsed)
+    const t14 = setTimeout(() => setPhase('seated'), elapsed)
 
-    timeouts.current = [t1, t2, t3, t4a, t4, t5, t6, t7, t8]
+    timeouts.current = [t1, t2, t3, t4a, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14]
     return () => {
       cancelAnimationFrame(raf)
       timeouts.current.forEach(clearTimeout)
@@ -262,10 +312,17 @@ export function HeaderStickman({ locale }: { locale: string }) {
 
   if (!anchors) return <div ref={containerRef} className="pointer-events-none absolute inset-0" />
 
-  const isWalking = phase === 'walking-to-lamp' || phase === 'walking-across-top' || phase === 'walking-to-desk'
+  const isWalking =
+    phase === 'walking-to-lamp' ||
+    phase === 'walking-across-top' ||
+    phase === 'walking-to-lamp2' ||
+    phase === 'walking-to-lamp3' ||
+    phase === 'walking-to-desk'
   const isClimbing = phase === 'climbing-up' || phase === 'climbing-to-text'
   const isStepping = isWalking || isClimbing
-  const isReaching = phase === 'toggling'
+  const isReachingLamp1 = phase === 'toggling'
+  const isReachingLamp23 = phase === 'toggling2' || phase === 'toggling3'
+  const isReaching = isReachingLamp1 || isReachingLamp23
   const isJumping = phase === 'jumping-down'
   const isSeated = phase === 'sitting' || phase === 'seated'
 
@@ -275,7 +332,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
         viewBox={`0 0 ${anchors.headerWidth} ${anchors.headerHeight}`}
         className="h-full w-full"
         role="img"
-        aria-label="Prototip: lambayı açan, yazının üstünden geçip zıplayan ve masaya oturan çubuk adam animasyonu"
+        aria-label="Prototip: lambaları açan, yazının üstünden geçip zıplayan ve masaya oturan çubuk adam animasyonu"
       >
         <defs>
           {/* Lamba glow'u için yumuşak, merkezden dışa doğru sönümlenen gradient */}
@@ -286,22 +343,68 @@ export function HeaderStickman({ locale }: { locale: string }) {
           </radialGradient>
         </defs>
 
-        {/* ── Lamba (marka yazısının solunda, logo gibi — büyütülmüş) ── */}
+        {/* ── Lamba 1 (marka yazısının solunda, logo gibi) ── */}
         <g transform={`translate(${anchors.lampX} ${anchors.lampY})`}>
           <circle
             cx="0" cy="-3"
             r="15"
             fill="url(#stickmanLampGlow)"
-            style={{ opacity: lampsOn ? 1 : 0, transition: 'opacity 800ms ease-out' }}
+            style={{ opacity: lamp1On ? 1 : 0, transition: 'opacity 800ms ease-out' }}
           />
           <line x1="0" y1="11" x2="0" y2="1.5" stroke="#141414" strokeWidth="1.6" />
           <path d="M -8.5 1.5 L 8.5 1.5 L 5 -10 L -5 -10 Z" fill="none" stroke="#141414" strokeWidth="1.6" strokeLinejoin="round" />
           <circle
             cx="0" cy="-3" r="2.8"
             className="transition-colors duration-500"
-            fill={lampsOn ? '#F5D78E' : '#EDEDED'}
+            fill={lamp1On ? '#F5D78E' : '#EDEDED'}
             stroke="#141414"
             strokeWidth="0.9"
+          />
+        </g>
+
+        {/* ── Lamba 2 ("Yörüngesel Düzenleme" tarzı — yeşil/mavi segmentli
+            gövde + geniş konik abajur), Arşiv'in yanında ── */}
+        <g transform={`translate(${anchors.lamp2X} ${anchors.groundY})`}>
+          <circle
+            cx="0" cy="-22" r="11"
+            fill="url(#stickmanLampGlow)"
+            style={{ opacity: lamp2On ? 1 : 0, transition: 'opacity 800ms ease-out' }}
+          />
+          <ellipse cx="0" cy="-1" rx="3.5" ry="1.2" fill="none" stroke="#141414" strokeWidth="1" />
+          <ellipse cx="0" cy="-4" rx="3.2" ry="1.6" fill="#6B9B5E" stroke="#141414" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-7" rx="2.8" ry="1.4" fill="#4A6B96" stroke="#141414" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-10" rx="2.6" ry="1.3" fill="#6B9B5E" stroke="#141414" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-13" rx="2.2" ry="1.1" fill="#4A6B96" stroke="#141414" strokeWidth="0.7" />
+          <path
+            d="M -3.5 -15 L 3.5 -15 L 2 -18 L -2 -18 Z"
+            fill={lamp2On ? '#FFFFFF' : '#EDEDED'}
+            stroke="#141414" strokeWidth="0.9" strokeLinejoin="round"
+            className="transition-colors duration-500"
+          />
+          <path
+            d="M -7.5 -18 L 7.5 -18 L 3.8 -27 L -3.8 -27 Z"
+            fill={lamp2On ? '#FFFFFF' : '#EDEDED'}
+            stroke="#141414" strokeWidth="1.1" strokeLinejoin="round"
+            className="transition-colors duration-500"
+          />
+        </g>
+
+        {/* ── Lamba 3 ("Eritilmiş Boru" tarzı — turkuaz/turuncu bantlı
+            silindir), Arşiv'in yanında ── */}
+        <g transform={`translate(${anchors.lamp3X} ${anchors.groundY})`}>
+          <circle
+            cx="0" cy="-24" r="10"
+            fill="url(#stickmanLampGlow)"
+            style={{ opacity: lamp3On ? 1 : 0, transition: 'opacity 800ms ease-out' }}
+          />
+          <ellipse cx="0" cy="-1" rx="3" ry="1" fill="none" stroke="#141414" strokeWidth="1" />
+          <rect x="-2.6" y="-11" width="5.2" height="9" rx="2.4" fill="#D97F4E" stroke="#141414" strokeWidth="0.8" />
+          <rect x="-2.6" y="-18" width="5.2" height="7.2" fill="#7FC9B0" stroke="#141414" strokeWidth="0.8" />
+          <rect
+            x="-2.6" y="-28.5" width="5.2" height="10.7" rx="2.6"
+            fill={lamp3On ? '#FFFFFF' : '#EDEDED'}
+            stroke="#141414" strokeWidth="0.8"
+            className="transition-colors duration-500"
           />
         </g>
 
@@ -341,19 +444,22 @@ export function HeaderStickman({ locale }: { locale: string }) {
             {/* Gövde */}
             <line x1="0" y1="-9" x2="0" y2="0" stroke="#141414" strokeWidth="1.4" />
 
-            {/* Sol kol (omuz) */}
+            {/* Sol kol (omuz) — lamba 1'e (solunda) düz uzanır, lamba 2/3'e
+                (sağında) yukarı-sağa uzanır */}
             <g transform="translate(0 -7)">
               <g
                 className={isStepping && !isReaching ? 'stickman-arm-a-sm' : undefined}
                 style={{
                   animationDuration: isStepping ? `${STEP_CYCLE_MS}ms` : undefined,
-                  ...(isReaching
+                  ...(isReachingLamp1
                     ? { transform: 'rotate(90deg)', transition: 'transform 350ms ease-out' }
-                    : isJumping
-                      ? { transform: 'rotate(-40deg)', transition: 'transform 200ms ease-out' }
-                      : !isStepping
-                        ? { transform: 'rotate(8deg)', transition: 'transform 250ms ease-out' }
-                        : {}),
+                    : isReachingLamp23
+                      ? { transform: 'rotate(-60deg)', transition: 'transform 350ms ease-out' }
+                      : isJumping
+                        ? { transform: 'rotate(-40deg)', transition: 'transform 200ms ease-out' }
+                        : !isStepping
+                          ? { transform: 'rotate(8deg)', transition: 'transform 250ms ease-out' }
+                          : {}),
                 }}
               >
                 <line x1="0" y1="0" x2="0" y2="8" stroke="#141414" strokeWidth="1.4" strokeLinecap="round" />
