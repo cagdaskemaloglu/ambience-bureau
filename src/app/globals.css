@@ -118,3 +118,50 @@
     display: none; /* Chrome/Safari */
   }
 }
+
+/* ── HeaderStickman.tsx (PROTOTİP) — yürüme döngüsü animasyonları ──
+   Her sınıf, ilgili SVG <g>'nin KENDİ yerel (0,0) noktası etrafında
+   (bir üstteki <g translate(...)> ile eklem konumuna taşınmış olan)
+   döndürülmesini sağlar. transform-origin:0 0, SVG kullanıcı birimi
+   olarak elemanın kendi orijinine karşılık geldiği için köşe/bounding-box
+   hesaplamasına bağımlı değil, tarayıcılar arası tutarlı çalışır. */
+.stickman-leg-a-sm {
+  transform-origin: 0 0;
+  animation: stickman-walk-leg-a 2s ease-in-out infinite;
+}
+.stickman-leg-b-sm {
+  transform-origin: 0 0;
+  animation: stickman-walk-leg-b 2s ease-in-out infinite;
+}
+.stickman-arm-a-sm {
+  transform-origin: 0 0;
+  animation: stickman-walk-arm-a 2s ease-in-out infinite;
+}
+.stickman-arm-b-sm {
+  transform-origin: 0 0;
+  animation: stickman-walk-arm-b 2s ease-in-out infinite;
+}
+.stickman-seated-bob-sm {
+  animation: stickman-seated-bob-sm 2.4s ease-in-out infinite;
+}
+
+@keyframes stickman-walk-leg-a {
+  0%, 100% { transform: rotate(24deg); }
+  50% { transform: rotate(-24deg); }
+}
+@keyframes stickman-walk-leg-b {
+  0%, 100% { transform: rotate(-24deg); }
+  50% { transform: rotate(24deg); }
+}
+@keyframes stickman-walk-arm-a {
+  0%, 100% { transform: rotate(-20deg); }
+  50% { transform: rotate(20deg); }
+}
+@keyframes stickman-walk-arm-b {
+  0%, 100% { transform: rotate(20deg); }
+  50% { transform: rotate(-20deg); }
+}
+@keyframes stickman-seated-bob-sm {
+  0%, 100% { transform: translateY(3px); }
+  50% { transform: translateY(2px); }
+}

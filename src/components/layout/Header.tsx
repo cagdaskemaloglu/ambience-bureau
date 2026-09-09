@@ -9,6 +9,7 @@ import { useCartStore } from '@/lib/store/cart'
 import Image from 'next/image'
 import { getLocalizedValue } from '@/lib/sanity'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
+import { HeaderStickman } from './HeaderStickman'
 import type { Collection } from '@/types'
 
 const NAV_ITEMS = [
@@ -128,10 +129,15 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
   return (
     <>
       <header className="relative z-40 flex-shrink-0 border-b border-bureau-black bg-white">
-        <div className="flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
+        <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
-          <Link href="/" className="group no-underline flex items-center gap-3" onClick={() => setMenuOpen(false)}>
+          <Link
+            href="/"
+            data-stickman-anchor="brand"
+            className="group no-underline flex items-center gap-3"
+            onClick={() => setMenuOpen(false)}
+          >
             <div className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black sm:text-xl">
               THE AMBIENCE BUREAU
             </div>
@@ -216,6 +222,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <Link
                 key={href}
                 href={href}
+                data-stickman-anchor={href === '/bureau' ? 'buro' : undefined}
                 className={`
                   font-mono text-[11px] tracking-wider uppercase no-underline
                   transition-opacity duration-150
@@ -228,7 +235,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
           </nav>
 
           {/* Desktop right */}
-          <div className="hidden items-center gap-6 mt-1 lg:flex">
+          <div data-stickman-anchor="nav-end" className="hidden items-center gap-6 mt-1 lg:flex">
             <button
               onClick={switchLocale}
               className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors"
@@ -330,6 +337,10 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <span className={`block h-px w-6 bg-bureau-black transition-all duration-200 ${menuOpen ? '-translate-y-[3.5px] -rotate-45' : ''}`} />
             </button>
           </div>
+        </div>
+
+        <div className="hidden lg:block">
+          <HeaderStickman locale={locale} />
         </div>
       </header>
 
