@@ -120,15 +120,15 @@ export function ProductCardMedia({
   // ziyaretçi siteye girince her zaman fotoğrafı görür, 3D'ye geçmek
   // istediğinde sol üstteki butona kendisi tıklar (bkz. handleToggle).
 
-  // 3D görünümdeyken, ekrandayken VE mouse kartın üzerinde değilken
-  // yavaşça döndür — hover'da dönüş durur (kullanıcı modeli net görebilsin).
+  // 3D görünümdeyken ve ekrandayken yavaşça döndür — mouse üzerine
+  // gelse de dönüş DURMAZ, her zaman döner.
   useEffect(() => {
-    if (view !== '3d' || framesStatus !== 'ready' || !isInView || isHovered) return
+    if (view !== '3d' || framesStatus !== 'ready' || !isInView) return
     const interval = setInterval(() => {
       setFrameIndex((i) => (i + 1) % SPIN_FRAME_COUNT)
     }, ROTATE_INTERVAL_MS)
     return () => clearInterval(interval)
-  }, [view, framesStatus, isInView, isHovered])
+  }, [view, framesStatus, isInView])
 
   function handleToggle(e: React.MouseEvent) {
     // Kartın tamamı bir <Link> — bu butona tıklamak ürün detay sayfasına
@@ -141,11 +141,12 @@ export function ProductCardMedia({
   // Kareler tamamen yüklenip doğrulanmadan buton gösterilmez — "unavailable"
   // durumunda (bu üründe kare üretilmemiş) buton hiç görünmez.
   const showToggleButton = isConfigurable && framesStatus === 'ready'
-  // Boy rozeti SADECE 3D görünümdeyken gösterilir. Flip'i sağlayan
-  // `transform: rotateY(...)` div'inin DIŞINDA, sabit bir kardeş eleman
-  // olarak render ediliyor — bu yüzden model/kare döndükçe rozet ASLA
-  // dönmez, hep aynı yerde sabit kalır.
-  const showHeightBadge = isConfigurable && view === '3d' && framesStatus === 'ready' && heightMm !== null
+  // Boy rozeti SADECE 3D görünümdeyken gösterilebilir hale gelir — asıl
+  // açılıp kapanması ise hover'a bağlı, yumuşak bir fade ile (bkz. render
+  // kısmındaki opacity geçişi). Flip'i sağlayan `transform: rotateY(...)`
+  // div'inin DIŞINDA, sabit bir kardeş eleman olarak render ediliyor — bu
+  // yüzden model/kare döndükçe rozet ASLA dönmez, hep aynı yerde sabit kalır.
+  const heightBadgeEligible = isConfigurable && view === '3d' && framesStatus === 'ready' && heightMm !== null
 
   return (
     <div
@@ -179,13 +180,17 @@ export function ProductCardMedia({
         </button>
       )}
 
-      {showHeightBadge && (
+      {heightBadgeEligible && (
         // Custom Registry'deki BOY ölçü çizgisiyle aynı görsel dil (kesikli
         // çizgi + ok başları + mm etiketi) — ama burada gerçek 3D sahneye
         // YAKILMIYOR, sabit bir 2D SVG/HTML katmanı. Döndürülen flip div'inin
         // DIŞINDA olduğu için model/kare döndükçe ASLA dönmez. Kartın SAĞ
-        // kenarında, dikey olarak ortalanmış şekilde duruyor.
-        <div className="pointer-events-none absolute inset-y-3 right-2.5 z-10 flex items-center gap-1">
+        // kenarında, dikey olarak ortalanmış şekilde duruyor. Hover'da
+        // yumuşakça belirip kayboluyor (mouse kartın üzerindeyken açık).
+        <div
+          className="pointer-events-none absolute inset-y-3 right-2.5 z-10 flex items-center gap-1 transition-opacity duration-200 ease-out"
+          style={{ opacity: isHovered ? 1 : 0 }}
+        >
           <svg viewBox="0 0 14 100" preserveAspectRatio="none" className="h-full w-3 overflow-visible">
             <line
               x1="7" y1="7" x2="7" y2="93"

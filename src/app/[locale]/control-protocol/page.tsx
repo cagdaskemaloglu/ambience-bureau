@@ -122,7 +122,9 @@ export default async function ControlProtocolPage({
             <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
 
               <a
-                href="#"
+                href="https://apps.apple.com/tr/app/ambience-bureau/id6794577754"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Download from App Store"
                 className="btn-bureau-outline inline-flex items-center justify-center"
               >
