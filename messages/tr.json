@@ -46,6 +46,7 @@
   },
   "product": {
     "addToCart": "Nesne Talep Et",
+    "customize": "Özelleştir",
     "outOfStock": "Hizmet Dışı",
     "specifications": "Teknik Özellikler",
     "registryNo": "Kayıt No.",
@@ -53,8 +54,7 @@
       "certified": "Sertifikalı",
       "limited": "Sınırlı Seri",
       "decommissioned": "Hizmet Dışı"
-    },
-    "customize": "Özelleştir"
+    }
   },
   "customRegistry": {
     "title": "Özel Kayıt",
@@ -144,5 +144,10 @@
     "error": "Bir hata oluştu.",
     "backToRegistry": "Kayda Dön"
   },
-  "customize": "Özelleştir"
+  "home": {
+    "title": "The Ambience Bureau",
+    "description": "Mekânsal foton düzenlemesi için sertifikalı nesneler — Drop'lara göre gruplanmış.",
+    "viewMore": "Devamını Görüntüle",
+    "noDrops": "Henüz yayınlanmış bir Drop yok."
+  }
 }

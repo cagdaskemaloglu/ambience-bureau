@@ -122,6 +122,18 @@ export interface Collection {
   iotFeeUSD?: number
 }
 
+// ── Drop ──────────────────────────────────────────────────
+
+export interface Drop {
+  _id: string
+  dropNo: string
+  name: LocalizedString[]
+}
+
+export interface DropWithProducts extends Drop {
+  products: ProductCard[]
+}
+
 // ── Lamba Parçası (Konfigüratör) ──────────────────────────
 
 export type SlotType = 'base' | 'body' | 'head'

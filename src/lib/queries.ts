@@ -93,6 +93,7 @@ export async function getAllProducts(filters?: {
   compatibility?: string
   minPrice?: number
   maxPrice?: number
+  drop?: string
 }) {
   let filter = `_type == "product"`
   const params: Record<string, string | number> = {}
@@ -121,6 +122,10 @@ export async function getAllProducts(filters?: {
   if (filters?.maxPrice !== undefined) {
     filter += ` && priceTRY <= $maxPrice`
     params.maxPrice = filters.maxPrice
+  }
+  if (filters?.drop) {
+    filter += ` && drop->dropNo == $drop`
+    params.drop = filters.drop
   }
 
   return sanityClient.fetch(
@@ -202,6 +207,25 @@ export async function getFeaturedPosts(limit = 3) {
     `*[_type == "post" && featured == true] | order(publishedAt desc) [0...$limit] {${POST_CARD_FRAGMENT}}`,
     { limit },
     { next: { tags: ['posts'] } }
+  )
+}
+
+// ── Drop Sorguları ────────────────────────────────────────
+
+// Anasayfadaki Drop satırları için: her drop'u, ona ait ürünlerle
+// (ProductCard bilgisiyle) birlikte, TEK sorguda getirir. Ürünü olmayan
+// drop'lar da döner — anasayfa bileşeni bunları (boş satır göstermemek
+// için) kendi filtreler.
+export async function getAllDropsWithProducts() {
+  return sanityClient.fetch(
+    `*[_type == "drop"] | order(sortOrder asc) {
+      _id,
+      dropNo,
+      ${LOCALIZED_FIELD('name')},
+      "products": *[_type == "product" && references(^._id)] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
+    }`,
+    {},
+    { next: { tags: ['drops', 'products'] } }
   )
 }
 

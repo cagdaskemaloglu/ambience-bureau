@@ -76,7 +76,7 @@ interface Anchors {
 }
 
 /**
- * Header'daki 3 sabit noktayı (marka yazısı, "Büro" linki, "Arşiv" linki)
+ * Header'daki 3 sabit noktayı (marka yazısı, "BUREAU" kelimesi, "Arşiv" linki)
  * gerçek piksel cinsinden ölçer — hem X hem Y. data-stickman-anchor="..."
  * ile işaretlenmiş elemanları arar (bkz. Header.tsx). `locale` değişince
  * ve pencere yeniden boyutlandığında yeniden ölçer.
@@ -95,13 +95,13 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
       if (!header) return
 
       const brandEl = header.querySelector('[data-stickman-anchor="brand"]')
-      const buroEl = header.querySelector('[data-stickman-anchor="buro"]')
+      const bureauWordEl = header.querySelector('[data-stickman-anchor="bureau-word"]')
       const arsivEl = header.querySelector('[data-stickman-anchor="arsiv"]')
-      if (!brandEl || !buroEl || !arsivEl) return
+      if (!brandEl || !bureauWordEl || !arsivEl) return
 
       const headerRect = header.getBoundingClientRect()
       const brandRect = brandEl.getBoundingClientRect()
-      const buroRect = buroEl.getBoundingClientRect()
+      const bureauWordRect = bureauWordEl.getBoundingClientRect()
       const arsivRect = arsivEl.getBoundingClientRect()
 
       const headerWidth = headerRect.width
@@ -133,7 +133,7 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
         lamp3X,
         reachLamp2X: lamp2X - ARCHIVE_LAMP_REACH_OFFSET,
         reachLamp3X: lamp3X - ARCHIVE_LAMP_REACH_OFFSET,
-        deskX: buroRect.left - headerRect.left + buroRect.width / 2,
+        deskX: bureauWordRect.left - headerRect.left + bureauWordRect.width / 2,
       })
     }
 
@@ -145,7 +145,7 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
       ? [
           header,
           header.querySelector('[data-stickman-anchor="brand"]'),
-          header.querySelector('[data-stickman-anchor="buro"]'),
+          header.querySelector('[data-stickman-anchor="bureau-word"]'),
           header.querySelector('[data-stickman-anchor="arsiv"]'),
         ].filter((el): el is Element => el !== null)
       : []
@@ -179,7 +179,7 @@ function walkDuration(fromX: number, toX: number, fromY: number, toY: number) {
  * logo/marka işareti gibi duran) yürür, yükselip yakar, "Ambience
  * Bureau" yazısının ÜSTÜNDEN geçerek yürür, yazının bitiminde aşağı
  * zıplar, "Arşiv" linkinin yanındaki iki lambayı (ürünlerdeki gerçek
- * tasarımlara benzeyen) da yakar, sonra "Büro" linkinin hizasındaki
+ * tasarımlara benzeyen) da yakar, sonra "Ambience Bureau" yazısındaki
  * masaya yürüyüp arkasına oturur.
  *
  * TÜM düz yürüyüş segmentleri aynı px/sn hızını kullanır — adım
@@ -291,7 +291,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
     const t11 = setTimeout(() => setLamp3On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
     elapsed += TOGGLE_HOLD_MS
 
-    // Üç lamba da yandıktan sonra masaya (Büro hizası) yürüyüp oturur.
+    // Üç lamba da yandıktan sonra masaya ("BUREAU" kelimesi hizası) yürüyüp oturur.
     const t12 = setTimeout(() => {
       setPhase('walking-to-desk')
       setDurationMs(walkDuration(anchors.reachLamp3X, anchors.deskX, anchors.groundY, anchors.groundY))
@@ -408,7 +408,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
           />
         </g>
 
-        {/* ── Masa ("Büro" ile hizalı) ── */}
+        {/* ── Masa ("BUREAU" kelimesiyle hizalı) ── */}
         <g transform={`translate(${anchors.deskX} ${anchors.groundY - 34})`}>
           <line x1="-11" y1="24" x2="11" y2="24" stroke="#141414" strokeWidth="1.6" />
           <line x1="-9" y1="24" x2="-9" y2="34" stroke="#141414" strokeWidth="1.4" />

@@ -36,6 +36,9 @@ export default defineConfig({
             S.listItem()
               .title('Collections')
               .child(S.documentTypeList('collection').title('Collections')),
+            S.listItem()
+              .title('Drops')
+              .child(S.documentTypeList('drop').title('Drops')),
           ]),
     }),
     visionTool(),

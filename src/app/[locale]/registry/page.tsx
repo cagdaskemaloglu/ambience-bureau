@@ -15,6 +15,7 @@ type Props = {
     photon?: string
     compat?: string
     price?: string
+    drop?: string
   }>
 }
 
@@ -54,6 +55,7 @@ export default async function RegistryPage({ params, searchParams }: Props) {
     compatibility: resolvedSearch.compat as ControlCompatibility | undefined,
     minPrice,
     maxPrice,
+    drop: resolvedSearch.drop,
   })
 
   return (

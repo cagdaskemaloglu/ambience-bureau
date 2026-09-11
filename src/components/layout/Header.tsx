@@ -139,7 +139,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             onClick={() => setMenuOpen(false)}
           >
             <div className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black sm:text-xl">
-              THE AMBIENCE BUREAU
+              THE AMBIENCE <span data-stickman-anchor="bureau-word">BUREAU</span>
             </div>
           </Link>
 

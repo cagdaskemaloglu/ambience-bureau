@@ -46,6 +46,7 @@
   },
   "product": {
     "addToCart": "Request Object",
+    "customize": "Customize",
     "outOfStock": "Decommissioned",
     "specifications": "Technical Specifications",
     "registryNo": "Reg. No.",
@@ -53,8 +54,7 @@
       "certified": "Certified",
       "limited": "Limited Series",
       "decommissioned": "Decommissioned"
-    },
-    "customize": "Customize Object"
+    }
   },
   "customRegistry": {
     "title": "Custom Registry",
@@ -143,5 +143,11 @@
     "loading": "Loading...",
     "error": "An error occurred.",
     "backToRegistry": "Back to Registry"
+  },
+  "home": {
+    "title": "The Ambience Bureau",
+    "description": "Certified objects for the regulation of spatial photons — grouped by Drop.",
+    "viewMore": "View More",
+    "noDrops": "No Drops have been released yet."
   }
 }
