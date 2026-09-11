@@ -85,6 +85,15 @@ export const productSchema = defineType({
       to: [{ type: 'collection' }],
     }),
 
+    defineField({
+      name: 'drop',
+      title: 'Drop',
+      description:
+        'Bu ürün hangi Drop\'ta yer alıyor? OPSİYONEL — boş bırakılırsa anasayfadaki Drop satırlarında görünmez, sadece Registry sayfasında listelenir.',
+      type: 'reference',
+      to: [{ type: 'drop' }],
+    }),
+
     // ── Fiyat ────────────────────────────────────────────
     // İki para birimi de elle girilir (otomatik kur çevrimi kullanılmıyor).
     // Görüntülemede dil/locale'e göre ilgili alan seçilir.
