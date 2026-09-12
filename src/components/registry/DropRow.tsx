@@ -11,7 +11,11 @@ import type { DropWithProducts } from '@/types'
 // kaç tanesinin sığdığı buna göre hesaplanır. ProductCard kendi içinde
 // %100 genişlik kullanıyor, bu yüzden sadece dış sarmalayıcının
 // genişliğini sabitlememiz yeterli.
-const CARD_WIDTH = 210
+// Genişlik %25 artırıldı (210→263), görsel oranı 5:4'e çekilerek boy
+// %25 azaltıldı (registry grid'indeki 3:4'ten farklı — sadece bu satırlar
+// için, bkz. ProductCard'a geçilen mediaAspectClassName).
+const CARD_WIDTH = 263
+const CARD_MEDIA_ASPECT = 'aspect-[5/4]'
 const CARD_GAP = 12 // gap-3
 
 export function DropRow({ drop }: { drop: DropWithProducts }) {
@@ -50,9 +54,9 @@ export function DropRow({ drop }: { drop: DropWithProducts }) {
   return (
     <section className="border-b border-bureau-black">
       <div className="flex items-baseline justify-between border-b border-dashed border-bureau-rule px-5 py-2.5 md:px-9">
-        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-bureau-black">
-          DROP-{drop.dropNo}
-          <span className="ml-2 font-normal text-bureau-muted">{name}</span>
+        <h2 className="font-mono text-[14px] font-bold uppercase tracking-wider text-bureau-black">
+          <span className="text-bureau-amber">DROP-{drop.dropNo}</span>
+          <span className="ml-2 font-semibold text-bureau-black">{name}</span>
         </h2>
         {hasMore && (
           <Link
@@ -67,7 +71,7 @@ export function DropRow({ drop }: { drop: DropWithProducts }) {
       <div ref={containerRef} className="flex flex-nowrap gap-3 overflow-hidden px-5 py-3 md:px-9">
         {visibleProducts.map((product) => (
           <div key={product._id} style={{ width: CARD_WIDTH, flexShrink: 0 }}>
-            <ProductCard product={product} />
+            <ProductCard product={product} mediaAspectClassName={CARD_MEDIA_ASPECT} />
           </div>
         ))}
 
@@ -75,7 +79,7 @@ export function DropRow({ drop }: { drop: DropWithProducts }) {
           <Link
             href={`/registry?drop=${drop.dropNo}`}
             style={{ width: CARD_WIDTH, flexShrink: 0 }}
-            className="flex aspect-[3/4] flex-col items-center justify-center gap-2 border border-dashed border-bureau-black/40 p-4 text-center no-underline transition-colors hover:border-bureau-amber hover:bg-bureau-surface"
+            className={`flex ${CARD_MEDIA_ASPECT} flex-col items-center justify-center gap-2 border border-dashed border-bureau-black/40 p-4 text-center no-underline transition-colors hover:border-bureau-amber hover:bg-bureau-surface`}
           >
             <span className="font-mono text-[10px] uppercase tracking-wider text-bureau-amber">
               {t('viewMore')}

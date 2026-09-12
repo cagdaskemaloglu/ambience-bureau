@@ -138,7 +138,10 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             className="group no-underline flex items-center gap-3"
             onClick={() => setMenuOpen(false)}
           >
-            <div className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black sm:text-xl">
+            <div
+              className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black sm:text-xl"
+              style={{ paddingLeft: '0.65em' }}
+            >
               THE AMBIENCE <span data-stickman-anchor="bureau-word">BUREAU</span>
             </div>
           </Link>

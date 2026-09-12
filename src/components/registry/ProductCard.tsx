@@ -20,7 +20,14 @@ const STATUS_CLASS: Record<string, string> = {
   decommissioned: 'status-decommissioned',
 }
 
-export function ProductCard({ product }: { product: ProductCardType }) {
+export function ProductCard({
+  product,
+  mediaAspectClassName,
+}: {
+  product: ProductCardType
+  /** Varsayılan 3:4 (registry grid'i) — Drop satırlarında farklı bir oran geçilebilir. */
+  mediaAspectClassName?: string
+}) {
   const locale = useLocale()
   const name = getLocalizedValue(product.name, locale, '—')
   const statusLabel = STATUS_LABEL[product.status]?.[locale as 'tr' | 'en'] ?? product.status
@@ -46,6 +53,7 @@ export function ProductCard({ product }: { product: ProductCardType }) {
         isConfigurable={product.isConfigurable}
         image={product.image}
         alt={product.image?.alt ?? name ?? ''}
+        {...(mediaAspectClassName ? { aspectClassName: mediaAspectClassName } : {})}
       />
 
       {/* Meta */}

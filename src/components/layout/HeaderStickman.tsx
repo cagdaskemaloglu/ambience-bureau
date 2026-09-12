@@ -4,13 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 
 // ── Ofsetler (piksel) ─────────────────────────────────────────────
 const LAMP_GAP_FROM_BRAND = 28 // lamba, marka yazısının bu kadar SOLUNA
-const REACH_OFFSET_X = 14 // adamın lambayı yakmak için durduğu nokta, lambanın bu kadar SAĞINDA (üst üste binmesin diye)
-// Lamba grafiğinin kendi tabanı (yakma anında adamın bastığı "zemin"),
-// lampY'nin (marka yazısının DİKEY ORTASI) bu kadar ALTINDA duruyor —
-// aşağıdaki <path>/<line> çizimindeki taban y=11 değeriyle birebir
-// eşleşmeli, aksi halde adam lambanın havada asılıymış gibi durduğu bir
-// yükseklikte durur ve kol açısı yanlış hesaplanır.
-const LAMP_PLATFORM_OFFSET_Y = 11
+const LADDER_X_OFFSET = 18 // merdiven, lamba 1'in bu kadar SAĞINDA konumlanır
+const LADDER_STEPS = 8 // merdivenin toplam basamak sayısı (zeminden yazının üst kenarına kadar)
+const LADDER_TOGGLE_STEP = 5 // bu basamakta durup lambayı yakar, sonra 3 basamak daha çıkar
+const LADDER_RAIL_HALF_WIDTH = 4 // merdivenin iki yan ray'i arası mesafenin yarısı
 const JUMP_LANDING_GAP = 10 // zıplama sonrası inilen nokta, yazının bittiği yerin bu kadar SAĞINDA
 const GROUND_MARGIN = 6 // zemin çizgisi, header'ın alt kenarından bu kadar içeride
 const ARCHIVE_LAMPS_GAP = 24 // "Arşiv" yanındaki iki lamba arası mesafe
@@ -29,7 +26,9 @@ const STEP_CYCLE_PX = 24 // bir tam adım (bacak sallanma) döngüsünün kapsad
 const STEP_CYCLE_MS = Math.round((STEP_CYCLE_PX / WALK_SPEED_PX_PER_SEC) * 1000)
 
 const TOGGLE_HOLD_MS = 700
-const EXTRA_CLIMB_MS_MIN = 350 // lambayı yaktıktan sonra yazının üstüne çıkan "bir adım daha"
+const PLACE_LADDER_MS = 550 // "cebinden merdiven çıkarma" duraklaması
+const PACK_LADDER_MS = 500 // çıkış sonrası "merdiveni tekrar cebe koyma" duraklaması
+const MIN_CLIMB_MS = 300
 const JUMP_MS = 550
 const SIT_TRANSITION_MS = 450
 
@@ -41,10 +40,12 @@ const SIT_TRANSITION_MS = 450
 const LEG_LENGTH = 7
 
 type Phase =
-  | 'walking-to-lamp'
-  | 'climbing-up'
+  | 'walking-to-ladder'
+  | 'placing-ladder'
+  | 'climbing-ladder-1'
   | 'toggling'
-  | 'climbing-to-text'
+  | 'climbing-ladder-2'
+  | 'packing-ladder'
   | 'walking-across-top'
   | 'jumping-down'
   | 'walking-to-lamp2'
@@ -61,9 +62,8 @@ interface Anchors {
   groundY: number
   lampX: number
   lampY: number
-  lampPlatformY: number // adamın lambayı yakmak için bastığı zemin (lambanın tabanı)
-  brandTopY: number // "Ambience Bureau" yazısının ÜST kenarı — yazının üstünden yürüme hattı
-  reachX: number // adamın lambayı yakmak için durduğu X
+  ladderX: number // merdivenin durduğu X — lamba 1'in sağında
+  brandTopY: number // "Ambience Bureau" yazısının ÜST kenarı — merdivenin/yürüme hattının tepe noktası
   brandRightX: number // "Ambience Bureau" yazısının bittiği X
   jumpLandingX: number // yazının bitiminden sonra aşağı atlayıp indiği X
   archiveCenterX: number // "Arşiv" linkinin yatay ortası (referans olarak tutuluyor)
@@ -73,6 +73,11 @@ interface Anchors {
   reachLamp2X: number
   reachLamp3X: number
   deskX: number
+}
+
+/** Merdivenin `step` numaralı basamağının Y konumu (0=zemin, LADDER_STEPS=yazının üst kenarı). */
+function ladderStepY(anchors: Anchors, step: number): number {
+  return anchors.groundY - ((anchors.groundY - anchors.brandTopY) * step) / LADDER_STEPS
 }
 
 /**
@@ -122,9 +127,8 @@ function useAnchors(containerRef: React.RefObject<HTMLDivElement | null>, locale
         groundY,
         lampX,
         lampY,
-        lampPlatformY: lampY + LAMP_PLATFORM_OFFSET_Y,
+        ladderX: lampX + LADDER_X_OFFSET,
         brandTopY,
-        reachX: lampX + REACH_OFFSET_X,
         brandRightX,
         jumpLandingX: brandRightX + JUMP_LANDING_GAP,
         archiveCenterX,
@@ -175,12 +179,14 @@ function walkDuration(fromX: number, toX: number, fromY: number, toY: number) {
 
 /**
  * PROTOTİP. Header'ın TAMAMINI kaplayan (pointer-events-none) bir
- * bindirme: çubuk adam zeminde lambaya (marka yazısının solunda, bir
- * logo/marka işareti gibi duran) yürür, yükselip yakar, "Ambience
- * Bureau" yazısının ÜSTÜNDEN geçerek yürür, yazının bitiminde aşağı
- * zıplar, "Arşiv" linkinin yanındaki iki lambayı (ürünlerdeki gerçek
- * tasarımlara benzeyen) da yakar, sonra "Ambience Bureau" yazısındaki
- * masaya yürüyüp arkasına oturur.
+ * bindirme: çubuk adam zeminde lamba 1'in (marka yazısının solunda, bir
+ * logo/marka işareti gibi duran) yanına yürür, cebinden bir merdiven
+ * çıkarıp lambanın SAĞINA yerleştirir, merdivenin 5. basamağına kadar
+ * çıkıp lambayı yakar, 3 basamak daha çıkıp "Ambience Bureau" yazısının
+ * ÜST kenarına ulaşır, yazının ÜSTÜNDEN geçerek yürür, yazının bitiminde
+ * aşağı zıplar, "Arşiv" linkinin yanındaki iki lambayı (ürünlerdeki
+ * gerçek tasarımlara benzeyen) da yakar, sonra "Ambience Bureau"
+ * yazısındaki masaya yürüyüp arkasına oturur.
  *
  * TÜM düz yürüyüş segmentleri aynı px/sn hızını kullanır — adım
  * animasyonunun süresi de bu hıza göre hesaplanır, böylece hangi
@@ -194,13 +200,14 @@ export function HeaderStickman({ locale }: { locale: string }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const anchors = useAnchors(containerRef, locale)
 
-  const [phase, setPhase] = useState<Phase>('walking-to-lamp')
+  const [phase, setPhase] = useState<Phase>('walking-to-ladder')
   const [pos, setPos] = useState({ x: 0, y: 0 })
   const [durationMs, setDurationMs] = useState(0)
   const [timingFn, setTimingFn] = useState<'linear' | 'ease-in'>('linear')
   const [lamp1On, setLamp1On] = useState(false)
   const [lamp2On, setLamp2On] = useState(false)
   const [lamp3On, setLamp3On] = useState(false)
+  const [ladderVisible, setLadderVisible] = useState(false)
   const timeouts = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
@@ -210,7 +217,8 @@ export function HeaderStickman({ locale }: { locale: string }) {
     setLamp1On(false)
     setLamp2On(false)
     setLamp3On(false)
-    setPhase('walking-to-lamp')
+    setLadderVisible(false)
+    setPhase('walking-to-ladder')
     setTimingFn('linear')
 
     const startX = anchors.lampX - 60
@@ -220,45 +228,60 @@ export function HeaderStickman({ locale }: { locale: string }) {
     let elapsed = 0
 
     const raf = requestAnimationFrame(() => {
-      setDurationMs(walkDuration(startX, anchors.lampX, anchors.groundY, anchors.groundY))
-      setPos({ x: anchors.lampX, y: anchors.groundY })
+      setDurationMs(walkDuration(startX, anchors.ladderX, anchors.groundY, anchors.groundY))
+      setPos({ x: anchors.ladderX, y: anchors.groundY })
     })
-    elapsed += walkDuration(startX, anchors.lampX, anchors.groundY, anchors.groundY)
+    elapsed += walkDuration(startX, anchors.ladderX, anchors.groundY, anchors.groundY)
 
-    const t1 = setTimeout(() => {
-      setPhase('climbing-up')
-      setDurationMs(walkDuration(anchors.lampX, anchors.reachX, anchors.groundY, anchors.lampPlatformY))
-      setPos({ x: anchors.reachX, y: anchors.lampPlatformY })
+    // Merdivenin yanına varınca: cebinden merdiveni çıkarıp lamba 1'in
+    // sağına yerleştirir (kısa bir duraklama + merdiven belirir).
+    const t1 = setTimeout(() => setPhase('placing-ladder'), elapsed)
+    const t1b = setTimeout(() => setLadderVisible(true), elapsed + PLACE_LADDER_MS * 0.5)
+    elapsed += PLACE_LADDER_MS
+
+    // Merdivenin 5. basamağına kadar çıkar.
+    const toggleStepY = ladderStepY(anchors, LADDER_TOGGLE_STEP)
+    const climb1Ms = Math.max(MIN_CLIMB_MS, walkDuration(anchors.ladderX, anchors.ladderX, anchors.groundY, toggleStepY))
+    const t2 = setTimeout(() => {
+      setPhase('climbing-ladder-1')
+      setDurationMs(climb1Ms)
+      setPos({ x: anchors.ladderX, y: toggleStepY })
     }, elapsed)
-    elapsed += walkDuration(anchors.lampX, anchors.reachX, anchors.groundY, anchors.lampPlatformY)
+    elapsed += climb1Ms
 
-    const t2 = setTimeout(() => setPhase('toggling'), elapsed)
-    const t3 = setTimeout(() => setLamp1On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
+    // 5. basamakta durup lambayı yakar.
+    const t3 = setTimeout(() => setPhase('toggling'), elapsed)
+    const t4 = setTimeout(() => setLamp1On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
     elapsed += TOGGLE_HOLD_MS
 
-    // Lambayı yaktıktan sonra: "bir adım daha" yukarı çıkıp tam olarak
-    // yazının ÜST kenarı (brandTopY) hizasına gelir.
-    const climbToTextMs = Math.max(
-      EXTRA_CLIMB_MS_MIN,
-      walkDuration(anchors.reachX, anchors.reachX, anchors.lampPlatformY, anchors.brandTopY)
+    // Sonra 3 basamak daha çıkıp tam olarak yazının ÜST kenarı
+    // (brandTopY = LADDER_STEPS'inci basamak) hizasına gelir.
+    const climb2Ms = Math.max(
+      MIN_CLIMB_MS,
+      walkDuration(anchors.ladderX, anchors.ladderX, toggleStepY, anchors.brandTopY)
     )
-    const t4a = setTimeout(() => {
-      setPhase('climbing-to-text')
-      setDurationMs(climbToTextMs)
-      setPos({ x: anchors.reachX, y: anchors.brandTopY })
+    const t5 = setTimeout(() => {
+      setPhase('climbing-ladder-2')
+      setDurationMs(climb2Ms)
+      setPos({ x: anchors.ladderX, y: anchors.brandTopY })
     }, elapsed)
-    elapsed += climbToTextMs
+    elapsed += climb2Ms
+
+    // Çıkışı tamamlayınca: merdiveni tekrar cebine koyar, merdiven kaybolur.
+    const t5b = setTimeout(() => setPhase('packing-ladder'), elapsed)
+    const t5c = setTimeout(() => setLadderVisible(false), elapsed + PACK_LADDER_MS * 0.5)
+    elapsed += PACK_LADDER_MS
 
     // Sonra: yazının ÜSTÜNDEN (aynı yükseklikte) geçerek yürür.
-    const t4 = setTimeout(() => {
+    const t6 = setTimeout(() => {
       setPhase('walking-across-top')
-      setDurationMs(walkDuration(anchors.reachX, anchors.jumpLandingX, anchors.brandTopY, anchors.brandTopY))
+      setDurationMs(walkDuration(anchors.ladderX, anchors.jumpLandingX, anchors.brandTopY, anchors.brandTopY))
       setPos({ x: anchors.jumpLandingX, y: anchors.brandTopY })
     }, elapsed)
-    elapsed += walkDuration(anchors.reachX, anchors.jumpLandingX, anchors.brandTopY, anchors.brandTopY)
+    elapsed += walkDuration(anchors.ladderX, anchors.jumpLandingX, anchors.brandTopY, anchors.brandTopY)
 
     // Yazının bitiminde aşağı zıplar.
-    const t5 = setTimeout(() => {
+    const t7 = setTimeout(() => {
       setPhase('jumping-down')
       setTimingFn('ease-in') // düşüş hissi için hızlanarak iner
       setDurationMs(JUMP_MS)
@@ -267,7 +290,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
     elapsed += JUMP_MS
 
     // "Arşiv" yanındaki 1. ek lambaya yürür ve yakar.
-    const t6 = setTimeout(() => {
+    const t8 = setTimeout(() => {
       setPhase('walking-to-lamp2')
       setTimingFn('linear')
       setDurationMs(walkDuration(anchors.jumpLandingX, anchors.reachLamp2X, anchors.groundY, anchors.groundY))
@@ -275,35 +298,35 @@ export function HeaderStickman({ locale }: { locale: string }) {
     }, elapsed)
     elapsed += walkDuration(anchors.jumpLandingX, anchors.reachLamp2X, anchors.groundY, anchors.groundY)
 
-    const t7 = setTimeout(() => setPhase('toggling2'), elapsed)
-    const t8 = setTimeout(() => setLamp2On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
+    const t9 = setTimeout(() => setPhase('toggling2'), elapsed)
+    const t10 = setTimeout(() => setLamp2On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
     elapsed += TOGGLE_HOLD_MS
 
     // 2. ek lambaya (Arşiv'in hemen yanındaki diğer lamba) yürür ve yakar.
-    const t9 = setTimeout(() => {
+    const t11 = setTimeout(() => {
       setPhase('walking-to-lamp3')
       setDurationMs(walkDuration(anchors.reachLamp2X, anchors.reachLamp3X, anchors.groundY, anchors.groundY))
       setPos({ x: anchors.reachLamp3X, y: anchors.groundY })
     }, elapsed)
     elapsed += walkDuration(anchors.reachLamp2X, anchors.reachLamp3X, anchors.groundY, anchors.groundY)
 
-    const t10 = setTimeout(() => setPhase('toggling3'), elapsed)
-    const t11 = setTimeout(() => setLamp3On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
+    const t12 = setTimeout(() => setPhase('toggling3'), elapsed)
+    const t13 = setTimeout(() => setLamp3On(true), elapsed + TOGGLE_HOLD_MS * 0.4)
     elapsed += TOGGLE_HOLD_MS
 
     // Üç lamba da yandıktan sonra masaya ("BUREAU" kelimesi hizası) yürüyüp oturur.
-    const t12 = setTimeout(() => {
+    const t14 = setTimeout(() => {
       setPhase('walking-to-desk')
       setDurationMs(walkDuration(anchors.reachLamp3X, anchors.deskX, anchors.groundY, anchors.groundY))
       setPos({ x: anchors.deskX, y: anchors.groundY })
     }, elapsed)
     elapsed += walkDuration(anchors.reachLamp3X, anchors.deskX, anchors.groundY, anchors.groundY)
 
-    const t13 = setTimeout(() => setPhase('sitting'), elapsed)
+    const t15 = setTimeout(() => setPhase('sitting'), elapsed)
     elapsed += SIT_TRANSITION_MS
-    const t14 = setTimeout(() => setPhase('seated'), elapsed)
+    const t16 = setTimeout(() => setPhase('seated'), elapsed)
 
-    timeouts.current = [t1, t2, t3, t4a, t4, t5, t6, t7, t8, t9, t10, t11, t12, t13, t14]
+    timeouts.current = [t1, t1b, t2, t3, t4, t5, t5b, t5c, t6, t7, t8, t9, t10, t11, t12, t13, t14, t15, t16]
     return () => {
       cancelAnimationFrame(raf)
       timeouts.current.forEach(clearTimeout)
@@ -313,13 +336,16 @@ export function HeaderStickman({ locale }: { locale: string }) {
   if (!anchors) return <div ref={containerRef} className="pointer-events-none absolute inset-0" />
 
   const isWalking =
-    phase === 'walking-to-lamp' ||
+    phase === 'walking-to-ladder' ||
     phase === 'walking-across-top' ||
     phase === 'walking-to-lamp2' ||
     phase === 'walking-to-lamp3' ||
     phase === 'walking-to-desk'
-  const isClimbing = phase === 'climbing-up' || phase === 'climbing-to-text'
+  const isClimbing = phase === 'climbing-ladder-1' || phase === 'climbing-ladder-2'
   const isStepping = isWalking || isClimbing
+  const isPlacingLadder = phase === 'placing-ladder'
+  const isPackingLadder = phase === 'packing-ladder'
+  const isHandlingLadder = isPlacingLadder || isPackingLadder
   const isReachingLamp1 = phase === 'toggling'
   const isReachingLamp23 = phase === 'toggling2' || phase === 'toggling3'
   const isReaching = isReachingLamp1 || isReachingLamp23
@@ -360,6 +386,33 @@ export function HeaderStickman({ locale }: { locale: string }) {
             stroke="#141414"
             strokeWidth="0.9"
           />
+        </g>
+
+        {/* ── Merdiven (lamba 1'in sağında) — adam "cebinden çıkarıp"
+            yerleştirdikten sonra belirir, zeminden yazının üst kenarına
+            kadar LADDER_STEPS basamaklı ── */}
+        <g
+          style={{ opacity: ladderVisible ? 1 : 0, transition: 'opacity 400ms ease-out' }}
+          stroke="#141414" strokeWidth="1.1" fill="none"
+        >
+          <line
+            x1={anchors.ladderX - LADDER_RAIL_HALF_WIDTH} y1={anchors.groundY}
+            x2={anchors.ladderX - LADDER_RAIL_HALF_WIDTH} y2={anchors.brandTopY}
+          />
+          <line
+            x1={anchors.ladderX + LADDER_RAIL_HALF_WIDTH} y1={anchors.groundY}
+            x2={anchors.ladderX + LADDER_RAIL_HALF_WIDTH} y2={anchors.brandTopY}
+          />
+          {Array.from({ length: LADDER_STEPS }, (_, i) => i + 1).map((step) => {
+            const y = ladderStepY(anchors, step)
+            return (
+              <line
+                key={step}
+                x1={anchors.ladderX - LADDER_RAIL_HALF_WIDTH} y1={y}
+                x2={anchors.ladderX + LADDER_RAIL_HALF_WIDTH} y2={y}
+              />
+            )
+          })}
         </g>
 
         {/* ── Lamba 2 ("Yörüngesel Düzenleme" tarzı — yeşil/mavi segmentli
@@ -472,11 +525,13 @@ export function HeaderStickman({ locale }: { locale: string }) {
                 className={isStepping && !isReaching ? 'stickman-arm-b-sm' : undefined}
                 style={{
                   animationDuration: isStepping ? `${STEP_CYCLE_MS}ms` : undefined,
-                  ...(isJumping
-                    ? { transform: 'rotate(40deg)', transition: 'transform 200ms ease-out' }
-                    : !isStepping
-                      ? { transform: 'rotate(-8deg)', transition: 'transform 250ms ease-out' }
-                      : {}),
+                  ...(isHandlingLadder
+                    ? { transform: 'rotate(35deg)', transition: 'transform 250ms ease-out' } // cebe uzanma jesti (çıkarma/koyma)
+                    : isJumping
+                      ? { transform: 'rotate(40deg)', transition: 'transform 200ms ease-out' }
+                      : !isStepping
+                        ? { transform: 'rotate(-8deg)', transition: 'transform 250ms ease-out' }
+                        : {}),
                 }}
               >
                 <line x1="0" y1="0" x2="0" y2="8" stroke="#141414" strokeWidth="1.4" strokeLinecap="round" />

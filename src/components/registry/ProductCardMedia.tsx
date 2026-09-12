@@ -31,11 +31,14 @@ export function ProductCardMedia({
   isConfigurable,
   image,
   alt,
+  aspectClassName = 'aspect-[3/4]',
 }: {
   slug: string
   isConfigurable: boolean
   image?: SanityImage
   alt: string
+  /** Varsayılan 3:4 (registry grid'i) — Drop satırlarında daha geniş/kısa bir oran kullanılır. */
+  aspectClassName?: string
 }) {
   const containerRef = useRef<HTMLDivElement>(null)
   const [isInView, setIsInView] = useState(false)
@@ -151,7 +154,7 @@ export function ProductCardMedia({
   return (
     <div
       ref={containerRef}
-      className="relative mb-2 aspect-[3/4] w-full"
+      className={`relative mb-2 w-full ${aspectClassName}`}
       style={{ perspective: '1200px' }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
