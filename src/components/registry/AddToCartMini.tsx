@@ -16,7 +16,7 @@ function isMobile() {
   return window.innerWidth < 1024
 }
 
-export function AddToCartMini({ product }: { product: ProductCardType }) {
+export function AddToCartMini({ product, compact }: { product: ProductCardType; compact?: boolean }) {
   const t = useTranslations('product')
   const locale = useLocale()
   const router = useRouter()
@@ -61,7 +61,7 @@ export function AddToCartMini({ product }: { product: ProductCardType }) {
   return (
     <button
       onClick={handleAddToCart}
-      className="mt-1.5 w-full border border-bureau-black py-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-black hover:text-white"
+      className={`w-full border border-bureau-black font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-black hover:text-white ${compact ? 'mt-1 py-1' : 'mt-1.5 py-1.5'}`}
     >
       {justAdded ? '✓ ' + (locale === 'tr' ? 'Eklendi' : 'Added') : t('addToCart')}
     </button>

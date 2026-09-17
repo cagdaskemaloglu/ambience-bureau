@@ -12,9 +12,11 @@ import { useRouter } from '@/i18n/navigation'
 export function CustomizeButtonMini({
   slug,
   isConfigurable,
+  compact,
 }: {
   slug: string
   isConfigurable: boolean
+  compact?: boolean
 }) {
   const t = useTranslations('product')
   const router = useRouter()
@@ -34,7 +36,7 @@ export function CustomizeButtonMini({
       onClick={handleClick}
       disabled={!isConfigurable}
       aria-disabled={!isConfigurable}
-      className="mt-1.5 w-full border border-bureau-amber py-1.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-amber transition-colors enabled:hover:bg-bureau-amber enabled:hover:text-white disabled:cursor-not-allowed disabled:border-bureau-rule disabled:text-bureau-subtle"
+      className={`w-full border border-bureau-amber font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-amber transition-colors enabled:hover:bg-bureau-amber enabled:hover:text-white disabled:cursor-not-allowed disabled:border-bureau-rule disabled:text-bureau-subtle ${compact ? 'mt-1 py-1' : 'mt-1.5 py-1.5'}`}
     >
       {t('customize')}
     </button>

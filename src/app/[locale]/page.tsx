@@ -41,8 +41,14 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <div className="border-t border-bureau-black">
-      {dropsWithProducts.map((drop) => (
-        <DropRow key={drop._id} drop={drop} />
+      {dropsWithProducts.map((drop, i) => (
+        <DropRow
+          key={drop._id}
+          drop={drop}
+          index={i}
+          prevDrop={i > 0 ? dropsWithProducts[i - 1] : null}
+          nextDrop={i < dropsWithProducts.length - 1 ? dropsWithProducts[i + 1] : null}
+        />
       ))}
     </div>
   )

@@ -23,10 +23,13 @@ const STATUS_CLASS: Record<string, string> = {
 export function ProductCard({
   product,
   mediaAspectClassName,
+  compact,
 }: {
   product: ProductCardType
   /** Varsayılan 3:4 (registry grid'i) — Drop satırlarında farklı bir oran geçilebilir. */
   mediaAspectClassName?: string
+  /** Üst satırı (REG NO/durum) ve buton boşluklarını sıkılaştırır — Drop satırlarında kullanılır. */
+  compact?: boolean
 }) {
   const locale = useLocale()
   const name = getLocalizedValue(product.name, locale, '—')
@@ -39,9 +42,9 @@ export function ProductCard({
       className="group flex flex-col border border-bureau-black p-2.5 no-underline transition-colors hover:bg-bureau-surface"
     >
       {/* Top: serial + status */}
-      <div className="mb-2 flex items-start justify-between">
-        <span className="serial text-[9px]">REG. NO. {product.registryNo}</span>
-        <span className={`${statusClass} text-[9px]`}>● {statusLabel}</span>
+      <div className={`flex items-start justify-between ${compact ? 'mb-1' : 'mb-2'}`}>
+        <span className={`serial ${compact ? 'text-[7px]' : 'text-[9px]'}`}>REG. NO. {product.registryNo}</span>
+        <span className={`${statusClass} ${compact ? 'text-[7px]' : 'text-[9px]'}`}>● {statusLabel}</span>
       </div>
 
       {/* Image — 3:4 (portre) oranında: çektiğiniz fotoğrafların gerçek
@@ -80,8 +83,8 @@ export function ProductCard({
         )}
       </div>
 
-      <AddToCartMini product={product} />
-      <CustomizeButtonMini slug={product.slug.current} isConfigurable={product.isConfigurable} />
+      <AddToCartMini product={product} compact={compact} />
+      <CustomizeButtonMini slug={product.slug.current} isConfigurable={product.isConfigurable} compact={compact} />
     </Link>
   )
 }
