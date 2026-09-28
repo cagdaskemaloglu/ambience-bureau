@@ -47,7 +47,8 @@ export function MobileSlotPicker({
             onClick={() => onPartClick(part.partId)}
             disabled={disabled}
             title={name}
-            className={`relative flex flex-shrink-0 flex-col items-center gap-1 border p-1 transition-colors ${
+            aria-label={name}
+            className={`relative flex flex-shrink-0 items-center justify-center border p-1 transition-colors ${
               selected
                 ? 'border-bureau-amber bg-bureau-amber/5'
                 : 'border-bureau-rule hover:border-bureau-black'
@@ -58,13 +59,13 @@ export function MobileSlotPicker({
                 ×{count}
               </span>
             )}
-            <div className="flex h-9 w-9 items-center justify-center overflow-hidden bg-bureau-surface">
+            <div className="flex h-[52px] w-[52px] items-center justify-center overflow-hidden bg-bureau-surface">
               {part.thumbnail ? (
                 <Image
                   src={part.thumbnail}
                   alt={name ?? ''}
-                  width={36}
-                  height={36}
+                  width={52}
+                  height={52}
                   className="h-full w-full object-cover"
                 />
               ) : (
@@ -73,9 +74,6 @@ export function MobileSlotPicker({
                 </span>
               )}
             </div>
-            <span className="w-9 truncate text-center text-[8px] uppercase leading-none">
-              {name}
-            </span>
           </button>
         )
       })}

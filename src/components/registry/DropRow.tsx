@@ -99,6 +99,10 @@ export function DropRow({
   // index 1 = 2. Drop (çift) → panel SOLDA (ters sıra).
   const panelOnLeft = index % 2 === 1
 
+  const createHref = drop.configuratorCollectionKey
+    ? `/custom-registry?collection=${encodeURIComponent(drop.configuratorCollectionKey)}`
+    : '/custom-registry'
+
   return (
     <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-black">
       {/* Eski sistemdeki başlık satırı */}
@@ -162,6 +166,18 @@ export function DropRow({
             >
               {t('exploreAll')}
             </Link>
+
+            {/* "Oluştur" — Drop'un koleksiyonuyla Custom Registry'yi açar,
+                müşteri kendi lambasını tasarlar. Koleksiyon bulunamazsa
+                düz /custom-registry (koleksiyon seçim ekranı). */}
+            <div className="mt-2.5">
+              <Link
+                href={createHref}
+                className="inline-block border border-bureau-amber bg-bureau-amber px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-transparent hover:text-bureau-amber"
+              >
+                {t('create')}
+              </Link>
+            </div>
 
             {(prevDrop || nextDrop) && (
               <div className="mt-8 space-y-3 border-t border-white/20 pt-4">

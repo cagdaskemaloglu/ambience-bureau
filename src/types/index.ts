@@ -128,6 +128,12 @@ export interface Drop {
   _id: string
   dropNo: string
   name: LocalizedString[]
+  /**
+   * Drop'un Custom Registry'deki koleksiyon key'i (Oluştur butonu için).
+   * Önce Drop'ta elle seçilen koleksiyon, yoksa drop'un ürünlerinden
+   * birinin configuratorCollection'ı. Hiçbiri yoksa null.
+   */
+  configuratorCollectionKey?: string | null
 }
 
 export interface DropWithProducts extends Drop {

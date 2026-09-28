@@ -64,7 +64,7 @@ export function SlotPicker({
           </span>
         )}
       </div>
-      <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4">
+      <div className="flex flex-wrap gap-1.5">
         {slotsOfType.map((part) => {
           const name = getLocalizedValue(part.name, locale, '—')
           const count = getPartCount?.(part.partId) ?? 0
@@ -75,25 +75,26 @@ export function SlotPicker({
               key={part.partId}
               onClick={() => onPartClick(part.partId)}
               disabled={disabled}
-              className={`relative flex flex-col items-center gap-1 border p-1.5 transition-colors ${
+              className={`relative flex flex-shrink-0 items-center justify-center border p-1 transition-colors ${
                 selected
                   ? 'border-bureau-amber bg-bureau-amber/5'
                   : 'border-bureau-rule hover:border-bureau-black'
               } ${disabled ? 'cursor-not-allowed opacity-40' : ''}`}
               title={name}
+              aria-label={name}
             >
               {count > 1 && (
                 <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-bureau-amber font-mono text-[8px] text-white">
                   ×{count}
                 </span>
               )}
-              <div className="flex h-7 w-7 items-center justify-center overflow-hidden bg-bureau-surface">
+              <div className="flex h-14 w-14 items-center justify-center overflow-hidden bg-bureau-surface">
                 {part.thumbnail ? (
                   <Image
                     src={part.thumbnail}
                     alt={name ?? ''}
-                    width={28}
-                    height={28}
+                    width={56}
+                    height={56}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -102,9 +103,6 @@ export function SlotPicker({
                   </span>
                 )}
               </div>
-              <span className="line-clamp-1 text-center text-[7.5px] uppercase leading-tight">
-                {name}
-              </span>
             </button>
           )
         })}

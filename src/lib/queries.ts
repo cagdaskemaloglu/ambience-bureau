@@ -222,6 +222,10 @@ export async function getAllDropsWithProducts() {
       _id,
       dropNo,
       ${LOCALIZED_FIELD('name')},
+      "configuratorCollectionKey": coalesce(
+        collection->key.current,
+        *[_type == "product" && references(^._id) && defined(configuratorCollection)][0].configuratorCollection->key.current
+      ),
       "products": *[_type == "product" && references(^._id)] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
     }`,
     {},

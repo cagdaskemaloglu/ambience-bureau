@@ -61,19 +61,14 @@ export function ProductCard({
 
       {/* Meta */}
       <div className="flex-grow">
-        <h3 className="mb-1 text-[11px] font-semibold uppercase tracking-bureau">
+        <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-bureau">
           {name}
         </h3>
-        {product.shortDescription && (
-          <p className="mb-2 text-[9.5px] leading-relaxed text-bureau-muted">
-            {getLocalizedValue(product.shortDescription, locale, '')}
-          </p>
-        )}
       </div>
 
       {/* Foot: price + spec */}
       <div className="mt-auto flex items-center justify-between border-t border-dashed border-bureau-rule pt-2">
-        <span className="font-mono text-[11px] font-semibold">
+        <span className={`font-mono font-bold ${compact ? 'text-[16px]' : 'text-[18px]'}`}>
           {formatPriceForLocale(product, locale)}
         </span>
         {product.photonOutput && (

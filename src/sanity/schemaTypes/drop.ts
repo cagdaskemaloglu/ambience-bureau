@@ -18,6 +18,15 @@ export const dropSchema = defineType({
     localizedStringField({ name: 'name', title: 'Drop Name', required: true }),
 
     defineField({
+      name: 'collection',
+      title: 'Custom Registry Collection',
+      description:
+        'OPSİYONEL — anasayfadaki "Oluştur" butonunun açacağı Custom Registry koleksiyonu. Boş bırakılırsa bu Drop\'taki ürünlerden birinin "Configurator Collection" değeri kullanılır; o da yoksa buton koleksiyon seçim ekranını açar.',
+      type: 'reference',
+      to: [{ type: 'collection' }],
+    }),
+
+    defineField({
       name: 'sortOrder',
       title: 'Sort Order',
       description: 'Anasayfada drop satırlarının sırasını belirler (küçük değer önce gelir).',
