@@ -2,7 +2,7 @@
 
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
-import { getLocalizedValue, formatPriceForLocale } from '@/lib/sanity'
+import { getLocalizedValue, formatPrice, getPricingForLocale } from '@/lib/sanity'
 import { AddToCartMini } from './AddToCartMini'
 import { CustomizeButtonMini } from './CustomizeButtonMini'
 import { ProductCardMedia } from './ProductCardMedia'
@@ -35,6 +35,8 @@ export function ProductCard({
   const name = getLocalizedValue(product.name, locale, '—')
   const statusLabel = STATUS_LABEL[product.status]?.[locale as 'tr' | 'en'] ?? product.status
   const statusClass = STATUS_CLASS[product.status] ?? 'status-certified'
+  const pricing = getPricingForLocale(product, locale)
+  const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
 
   return (
     <Link
@@ -68,8 +70,21 @@ export function ProductCard({
 
       {/* Foot: price + spec */}
       <div className="mt-auto flex items-center justify-between border-t border-dashed border-bureau-rule pt-2">
-        <span className={`font-mono font-bold ${compact ? 'text-[16px]' : 'text-[18px]'}`}>
-          {formatPriceForLocale(product, locale)}
+        <span className="flex flex-wrap items-baseline gap-1.5">
+          {pricing.discounted !== undefined && (
+            <span
+              className={`font-mono text-bureau-subtle line-through ${compact ? 'text-[11px]' : 'text-[12px]'}`}
+            >
+              {formatPrice(pricing.original, pricing.currency, intlLocale)}
+            </span>
+          )}
+          <span
+            className={`font-mono font-bold ${compact ? 'text-[16px]' : 'text-[18px]'} ${
+              pricing.discounted !== undefined ? 'text-bureau-amber' : ''
+            }`}
+          >
+            {formatPrice(pricing.discounted ?? pricing.original, pricing.currency, intlLocale)}
+          </span>
         </span>
         {product.photonOutput && (
           <span className="font-mono text-[9px] text-bureau-subtle">

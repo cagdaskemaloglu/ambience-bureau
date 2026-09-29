@@ -111,6 +111,9 @@ export function CustomRegistryClient({
         baseUSD: selectedCollection?.hardwareBaseFeeUSD,
         iotTRY: selectedCollection?.iotFeeTRY,
         iotUSD: selectedCollection?.iotFeeUSD,
+      }, {
+        min: selectedCollection?.minBodyLayers,
+        max: selectedCollection?.maxBodyLayers,
       })
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
@@ -133,7 +136,8 @@ export function CustomRegistryClient({
           iotTRY: selectedCollection?.iotFeeTRY,
           iotUSD: selectedCollection?.iotFeeUSD,
         },
-        design.parts
+        design.parts,
+        { min: selectedCollection?.minBodyLayers, max: selectedCollection?.maxBodyLayers }
       )
     } catch (err) {
       console.error('Ürün kombinasyonu yüklenemedi:', err)

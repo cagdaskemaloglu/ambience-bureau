@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { useCartStore } from '@/lib/store/cart'
-import { getLocalizedValue } from '@/lib/sanity'
+import { getLocalizedValue, getCartPricing } from '@/lib/sanity'
 import type { ProductCard as ProductCardType } from '@/types'
 
 // Mobil breakpoint — 1024px (Tailwind lg). AddToCartButton.tsx'teki ile
@@ -42,8 +42,9 @@ export function AddToCartMini({ product, compact }: { product: ProductCardType; 
         tr: getLocalizedValue(product.name, 'tr', '—') ?? '—',
         en: getLocalizedValue(product.name, 'en', '—') ?? '—',
       },
-      priceTRY: product.priceTRY,
-      priceUSD: product.priceUSD,
+      // İndirim varsa priceTRY/priceUSD ZATEN indirimli tutar olarak
+      // yazılır — sepet toplamı ve checkout ayrıca indirim hesaplamaz.
+      ...getCartPricing(product),
       quantity: 1,
     })
 

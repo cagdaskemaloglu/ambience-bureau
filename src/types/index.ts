@@ -58,6 +58,9 @@ export interface ProductCard {
   category: ProductCategory
   priceTRY: number
   priceUSD: number
+  /** OPSİYONEL — doluysa kartta priceTRY/priceUSD üstü çizili gösterilir. */
+  discountPriceTRY?: number
+  discountPriceUSD?: number
   photonOutput?: PhotonOutput
   isConfigurable: boolean
   name: LocalizedString[]
@@ -120,6 +123,9 @@ export interface Collection {
   hardwareBaseFeeUSD?: number
   iotFeeTRY?: number
   iotFeeUSD?: number
+  /** Custom Registry'de eklenebilecek gövde sayısı (Sanity'de boşsa store varsayılanı kullanılır). */
+  minBodyLayers?: number
+  maxBodyLayers?: number
 }
 
 // ── Drop ──────────────────────────────────────────────────
@@ -188,6 +194,14 @@ export interface CartItem {
   name: { tr: string; en: string } // her iki dilde de isim saklanır (dil değişince güncel kalsın)
   priceTRY: number
   priceUSD: number
+  /**
+   * OPSİYONEL — sadece ürün sepete eklendiği an geçerli bir indirimi
+   * varsa dolar. SADECE görüntüleme amaçlı (sepette üstü çizili eski
+   * fiyat); priceTRY/priceUSD'nin kendisi zaten indirimli tutar — sepet
+   * toplamı, checkout ve iyzico ödemesi hep priceTRY/priceUSD'yi kullanır.
+   */
+  originalPriceTRY?: number
+  originalPriceUSD?: number
   quantity: number
   // Custom tasarım için ek alanlar
   customDesign?: {

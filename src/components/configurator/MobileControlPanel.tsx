@@ -1,7 +1,7 @@
 'use client'
 
 import { useLocale } from 'next-intl'
-import { useConfiguratorStore, MAX_BODY_LAYERS } from '@/lib/store/configurator'
+import { useConfiguratorStore } from '@/lib/store/configurator'
 import { MobileSlotPicker } from './MobileSlotPicker'
 import { MaterialPicker } from './MaterialPicker'
 import { ConfigSummary } from './ConfigSummary'
@@ -30,10 +30,15 @@ export function MobileControlPanel({
   const toggleSinglePart = useConfiguratorStore((s) => s.toggleSinglePart)
   const addBodyPart = useConfiguratorStore((s) => s.addBodyPart)
   const removeBodyLayer = useConfiguratorStore((s) => s.removeBodyLayer)
+  const moveBodyLayer = useConfiguratorStore((s) => s.moveBodyLayer)
   const selectMaterial = useConfiguratorStore((s) => s.selectMaterial)
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
-  const bodyAtMax = body.length >= MAX_BODY_LAYERS
+  // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
+  const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
+  const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, bölüm gizlenir
+  const bodyAtMax = body.length >= bodyLimits.max
+  const bodyBelowMin = body.length < bodyLimits.min
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
   const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
@@ -103,9 +108,14 @@ export function MobileControlPanel({
       </Section>
 
       {/* Body */}
+      {hasBodySlot && (
       <Section
         label={locale === 'tr' ? 'Gövde' : 'Body'}
-        hint={locale === 'tr' ? 'Eklemek için dokun' : 'Tap to add'}
+        hint={
+          (locale === 'tr' ? 'Eklemek için dokun' : 'Tap to add') +
+          ` · ${body.length}/${bodyLimits.max}` +
+          (bodyLimits.min > 0 ? ` (${locale === 'tr' ? 'en az' : 'min'} ${bodyLimits.min})` : '')
+        }
       >
         <MobileSlotPicker
           slotType="body"
@@ -119,28 +129,58 @@ export function MobileControlPanel({
           const part = availableParts.find((p) => p.partId === slot.partId)
           if (!part) return null
           return (
-            <div key={idx} className="mt-2 border border-bureau-rule px-2 pb-2 pt-1.5">
-              <div className="mb-1 flex items-center justify-between">
-                <span className="font-mono text-[9px] uppercase text-bureau-muted">
+            <div key={idx} className="mt-1.5 border border-bureau-rule px-1.5 pb-1.5 pt-1">
+              <div className="mb-0.5 flex items-center justify-between gap-2">
+                <span className="min-w-0 flex-1 truncate font-mono text-[9px] uppercase text-bureau-muted">
                   {locale === 'tr' ? 'Gövde' : 'Body'} {idx + 1} — {getLocalizedValue(part.name, locale, '—')}
                 </span>
-                <button
-                  onClick={() => removeBodyLayer(idx)}
-                  data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
-                  className="font-mono text-[9px] text-bureau-subtle hover:text-bureau-amber"
-                >
-                  ✕
-                </button>
+                {/* Sağda üç dokunma alanı: Yukarı / Aşağı / Kaldır — dizideki
+                    sıra 3D viewer'daki dikey istifleme sırasıyla aynı. */}
+                <div className="flex flex-shrink-0 items-center gap-0.5">
+                  <button
+                    onClick={() => moveBodyLayer(idx, 'up')}
+                    disabled={idx === 0}
+                    aria-label={locale === 'tr' ? 'Yukarı taşı' : 'Move up'}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => moveBodyLayer(idx, 'down')}
+                    disabled={idx === body.length - 1}
+                    aria-label={locale === 'tr' ? 'Aşağı taşı' : 'Move down'}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
+                  >
+                    ▼
+                  </button>
+                  <button
+                    onClick={() => removeBodyLayer(idx)}
+                    data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
+                    aria-label={locale === 'tr' ? 'Bu gövdeyi kaldır' : 'Remove this body'}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[12px] leading-none text-bureau-subtle hover:text-bureau-amber"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
               <MaterialPicker
                 part={part}
                 selectedMaterialId={slot.materialId}
                 onSelectMaterial={(m) => selectMaterial('body', m, idx)}
+                compact
               />
             </div>
           )
         })}
+        {bodyBelowMin && (
+          <p className="mt-2 font-mono text-[9px] uppercase text-bureau-amber">
+            {locale === 'tr'
+              ? `En az ${bodyLimits.min} gövde ekleyin.`
+              : `Add at least ${bodyLimits.min} bod${bodyLimits.min === 1 ? 'y' : 'ies'}.`}
+          </p>
+        )}
       </Section>
+      )}
 
       {/* Head */}
       <Section label={locale === 'tr' ? 'Başlık' : 'Head'}>

@@ -12,6 +12,9 @@ export function CartItemRow({ item, compact = false }: { item: CartItem; compact
 
   const name = item.name[locale]
   const unitPrice = locale === 'tr' ? item.priceTRY : item.priceUSD
+  // Sadece görüntüleme amaçlı — dolu ise (ürün indirimli eklendiyse) eski
+  // fiyatı üstü çizili göstermek için. lineTotal/toplam ASLA bunu kullanmaz.
+  const originalUnitPrice = locale === 'tr' ? item.originalPriceTRY : item.originalPriceUSD
   const currency = locale === 'tr' ? 'TRY' : 'USD'
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
   const lineTotal = unitPrice * item.quantity
@@ -70,7 +73,16 @@ export function CartItemRow({ item, compact = false }: { item: CartItem; compact
 
       {/* Sağ: fiyat */}
       <div className="flex-shrink-0 text-right">
-        <div className={`font-mono font-semibold ${compact ? 'text-[12px]' : 'text-[13px]'}`}>
+        {originalUnitPrice !== undefined && (
+          <div className="font-mono text-[10.5px] text-bureau-subtle line-through">
+            {formatPrice(originalUnitPrice * item.quantity, currency, intlLocale)}
+          </div>
+        )}
+        <div
+          className={`font-mono font-semibold ${compact ? 'text-[12px]' : 'text-[13px]'} ${
+            originalUnitPrice !== undefined ? 'text-bureau-amber' : ''
+          }`}
+        >
           {formatPrice(lineTotal, currency, intlLocale)}
         </div>
         {item.quantity > 1 && (

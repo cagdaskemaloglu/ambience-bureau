@@ -33,6 +33,36 @@ export const collectionSchema = defineType({
       initialValue: 0,
     }),
 
+    // ── Gövde (Body) Sayısı Sınırları ─────────────────────────
+    // Custom Registry'de bu koleksiyon için eklenebilecek gövde katmanı
+    // sayısı. Boş bırakılırsa kodtaki varsayılan kullanılır (min 0, max 5 —
+    // bkz. src/lib/store/configurator.ts, DEFAULT_BODY_LIMITS).
+    defineField({
+      name: 'minBodyLayers',
+      title: 'Minimum Gövde Sayısı',
+      description: 'Tasarımı kaydedebilmek için eklenmesi gereken en az gövde sayısı. 0 = gövde opsiyonel. Boşsa: 0',
+      type: 'number',
+      initialValue: 0,
+      validation: (R) => R.integer().min(0),
+    }),
+    defineField({
+      name: 'maxBodyLayers',
+      title: 'Maksimum Gövde Sayısı',
+      description: 'Eklenebilecek en fazla gövde sayısı. 0 = bu koleksiyonda gövde yok (Gövde sekmesi gizlenir). Boşsa: 5',
+      type: 'number',
+      initialValue: 5,
+      validation: (R) =>
+        R.integer()
+          .min(0)
+          .custom((max, context) => {
+            const min = (context.document as { minBodyLayers?: number } | undefined)?.minBodyLayers
+            if (typeof max === 'number' && typeof min === 'number' && max < min) {
+              return 'Maksimum, minimum değerden küçük olamaz.'
+            }
+            return true
+          }),
+    }),
+
     // ── Donanım Tahsisi & IoT Ücretlendirmesi ──────────────────
     // Custom Registry konfigüratöründe bu koleksiyondan bir tasarım
     // sipariş edildiğinde eklenen ücretler. Kod değişikliği gerektirmeden

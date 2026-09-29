@@ -85,6 +85,36 @@ const FALLBACK_HEIGHT = 50
 const FALLBACK_HALF_WIDTH = 25
 const FALLBACK_HALF_DEPTH = 25
 
+interface DisplayDimensions {
+  width: number
+  height: number
+  depth: number
+}
+
+/**
+ * SADECE 3D viewer'daki ölçü ETİKETLERİNDE (DimensionAnnotations)
+ * gösterilecek en/boy/derinlik. İstifleme mekaniği bunu KULLANMAZ — o
+ * her zaman gerçek geometriden hesaplanır (aşağıdaki `positioned` ve
+ * stack metrikleri). Öncelik sırası:
+ *   1) Sanity Studio'da o parça için elle girilen Dimensions (mm) —
+ *      "Bilgi amaçlı kayıt" alanı; istifleme için değil, sadece bu
+ *      etiketler için kaynak olarak kullanılır.
+ *   2) Studio'da alan boşsa: GLB/STL geometrisinden otomatik ölçülen
+ *      bounding box'a düşer (böylece etiket hep bir şey gösterir).
+ *   3) İkisi de yoksa (model daha yüklenmedi): sabit yer tutucu.
+ */
+function getDisplayDimensions(
+  part: LampPart,
+  measured: PartDimensions | undefined
+): DisplayDimensions {
+  const manual = part.dimensions
+  return {
+    width: manual?.width ?? (measured ? measured.maxX - measured.minX : FALLBACK_HALF_WIDTH * 2),
+    height: manual?.height ?? measured?.height ?? FALLBACK_HEIGHT,
+    depth: manual?.depth ?? (measured ? measured.maxZ - measured.minZ : FALLBACK_HALF_DEPTH * 2),
+  }
+}
+
 export function LampModel() {
   const slots = useResolvedSlots()
   const [dims, setDims] = useState<Record<string, PartDimensions>>({})
@@ -144,6 +174,23 @@ export function LampModel() {
 
     setStackMetrics(totalHeight, positioned.length, totalWidth, totalDepth)
   }, [positioned, dims, setStackMetrics])
+
+  // Ölçü etiketleri (DimensionAnnotations) için AYRI metrik: yukarıdaki
+  // stack metrikleri gerçek geometriden hesaplanırken, bu etiketlerde
+  // gösterilecek sayılar Sanity'deki Dimensions (mm) alanından gelir.
+  const setDisplayMetrics = useConfiguratorStore((s) => s.setDisplayMetrics)
+  useEffect(() => {
+    let totalHeight = 0
+    let maxWidth = 0
+    let maxDepth = 0
+    for (const slot of positioned) {
+      const { width, height, depth } = getDisplayDimensions(slot.part, dims[slot.key])
+      totalHeight += height
+      maxWidth = Math.max(maxWidth, width)
+      maxDepth = Math.max(maxDepth, depth)
+    }
+    setDisplayMetrics(maxWidth, totalHeight, maxDepth)
+  }, [positioned, dims, setDisplayMetrics])
 
   if (positioned.length === 0) return null
 

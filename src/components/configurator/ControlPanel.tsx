@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useLocale } from 'next-intl'
-import { useConfiguratorStore, MAX_BODY_LAYERS } from '@/lib/store/configurator'
+import { useConfiguratorStore } from '@/lib/store/configurator'
 import { SlotPicker } from './SlotPicker'
 import { MaterialPicker } from './MaterialPicker'
 import { getLocalizedValue } from '@/lib/sanity'
@@ -27,15 +27,32 @@ export function ControlPanel() {
   const head = useConfiguratorStore((s) => s.head)
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
   const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
+  const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
   const toggleSinglePart = useConfiguratorStore((s) => s.toggleSinglePart)
   const addBodyPart = useConfiguratorStore((s) => s.addBodyPart)
   const removeBodyLayer = useConfiguratorStore((s) => s.removeBodyLayer)
+  const moveBodyLayer = useConfiguratorStore((s) => s.moveBodyLayer)
   const selectMaterial = useConfiguratorStore((s) => s.selectMaterial)
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
 
-  const bodyAtMax = body.length >= MAX_BODY_LAYERS
+  // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
+  const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, sekme gizlenir
+  const bodyAtMax = body.length >= bodyLimits.max
+  const bodyBelowMin = body.length < bodyLimits.min
+  const bodyRangeLabel =
+    bodyLimits.min === bodyLimits.max
+      ? tr
+        ? `tam ${bodyLimits.max}`
+        : `exactly ${bodyLimits.max}`
+      : bodyLimits.min > 0
+        ? tr
+          ? `en az ${bodyLimits.min}, en çok ${bodyLimits.max}`
+          : `min ${bodyLimits.min}, max ${bodyLimits.max}`
+        : tr
+          ? `en çok ${bodyLimits.max}`
+          : `max ${bodyLimits.max}`
   const baseComplete = !!base.partId && !!base.materialId
   const headComplete = !!head.partId && !!head.materialId
 
@@ -60,11 +77,15 @@ export function ControlPanel() {
 
   const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
     { key: 'base', label: tr ? 'Taban' : 'Base', done: baseComplete },
-    {
-      key: 'body',
-      label: (tr ? 'Gövde' : 'Body') + (body.length > 0 ? ` (${body.length})` : ''),
-      done: body.length > 0,
-    },
+    ...(hasBodySlot
+      ? [
+          {
+            key: 'body' as Tab,
+            label: (tr ? 'Gövde' : 'Body') + (body.length > 0 ? ` (${body.length})` : ''),
+            done: body.length >= Math.max(1, bodyLimits.min),
+          },
+        ]
+      : []),
     { key: 'head', label: tr ? 'Başlık' : 'Head', done: headComplete },
   ]
 
@@ -127,8 +148,9 @@ export function ControlPanel() {
             selectedMaterialId={base.materialId}
             onSelectMaterial={(materialId) => {
               selectMaterial('base', materialId)
-              // Taban tamamlanınca otomatik olarak Gövde sekmesine geç.
-              setActiveTab('body')
+              // Taban tamamlanınca otomatik olarak Gövde sekmesine geç
+              // (bu koleksiyonda gövde yoksa doğrudan Başlık'a).
+              setActiveTab(hasBodySlot ? 'body' : 'head')
             }}
             dataTutorial="material-base"
           />
@@ -136,7 +158,7 @@ export function ControlPanel() {
       )}
 
       {/* Gövde */}
-      {activeTab === 'body' && (
+      {activeTab === 'body' && hasBodySlot && (
         <div>
           <SlotPicker
             slotType="body"
@@ -146,33 +168,61 @@ export function ControlPanel() {
             disabled={bodyAtMax}
             dataTutorial="picker-body"
           />
+          <p
+            className={`mt-2 font-mono text-[9.5px] uppercase tracking-wide ${
+              bodyBelowMin ? 'text-bureau-amber' : 'text-bureau-muted'
+            }`}
+          >
+            {tr ? 'Gövde' : 'Body'}: {body.length} / {bodyLimits.max} ({bodyRangeLabel})
+          </p>
           {body.length > 0 && (
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-1.5">
               {body.map((slot, idx) => {
                 const part = availableParts.find((p) => p.partId === slot.partId)
                 if (!part) return null
                 const partName = getLocalizedValue(part.name, locale, '—')
                 return (
-                  <div key={idx} className="border border-bureau-rule p-2">
-                    <div className="mb-1.5 flex items-center justify-between">
-                      <span className="font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
+                  <div key={idx} className="border border-bureau-rule p-1.5">
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <span className="min-w-0 flex-1 truncate font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
                         {tr ? 'Gövde' : 'Body'} {idx + 1} — {partName}
                       </span>
-                      {/* Kaldırma ikonu büyütüldü — önceden 10px metin, artık
-                          gerçek bir tıklama/dokunma alanı (28x28px) olan bir buton. */}
-                      <button
-                        onClick={() => removeBodyLayer(idx)}
-                        data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
-                        aria-label={tr ? 'Bu gövdeyi kaldır' : 'Remove this body'}
-                        className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[16px] leading-none text-bureau-muted transition-colors hover:bg-red-50 hover:text-red-600"
-                      >
-                        ✕
-                      </button>
+                      {/* Sağ tarafta üç buton: sırayla Yukarı Taşı / Aşağı
+                          Taşı / Kaldır — dizideki sıra 3D viewer'daki dikey
+                          istifleme sırasıyla birebir aynı (bkz. LampModel.tsx). */}
+                      <div className="flex flex-shrink-0 items-center gap-0.5">
+                        <button
+                          onClick={() => moveBodyLayer(idx, 'up')}
+                          disabled={idx === 0}
+                          aria-label={tr ? 'Yukarı taşı' : 'Move up'}
+                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] leading-none text-bureau-muted transition-colors hover:bg-bureau-subtle hover:text-bureau-black disabled:pointer-events-none disabled:opacity-20"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          onClick={() => moveBodyLayer(idx, 'down')}
+                          disabled={idx === body.length - 1}
+                          aria-label={tr ? 'Aşağı taşı' : 'Move down'}
+                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] leading-none text-bureau-muted transition-colors hover:bg-bureau-subtle hover:text-bureau-black disabled:pointer-events-none disabled:opacity-20"
+                        >
+                          ▼
+                        </button>
+                        {/* Kaldırma ikonu — gerçek bir tıklama alanı (24x24px) olan buton. */}
+                        <button
+                          onClick={() => removeBodyLayer(idx)}
+                          data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
+                          aria-label={tr ? 'Bu gövdeyi kaldır' : 'Remove this body'}
+                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[14px] leading-none text-bureau-muted transition-colors hover:bg-red-50 hover:text-red-600"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </div>
                     <MaterialPicker
                       part={part}
                       selectedMaterialId={slot.materialId}
                       onSelectMaterial={(materialId) => selectMaterial('body', materialId, idx)}
+                      compact
                     />
                   </div>
                 )
@@ -182,16 +232,21 @@ export function ControlPanel() {
 
           <button
             onClick={() => setActiveTab('head')}
+            disabled={bodyBelowMin}
             data-tutorial="continue-to-head"
-            className="btn-bureau mt-4 w-full"
+            className={`btn-bureau mt-4 w-full ${bodyBelowMin ? 'cursor-not-allowed opacity-40' : ''}`}
           >
-            {body.length === 0
+            {bodyBelowMin
               ? tr
-                ? 'Gövde Eklemeden Devam Et →'
-                : 'Continue Without Body →'
-              : tr
-                ? 'Devam Et: Başlık →'
-                : 'Continue: Head →'}
+                ? `En az ${bodyLimits.min} gövde ekleyin`
+                : `Add at least ${bodyLimits.min} bod${bodyLimits.min === 1 ? 'y' : 'ies'}`
+              : body.length === 0
+                ? tr
+                  ? 'Gövde Eklemeden Devam Et →'
+                  : 'Continue Without Body →'
+                : tr
+                  ? 'Devam Et: Başlık →'
+                  : 'Continue: Head →'}
           </button>
         </div>
       )}

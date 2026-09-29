@@ -122,6 +122,45 @@ export const productSchema = defineType({
       initialValue: true,
     }),
 
+    // ── İndirim (opsiyonel) ────────────────────────────────
+    // İkisi de OPSİYONEL. Herhangi biri doldurulursa (0'dan büyük ve
+    // ilgili normal fiyattan düşükse) ürün kartında ve ürün sayfasında
+    // eski fiyat üstü çizili, yeni fiyat yanında gösterilir. Boş
+    // bırakılırsa indirim özelliği o para birimi için devre dışı kalır.
+    defineField({
+      name: 'discountPriceTRY',
+      title: 'İndirimli Fiyat — TRY (₺)',
+      description:
+        'OPSİYONEL. Doldurulursa kartlarda normal fiyatın (priceTRY) üstü çizilip bu fiyat gösterilir. Boş = indirim yok.',
+      type: 'number',
+      validation: (R) =>
+        R.positive().custom((value, context) => {
+          if (value === undefined) return true
+          const regular = (context.document as { priceTRY?: number } | undefined)?.priceTRY
+          if (typeof regular === 'number' && value >= regular) {
+            return 'İndirimli fiyat, normal fiyattan (TRY) düşük olmalı'
+          }
+          return true
+        }),
+    }),
+
+    defineField({
+      name: 'discountPriceUSD',
+      title: 'İndirimli Fiyat — USD ($)',
+      description:
+        'OPSİYONEL. Doldurulursa kartlarda normal fiyatın (priceUSD) üstü çizilip bu fiyat gösterilir. Boş = indirim yok.',
+      type: 'number',
+      validation: (R) =>
+        R.positive().custom((value, context) => {
+          if (value === undefined) return true
+          const regular = (context.document as { priceUSD?: number } | undefined)?.priceUSD
+          if (typeof regular === 'number' && value >= regular) {
+            return 'İndirimli fiyat, normal fiyattan (USD) düşük olmalı'
+          }
+          return true
+        }),
+    }),
+
     // ── Teknik Özellikler ─────────────────────────────────
     defineField({
       name: 'specs',

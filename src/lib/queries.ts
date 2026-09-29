@@ -21,6 +21,8 @@ const PRODUCT_CARD_FRAGMENT = `
   category,
   priceTRY,
   priceUSD,
+  discountPriceTRY,
+  discountPriceUSD,
   photonOutput,
   isConfigurable,
   ${LOCALIZED_FIELD('name')},
@@ -246,7 +248,9 @@ export async function getAllCollections() {
       hardwareBaseFeeTRY,
       hardwareBaseFeeUSD,
       iotFeeTRY,
-      iotFeeUSD
+      iotFeeUSD,
+      minBodyLayers,
+      maxBodyLayers
     }`,
     {},
     { next: { tags: ['collections'] } }
@@ -299,7 +303,9 @@ export async function getAllLampCollections() {
         hardwareBaseFeeTRY,
         hardwareBaseFeeUSD,
         iotFeeTRY,
-        iotFeeUSD
+        iotFeeUSD,
+        minBodyLayers,
+        maxBodyLayers
       }`,
     {},
     { next: { tags: ['configurator-collections'] } }

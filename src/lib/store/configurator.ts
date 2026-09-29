@@ -1,7 +1,23 @@
 import { create } from 'zustand'
 import type { SlotType, LampPart } from '@/types'
 
-const MAX_BODY_LAYERS = 5
+interface BodyLimits {
+  min: number
+  max: number
+}
+
+// Sanity'de bir koleksiyonun min/max gövde alanları boşsa kullanılacak
+// varsayılan (eski sabit "en fazla 5" davranışı korunur, gövde opsiyonel).
+const DEFAULT_BODY_LIMITS: BodyLimits = { min: 0, max: 5 }
+
+/** Sanity'den gelen (boş/geçersiz olabilen) değerleri güvenli bir aralığa çevirir. */
+function resolveBodyLimits(raw?: { min?: number | null; max?: number | null }): BodyLimits {
+  const valid = (n: unknown): n is number => typeof n === 'number' && Number.isFinite(n) && n >= 0
+  const min = valid(raw?.min) ? Math.floor(raw.min) : DEFAULT_BODY_LIMITS.min
+  const max = valid(raw?.max) ? Math.floor(raw.max) : DEFAULT_BODY_LIMITS.max
+  // Studio'da yanlışlıkla max < min girilirse aralık çökmesin.
+  return { min, max: Math.max(min, max) }
+}
 
 interface SlotSelection {
   partId: string | null
@@ -29,9 +45,10 @@ interface ConfiguratorStore {
   collectionKey: string | null
   availableParts: LampPart[] // Sanity'den çekilen, aktif koleksiyonun tüm parçaları
   hardwareFees: HardwareFees // Aktif koleksiyonun Donanım Tahsisi/IoT ücretleri (Sanity'den)
+  bodyLimits: BodyLimits // Aktif koleksiyonun min/max gövde sayısı (Sanity'den)
 
   base: SlotSelection
-  body: SlotSelection[] // sırayla istiflenir, en fazla MAX_BODY_LAYERS adet
+  body: SlotSelection[] // sırayla istiflenir, koleksiyonun bodyLimits.max değerine kadar
   head: SlotSelection
 
   lightColor: string
@@ -50,12 +67,30 @@ interface ConfiguratorStore {
   stackDepth: number
   setStackMetrics: (totalHeight: number, partCount: number, width: number, depth: number) => void
 
+  /**
+   * 3D viewer'daki ölçü etiketlerinde (DimensionAnnotations) GÖSTERİLEN
+   * en/boy/derinlik — SADECE bunlar Sanity Studio'daki "Dimensions (mm)"
+   * bilgi amaçlı alanından (parça başına elle girilen değer) gelir; bir
+   * parçada bu alan boşsa o parça için geometriden ölçülen değere düşer.
+   * İstifleme (yukarıdaki stackTotalHeight/stackWidth/stackDepth) ve kamera
+   * hizalaması BUNU kullanmaz, her zaman gerçek 3D geometriden hesaplanır.
+   */
+  displayWidth: number
+  displayHeight: number
+  displayDepth: number
+  setDisplayMetrics: (width: number, height: number, depth: number) => void
+
   /** "Kamerayı Sığdır" butonuna her basıldığında artar — CameraFit bunu izler. */
   cameraFitRequestId: number
   requestCameraFit: () => void
 
   // ── Actions ──────────────────────────────────────────────
-  setCollection: (key: string, parts: LampPart[], hardwareFees?: Partial<HardwareFees>) => void
+  setCollection: (
+    key: string,
+    parts: LampPart[],
+    hardwareFees?: Partial<HardwareFees>,
+    bodyLimits?: { min?: number | null; max?: number | null }
+  ) => void
   clearCollection: () => void
 
   /**
@@ -68,17 +103,26 @@ interface ConfiguratorStore {
     key: string,
     parts: LampPart[],
     hardwareFees: Partial<HardwareFees> | undefined,
-    preset: Array<{ slotType: SlotType; partId: string; materialId: string }>
+    preset: Array<{ slotType: SlotType; partId: string; materialId: string }>,
+    bodyLimits?: { min?: number | null; max?: number | null }
   ) => void
 
   /** Base/Head için: aynı parçaya tekrar tıklanırsa seçim kalkar (toggle). */
   toggleSinglePart: (slot: 'base' | 'head', partId: string) => void
 
-  /** Body için: her tıklama YENİ bir katman ekler (üst sınıra kadar). */
+  /** Body için: her tıklama YENİ bir katman ekler (koleksiyonun max değerine kadar). */
   addBodyPart: (partId: string) => void
 
   /** Bir body katmanını tamamen kaldırır. */
   removeBodyLayer: (index: number) => void
+
+  /**
+   * Bir body katmanını bir üst/alt komşusuyla yer değiştirir (dizideki
+   * sıra = 3D viewer'daki dikey istifleme sırası, bkz. LampModel.tsx).
+   * Uçlarda (ilk katman için 'up', son katman için 'down') sessizce
+   * hiçbir şey yapmaz.
+   */
+  moveBodyLayer: (index: number, direction: 'up' | 'down') => void
 
   selectMaterial: (slot: SlotType, materialId: string, bodyIndex?: number) => void
 
@@ -94,7 +138,7 @@ interface ConfiguratorStore {
   getSelectedPart: (slot: SlotType, bodyIndex?: number) => LampPart | undefined
   getSelectedMaterial: (slot: SlotType, bodyIndex?: number) => LampPart['materials'][number] | undefined
   getBodyPartCount: (partId: string) => number // aynı parça kaç katmanda kullanılıyor
-  isComplete: () => boolean // taban + en az 1 gövde + başlık seçilmiş mi
+  isComplete: () => boolean // taban + başlık + koleksiyonun min–max gövde aralığı sağlanmış mı
 }
 
 const initialSlotState: SlotSelection = { partId: null, materialId: null }
@@ -103,6 +147,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   collectionKey: null,
   availableParts: [],
   hardwareFees: DEFAULT_HARDWARE_FEES,
+  bodyLimits: DEFAULT_BODY_LIMITS,
 
   base: { ...initialSlotState },
   body: [], // boş başlar — kullanıcı tıkladıkça katman eklenir
@@ -130,10 +175,21 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       return { stackTotalHeight: totalHeight, stackPartCount: partCount, stackWidth: width, stackDepth: depth }
     }),
 
+  displayWidth: 0,
+  displayHeight: 0,
+  displayDepth: 0,
+  setDisplayMetrics: (width, height, depth) =>
+    set((state) => {
+      if (state.displayWidth === width && state.displayHeight === height && state.displayDepth === depth) {
+        return state
+      }
+      return { displayWidth: width, displayHeight: height, displayDepth: depth }
+    }),
+
   cameraFitRequestId: 0,
   requestCameraFit: () => set((state) => ({ cameraFitRequestId: state.cameraFitRequestId + 1 })),
 
-  setCollection: (key, parts, hardwareFees) => {
+  setCollection: (key, parts, hardwareFees, bodyLimits) => {
     // Object.assign yerine tek tek kontrol: Sanity'den bir alan boş/undefined
     // gelirse (henüz doldurulmadıysa) varsayılanın üzerine yazılmasın.
     const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
@@ -146,6 +202,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       collectionKey: key,
       availableParts: parts,
       hardwareFees: merged,
+      bodyLimits: resolveBodyLimits(bodyLimits),
       // Koleksiyon değişince seçimleri sıfırla
       base: { ...initialSlotState },
       body: [],
@@ -154,6 +211,9 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       stackPartCount: 0,
       stackWidth: 0,
       stackDepth: 0,
+      displayWidth: 0,
+      displayHeight: 0,
+      displayDepth: 0,
     })
   },
 
@@ -162,6 +222,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       collectionKey: null,
       availableParts: [],
       hardwareFees: DEFAULT_HARDWARE_FEES,
+      bodyLimits: DEFAULT_BODY_LIMITS,
       base: { ...initialSlotState },
       body: [],
       head: { ...initialSlotState },
@@ -169,9 +230,12 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       stackPartCount: 0,
       stackWidth: 0,
       stackDepth: 0,
+      displayWidth: 0,
+      displayHeight: 0,
+      displayDepth: 0,
     }),
 
-  loadPreset: (key, parts, hardwareFees, preset) => {
+  loadPreset: (key, parts, hardwareFees, preset, bodyLimits) => {
     const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
     if (hardwareFees) {
       for (const k of Object.keys(merged) as Array<keyof HardwareFees>) {
@@ -181,12 +245,14 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
 
     const baseEntry = preset.find((p) => p.slotType === 'base')
     const headEntry = preset.find((p) => p.slotType === 'head')
-    const bodyEntries = preset.filter((p) => p.slotType === 'body').slice(0, MAX_BODY_LAYERS)
+    const limits = resolveBodyLimits(bodyLimits)
+    const bodyEntries = preset.filter((p) => p.slotType === 'body').slice(0, limits.max)
 
     set({
       collectionKey: key,
       availableParts: parts,
       hardwareFees: merged,
+      bodyLimits: limits,
       base: baseEntry ? { partId: baseEntry.partId, materialId: baseEntry.materialId } : { ...initialSlotState },
       body: bodyEntries.map((b) => ({ partId: b.partId, materialId: b.materialId })),
       head: headEntry ? { partId: headEntry.partId, materialId: headEntry.materialId } : { ...initialSlotState },
@@ -194,6 +260,9 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       stackPartCount: 0,
       stackWidth: 0,
       stackDepth: 0,
+      displayWidth: 0,
+      displayHeight: 0,
+      displayDepth: 0,
     })
   },
 
@@ -218,7 +287,7 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     const defaultMaterialId = part?.materials[0]?.materialId ?? null
 
     set((state) => {
-      if (state.body.length >= MAX_BODY_LAYERS) return state
+      if (state.body.length >= state.bodyLimits.max) return state
       return {
         body: [...state.body, { partId, materialId: defaultMaterialId }],
       }
@@ -229,6 +298,15 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     set((state) => ({
       body: state.body.filter((_, i) => i !== index),
     })),
+
+  moveBodyLayer: (index, direction) =>
+    set((state) => {
+      const targetIndex = direction === 'up' ? index - 1 : index + 1
+      if (targetIndex < 0 || targetIndex >= state.body.length) return state
+      const newBody = [...state.body]
+      ;[newBody[index], newBody[targetIndex]] = [newBody[targetIndex], newBody[index]]
+      return { body: newBody }
+    }),
 
   selectMaterial: (slot, materialId, bodyIndex) =>
     set((state) => {
@@ -329,9 +407,12 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     const hasBase = !!state.base.partId && !!state.base.materialId
     const hasHead = !!state.head.partId && !!state.head.materialId
     const hasAllBody = state.body.every((b) => !!b.partId && !!b.materialId)
-    // Gövde (body) opsiyoneldir — taban ve başlık zorunlu, gövde hiç seçilmeyebilir
-    return hasBase && hasHead && hasAllBody
+    // Gövde sayısı koleksiyonun Sanity'deki min–max aralığında olmalı
+    // (min 0 ise gövde opsiyoneldir). Taban ve başlık her zaman zorunlu.
+    const bodyCountOk =
+      state.body.length >= state.bodyLimits.min && state.body.length <= state.bodyLimits.max
+    return hasBase && hasHead && hasAllBody && bodyCountOk
   },
 }))
 
-export { MAX_BODY_LAYERS }
+export { DEFAULT_BODY_LIMITS }

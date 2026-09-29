@@ -81,3 +81,73 @@ export function formatPriceForLocale(
   const { amount, currency } = getPriceForLocale(product, locale)
   return formatPrice(amount, currency, locale === 'tr' ? 'tr-TR' : 'en-US')
 }
+
+type DiscountableProduct = {
+  priceTRY: number
+  priceUSD: number
+  discountPriceTRY?: number
+  discountPriceUSD?: number
+}
+
+/**
+ * Locale'e göre indirim durumunu çözer. Sanity'de ilgili para biriminin
+ * "İndirimli Fiyat" alanı doluysa VE normal fiyattan düşükse indirimli
+ * kabul edilir (Studio'da da aynı kural doğrulanıyor, ama veri elle GROQ
+ * dışından da gelebileceği için burada tekrar kontrol ediliyor).
+ * Geçerli bir indirim yoksa `discounted` alanı yoktur.
+ */
+export function getPricingForLocale(
+  product: DiscountableProduct,
+  locale: string
+): {
+  currency: 'TRY' | 'USD'
+  original: number
+  discounted?: number
+} {
+  const { amount: original, currency } = getPriceForLocale(product, locale)
+  const discountAmount = currency === 'TRY' ? product.discountPriceTRY : product.discountPriceUSD
+  const discounted =
+    typeof discountAmount === 'number' && discountAmount > 0 && discountAmount < original
+      ? discountAmount
+      : undefined
+  return { currency, original, discounted }
+}
+
+/**
+ * Sepete eklenecek satırın fiyatını hesaplar — locale'den BAĞIMSIZ,
+ * çünkü CartItem her zaman iki para birimini de saklar (kullanıcı sonradan
+ * dil değiştirebilir). Her para birimi kendi indirimini KENDİ başına
+ * kontrol eder (biri indirimli, diğeri olmayabilir).
+ *
+ * Döndürülen priceTRY/priceUSD ZATEN İNDİRİMLİ TUTARDIR — sepet toplamı
+ * (cart.ts -> getTotal), CartSummary, checkout API ve iyzico'ya giden
+ * tutar hep bu alanları doğrudan kullanır; ayrı bir indirim hesaplaması
+ * yapmazlar. originalPriceTRY/USD SADECE üstü çizili eski fiyatı
+ * göstermek için var, hiçbir toplam hesaplamasında kullanılmaz.
+ */
+export function getCartPricing(product: DiscountableProduct): {
+  priceTRY: number
+  priceUSD: number
+  originalPriceTRY?: number
+  originalPriceUSD?: number
+} {
+  const discountedTRY =
+    typeof product.discountPriceTRY === 'number' &&
+    product.discountPriceTRY > 0 &&
+    product.discountPriceTRY < product.priceTRY
+      ? product.discountPriceTRY
+      : undefined
+  const discountedUSD =
+    typeof product.discountPriceUSD === 'number' &&
+    product.discountPriceUSD > 0 &&
+    product.discountPriceUSD < product.priceUSD
+      ? product.discountPriceUSD
+      : undefined
+
+  return {
+    priceTRY: discountedTRY ?? product.priceTRY,
+    priceUSD: discountedUSD ?? product.priceUSD,
+    originalPriceTRY: discountedTRY !== undefined ? product.priceTRY : undefined,
+    originalPriceUSD: discountedUSD !== undefined ? product.priceUSD : undefined,
+  }
+}

@@ -7,7 +7,7 @@ import {
   getRelatedProducts,
   getAllProductSlugs,
 } from '@/lib/queries'
-import { getLocalizedValue, urlFor, formatPriceForLocale, getPriceForLocale } from '@/lib/sanity'
+import { getLocalizedValue, urlFor, formatPrice, getPricingForLocale } from '@/lib/sanity'
 import { ProductGallery } from '@/components/product/ProductGallery'
 import { SpecTable } from '@/components/product/SpecTable'
 import { AddToCartButton } from '@/components/product/AddToCartButton'
@@ -81,8 +81,13 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const relatedProducts = await getRelatedProducts(product.category, slug)
 
-  // JSON-LD Product Schema
-  const { amount: jsonLdPrice, currency: jsonLdCurrency } = getPriceForLocale(product, locale)
+  const pricing = getPricingForLocale(product, locale)
+  const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
+
+  // JSON-LD Product Schema — Google/arama motorlarına gösterilen fiyat,
+  // gerçekten ödenecek (indirimli varsa indirimli) tutar olmalı.
+  const jsonLdPrice = pricing.discounted ?? pricing.original
+  const jsonLdCurrency = pricing.currency
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -132,10 +137,17 @@ export default async function ProductDetailPage({ params }: Props) {
 
           <h1 className="mb-3 text-[32px] font-light uppercase tracking-wide">{name}</h1>
 
-          <div className="mb-6 font-mono text-[20px] font-semibold">
-            {formatPriceForLocale(product, locale)}
+          <div className="mb-6 flex flex-wrap items-baseline gap-2 font-mono text-[20px] font-semibold">
+            {pricing.discounted !== undefined && (
+              <span className="text-[15px] font-normal text-bureau-subtle line-through">
+                {formatPrice(pricing.original, pricing.currency, intlLocale)}
+              </span>
+            )}
+            <span className={pricing.discounted !== undefined ? 'text-bureau-amber' : ''}>
+              {formatPrice(pricing.discounted ?? pricing.original, pricing.currency, intlLocale)}
+            </span>
             {product.vatIncluded && (
-              <span className="ml-2 font-sans text-[11px] font-normal text-bureau-muted">
+              <span className="font-sans text-[11px] font-normal text-bureau-muted">
                 {locale === 'tr' ? '(KDV dahil)' : '(VAT included)'}
               </span>
             )}

@@ -46,17 +46,31 @@ function Label({ position, mm }: { position: Vec3; mm: number }) {
  */
 export function DimensionAnnotations() {
   const partCount = useConfiguratorStore((s) => s.stackPartCount)
-  const width = useConfiguratorStore((s) => s.stackWidth)
-  const depth = useConfiguratorStore((s) => s.stackDepth)
-  const height = useConfiguratorStore((s) => s.stackTotalHeight)
+
+  // Çizgilerin KONUMU ve UZUNLUĞU: modelin gerçek 3D geometrisinden
+  // (STL/GLB ölçümü) — çizgiler her zaman modelin gerçek görünen
+  // kenarlarına dokunmalı, aksi halde model ile ölçü çizgisi görsel
+  // olarak uyuşmaz.
+  const geomWidth = useConfiguratorStore((s) => s.stackWidth)
+  const geomDepth = useConfiguratorStore((s) => s.stackDepth)
+  const geomHeight = useConfiguratorStore((s) => s.stackTotalHeight)
+
+  // Etiketlerde YAZAN mm değeri: SADECE Sanity Studio'daki parça başına
+  // "Dimensions (mm)" alanından gelir (bkz. LampModel.tsx ->
+  // getDisplayDimensions; alan boşsa geometriye düşer). Çizgilerin
+  // konumundan KASITLI olarak bağımsız — ikisi farklı sayı gösterebilir.
+  const labelWidth = useConfiguratorStore((s) => s.displayWidth)
+  const labelDepth = useConfiguratorStore((s) => s.displayDepth)
+  const labelHeight = useConfiguratorStore((s) => s.displayHeight)
 
   const isCaptureMode =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('capture') === '1'
 
-  if (isCaptureMode || partCount === 0 || width <= 0 || depth <= 0 || height <= 0) return null
+  if (isCaptureMode || partCount === 0 || geomWidth <= 0 || geomDepth <= 0 || geomHeight <= 0) return null
 
-  const halfW = width / 2
-  const halfD = depth / 2
+  const halfW = geomWidth / 2
+  const halfD = geomDepth / 2
+  const height = geomHeight
 
   // ── EN (width) — modelin ÖNÜNDE, zemin seviyesinde, X ekseni boyunca ──
   const widthZ = halfD + MARGIN
@@ -115,19 +129,19 @@ export function DimensionAnnotations() {
       <Line points={widthLine} color={DIM_COLOR} lineWidth={1.5} dashed dashSize={DASH_SIZE} gapSize={GAP_SIZE} />
       <Chevron points={widthArrowLeft} />
       <Chevron points={widthArrowRight} />
-      <Label position={[0, 0, widthZ]} mm={width} />
+      <Label position={[0, 0, widthZ]} mm={labelWidth} />
 
       {/* DERİNLİK */}
       <Line points={depthLine} color={DIM_COLOR} lineWidth={1.5} dashed dashSize={DASH_SIZE} gapSize={GAP_SIZE} />
       <Chevron points={depthArrowNear} />
       <Chevron points={depthArrowFar} />
-      <Label position={[depthX, 0, 0]} mm={depth} />
+      <Label position={[depthX, 0, 0]} mm={labelDepth} />
 
       {/* BOY */}
       <Line points={heightLine} color={DIM_COLOR} lineWidth={1.5} dashed dashSize={DASH_SIZE} gapSize={GAP_SIZE} />
       <Chevron points={heightArrowBottom} />
       <Chevron points={heightArrowTop} />
-      <Label position={[heightX, height / 2, 0]} mm={height} />
+      <Label position={[heightX, height / 2, 0]} mm={labelHeight} />
     </group>
   )
 }
