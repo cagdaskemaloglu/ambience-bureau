@@ -1,7 +1,27 @@
 {
-  "folders": ["helicalCollection", "orbitalCollection", "extrudedCollection", "newCollection"],
+  "folders": [
+    "extrudedCollection",
+    "helicalCollection"
+  ],
   "files": {
-    "_body01": "helicalCollection/body01.stl",
-    "_head05": "orbitalCollection/head05.stl"
+    "base01": "extrudedCollection/base01.stl",
+    "base01extruded": "extrudedCollection/base01extruded.stl",
+    "body02": "extrudedCollection/body02.stl",
+    "body02extruded": "extrudedCollection/body02extruded.stl",
+    "head01": "extrudedCollection/head01.stl",
+    "head01extruded": "extrudedCollection/head01extruded.stl",
+    "base01helical": "helicalCollection/base01helical.stl",
+    "base02helical": "helicalCollection/base02helical.stl",
+    "body01helical": "helicalCollection/body01helical.stl",
+    "body02helical": "helicalCollection/body02helical.stl",
+    "body03helical": "helicalCollection/body03helical.stl",
+    "body04helical": "helicalCollection/body04helical.stl",
+    "body05helical": "helicalCollection/body05helical.stl",
+    "body06helical": "helicalCollection/body06helical.stl",
+    "head01helical": "helicalCollection/head01helical.stl",
+    "head02helical": "helicalCollection/head02helical.stl",
+    "head03helical": "helicalCollection/head03helical.stl",
+    "head04helical": "helicalCollection/head04helical.stl",
+    "head05helical": "helicalCollection/head05helical.stl"
   }
 }

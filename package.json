@@ -57,5 +57,7 @@
   "overrides": {
     "react": "$react",
     "react-dom": "$react-dom"
-  }
+  },
+  "prebuild": "node scripts/generate-spin-frames.js && node scripts/generate-stl-manifest.js",
+  "predev": "node scripts/generate-stl-manifest.js && node scripts/generate-spin-frames.js"
 }
