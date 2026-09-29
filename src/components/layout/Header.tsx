@@ -10,6 +10,7 @@ import Image from 'next/image'
 import { getLocalizedValue } from '@/lib/sanity'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import { HeaderStickman } from './HeaderStickman'
+import { ThemeToggle } from '@/components/theme/ThemeToggle'
 import type { Collection } from '@/types'
 
 const NAV_ITEMS = [
@@ -128,7 +129,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   return (
     <>
-      <header className="relative z-40 flex-shrink-0 border-b border-bureau-black bg-white">
+      <header className="relative z-40 flex-shrink-0 border-b border-bureau-black bg-bureau-white">
         <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
@@ -157,7 +158,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                   transition-colors duration-150
                   ${isActive('/custom-registry')
                     ? 'bg-bureau-black text-bureau-white'
-                    : 'bg-white text-bureau-black'}
+                    : 'bg-bureau-white text-bureau-black'}
                 `}
               >
                 <Link
@@ -177,7 +178,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                     aria-expanded={desktopDropdownOpen}
                     className={`flex h-full items-center border-l px-2 transition-colors ${
                       isActive('/custom-registry')
-                        ? 'border-white/30 hover:bg-white/10'
+                        ? 'border-bureau-white/30 hover:bg-bureau-white/10'
                         : 'border-bureau-black hover:bg-bureau-black hover:text-bureau-white'
                     }`}
                   >
@@ -196,7 +197,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
               {/* Dropdown panel */}
               {desktopDropdownOpen && collections.length > 0 && (
-                <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[260px] border border-bureau-black bg-white shadow-lg">
+                <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[260px] border border-bureau-black bg-bureau-white shadow-lg">
                   <div className="border-b border-bureau-rule px-3.5 py-2">
                     <span className="font-mono text-[9.5px] uppercase tracking-widest text-bureau-muted">
                       {locale === 'tr' ? 'Koleksiyonlar' : 'Collections'}
@@ -241,6 +242,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
           {/* Desktop right */}
           <div data-stickman-anchor="nav-end" className="hidden items-center gap-6 mt-1 lg:flex">
+            <ThemeToggle locale={locale} />
             <button
               onClick={switchLocale}
               className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors"
@@ -278,7 +280,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 </div>
 
                 {accountDropdownOpen && (
-                  <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-[220px] border border-bureau-black bg-white shadow-lg">
+                  <div className="absolute right-0 top-[calc(100%+6px)] z-50 w-[220px] border border-bureau-black bg-bureau-white shadow-lg">
                     {ACCOUNT_TABS.map((tab) => (
                       <Link
                         key={tab.href}
@@ -309,7 +311,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="border border-bureau-black px-2.5 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-bureau-black transition-colors hover:bg-bureau-black hover:text-white no-underline"
+                  className="border border-bureau-black px-2.5 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-bureau-black transition-colors hover:bg-bureau-black hover:text-bureau-white no-underline"
                 >
                   {locale === 'tr' ? 'Kayıt Ol' : 'Register'}
                 </Link>
@@ -325,6 +327,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
           {/* Mobile right: cart + hamburger */}
           <div className="flex items-center gap-4 lg:hidden">
+            <ThemeToggle locale={locale} />
             <Link
               href="/cart"
               className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
@@ -351,7 +354,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
       {/* Mobile menu overlay */}
       {menuOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white lg:hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-bureau-white lg:hidden">
           {/* Overlay header */}
           <div className="flex items-center justify-between border-b border-bureau-black px-5 py-4">
             <Link href="/" className="no-underline flex items-center gap-3" onClick={() => setMenuOpen(false)}>

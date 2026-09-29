@@ -104,12 +104,12 @@ export function DropRow({
     : '/custom-registry'
 
   return (
-    <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-black">
+    <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-fixed-black">
       {/* Eski sistemdeki başlık satırı */}
-      <div className="border-b border-dashed border-bureau-rule px-5 py-2.5 md:px-9">
-        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-bureau-black">
-          <span className="text-bureau-amber">DROP-{drop.dropNo}</span>
-          <span className="ml-2 font-normal text-bureau-muted">{name}</span>
+      <div className="border-b border-dashed border-bureau-fixed-rule px-5 py-2.5 md:px-9">
+        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-bureau-fixed-black">
+          <span className="text-bureau-fixed-amber">DROP-{drop.dropNo}</span>
+          <span className="ml-2 font-normal text-bureau-fixed-muted">{name}</span>
         </h2>
       </div>
 
@@ -129,32 +129,45 @@ export function DropRow({
             <Link
               href={`/registry?drop=${drop.dropNo}`}
               style={{ width: CARD_WIDTH, flexShrink: 0 }}
-              className={`flex ${CARD_MEDIA_ASPECT} flex-col items-center justify-center gap-2 border border-dashed border-bureau-black/40 p-4 text-center no-underline transition-colors hover:border-bureau-amber hover:bg-bureau-surface`}
+              className={`flex ${CARD_MEDIA_ASPECT} flex-col items-center justify-center gap-2 border border-dashed border-bureau-fixed-black/40 p-4 text-center no-underline transition-colors hover:border-bureau-fixed-amber hover:bg-bureau-fixed-surface`}
             >
-              <span className="font-mono text-[10px] uppercase tracking-wider text-bureau-amber">
+              <span className="font-mono text-[10px] uppercase tracking-wider text-bureau-fixed-amber">
                 {t('viewMore')}
               </span>
-              <span className="font-mono text-[18px] text-bureau-amber">→</span>
+              <span className="font-mono text-[18px] text-bureau-fixed-amber">→</span>
             </Link>
           )}
         </div>
 
         {/* Siyah Drop etiket paneli — `group` + stretch sayesinde ürün
             satırıyla AYNI yükseklikte olur, içeriği ortalanır. */}
-        <div className="group relative flex w-full flex-shrink-0 flex-col items-center justify-center overflow-hidden border-t border-bureau-black bg-bureau-black p-6 text-center text-white md:w-1/5 md:border-t-0 md:border-l md:border-r-0">
-          {/* Düz siyahı kıran, hover'da hafifçe canlanan sıcak glow — sitenin
-              ışıklandırma temasıyla uyumlu. Dekoratif, pointer-events-none. */}
+        <div className="group relative flex w-full flex-shrink-0 flex-col items-center justify-center overflow-hidden border-t border-bureau-fixed-black bg-bureau-fixed-black p-6 text-center text-white md:w-1/5 md:border-t-0 md:border-l md:border-r-0">
+          {/* Düz siyahı kıran, hover'da hafifçe canlanan iki glow katmanı —
+              biri sıcak/amber (sol-üst), biri soğuk/loş (sağ-alt), panelin
+              KENDİ kutusuna göre sabit yüzdelerle konumlanıyor. Panel sayfada
+              SOLDA durduğunda (panelOnLeft) bu "sıcak dışa, soğuk içe" yerleşim
+              zaten sayfanın koyu zeminiyle uyumlu görünüyor — dokunmuyoruz.
+              Panel SAĞDA durduğunda ise aynı sabit yerleşim tam tersine
+              düşüyor (sıcak içe, soğuk dışa) ve panel hover'da zeminden
+              "kopmuş" görünüyor. Bunu düzeltmek için SADECE bu dekoratif
+              katmanı (yazı/buton içeren içerik katmanına DOKUNMADAN) yatayda
+              aynalıyoruz — böylece panel hangi tarafta olursa olsun sıcak
+              glow hep dış kenarda kalıyor. */}
           <div
-            className="pointer-events-none absolute inset-0 opacity-40 transition-all duration-700 ease-out group-hover:scale-110 group-hover:opacity-70"
-            style={{ background: 'radial-gradient(circle at 30% 25%, rgba(245,215,142,0.45), transparent 62%)' }}
-          />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-700 ease-out group-hover:opacity-40"
-            style={{ background: 'radial-gradient(circle at 75% 80%, rgba(90,107,140,0.5), transparent 55%)' }}
-          />
+            className={`pointer-events-none absolute inset-0 ${panelOnLeft ? '' : '[transform:scaleX(-1)]'}`}
+          >
+            <div
+              className="absolute inset-0 opacity-40 transition-all duration-700 ease-out group-hover:scale-110 group-hover:opacity-70"
+              style={{ background: 'radial-gradient(circle at 30% 25%, rgba(245,215,142,0.45), transparent 62%)' }}
+            />
+            <div
+              className="absolute inset-0 opacity-0 transition-opacity duration-700 ease-out group-hover:opacity-40"
+              style={{ background: 'radial-gradient(circle at 75% 80%, rgba(90,107,140,0.5), transparent 55%)' }}
+            />
+          </div>
 
           <div className="relative z-10">
-            <div className="font-mono text-[20px] font-bold uppercase tracking-wider text-bureau-amber sm:text-[23px]">
+            <div className="font-mono text-[20px] font-bold uppercase tracking-wider text-bureau-fixed-amber sm:text-[23px]">
               DROP-{drop.dropNo}
             </div>
             <div className="mt-2 font-mono text-[17px] font-semibold uppercase tracking-wider text-white sm:text-[19px]">
@@ -162,7 +175,7 @@ export function DropRow({
             </div>
             <Link
               href={`/registry?drop=${drop.dropNo}`}
-              className="mt-6 inline-block border border-white px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-white hover:text-bureau-black"
+              className="mt-6 inline-block border border-white px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-white hover:text-bureau-fixed-black"
             >
               {t('exploreAll')}
             </Link>
@@ -173,7 +186,7 @@ export function DropRow({
             <div className="mt-2.5">
               <Link
                 href={createHref}
-                className="inline-block border border-bureau-amber bg-bureau-amber px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-transparent hover:text-bureau-amber"
+                className="inline-block border border-bureau-fixed-amber bg-bureau-fixed-amber px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-transparent hover:text-bureau-fixed-amber"
               >
                 {t('create')}
               </Link>
@@ -184,7 +197,7 @@ export function DropRow({
                 {prevDrop && (
                   <button
                     onClick={() => scrollToDrop(prevDrop.dropNo)}
-                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:text-bureau-amber"
+                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:text-bureau-fixed-amber"
                   >
                     ↑ {getLocalizedValue(prevDrop.name, locale, '—')}
                   </button>
@@ -192,7 +205,7 @@ export function DropRow({
                 {nextDrop && (
                   <button
                     onClick={() => scrollToDrop(nextDrop.dropNo)}
-                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:text-bureau-amber"
+                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:text-bureau-fixed-amber"
                   >
                     ↓ {getLocalizedValue(nextDrop.name, locale, '—')}
                   </button>

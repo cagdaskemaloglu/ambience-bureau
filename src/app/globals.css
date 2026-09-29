@@ -6,6 +6,42 @@
   :root {
     --font-inter: 'Inter', system-ui, sans-serif;
     --font-jetbrains: 'JetBrains Mono', monospace;
+
+    /* ── Karanlık/Aydınlık mod — renk token'ları ─────────────────
+       "R G B" (boşlukla ayrılmış, virgülsüz) formatı ZORUNLU — Tailwind
+       tailwind.config.ts'te bunu `rgb(var(--bureau-x) / <alpha-value>)`
+       kalıbıyla sarıp opacity modifier'larını (bg-bureau-amber/5 gibi)
+       destekliyor. Aşağıdakiler AYDINLIK (varsayılan) değerler. */
+    --bureau-white: 255 255 255;
+    --bureau-black: 0 0 0;
+    --bureau-ink: 10 10 10;
+    --bureau-muted: 102 102 102;
+    --bureau-subtle: 153 153 153;
+    --bureau-rule: 224 224 224;
+    --bureau-surface: 250 250 250;
+    --bureau-amber: 230 121 46;
+    --bureau-amber-dim: 184 94 32;
+  }
+
+  /* KARANLIK MOD — <html> elemanına "dark" class'ı eklenince devreye
+     girer (bkz. ThemeProvider.tsx). Site boyunca siyah/beyaz iki zıt uç
+     (arka plan/ön plan) olarak KULLANILDIĞI için burada bilerek YER
+     DEĞİŞTİRİYORLAR: bureau-white artık koyu arka plan, bureau-black
+     artık açık ön plan/kenarlık rengi oluyor — böylece "bg-bureau-black
+     text-bureau-white" gibi zaten var olan yüzlerce class, tek bir
+     değişiklik yapmadan otomatik olarak doğru (ters) kontrastla çalışır. */
+  .dark {
+    --bureau-white: 13 13 13;
+    --bureau-black: 242 242 242;
+    --bureau-ink: 237 237 237;
+    --bureau-muted: 171 171 171;
+    --bureau-subtle: 122 122 122;
+    --bureau-rule: 42 42 42;
+    --bureau-surface: 22 22 22;
+    /* Marka rengi (amber) her iki modda da aynı — her iki arka planda da
+       yeterli kontrastı olan tek "sıcak" vurgu rengi zaten bu yüzden var. */
+    --bureau-amber: 230 121 46;
+    --bureau-amber-dim: 184 94 32;
   }
 
   html {
@@ -13,24 +49,26 @@
     font-feature-settings: 'kern' 1, 'liga' 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Mod değişince renkler ani değil, yumuşak geçsin. */
+    transition: background-color 150ms ease, color 150ms ease;
   }
 
   /* Thin 1px borders throughout */
   * {
-    border-color: theme('colors.bureau.black');
+    border-color: rgb(var(--bureau-black));
   }
 
   /* Selection */
   ::selection {
-    background: theme('colors.bureau.amber');
-    color: white;
+    background: rgb(var(--bureau-amber));
+    color: rgb(var(--bureau-white));
   }
 
   /* Scrollbar — minimal, branded */
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: theme('colors.bureau.rule'); }
-  ::-webkit-scrollbar-thumb:hover { background: theme('colors.bureau.subtle'); }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--bureau-rule)); }
+  ::-webkit-scrollbar-thumb:hover { background: rgb(var(--bureau-subtle)); }
 }
 
 @layer components {

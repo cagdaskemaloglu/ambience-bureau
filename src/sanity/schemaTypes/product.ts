@@ -49,6 +49,11 @@ export const productSchema = defineType({
     defineField({
       name: 'images',
       title: 'Images',
+      description:
+        'SIRA ÖNEMLİ: 1. fotoğraf (site aydınlık moddayken) ve 2. fotoğraf ' +
+        '(site karanlık moddayken) ürün kartlarında gösterilir. 2. fotoğraf ' +
+        'girilmezse kartlar her modda 1. fotoğrafı kullanmaya devam eder. ' +
+        'Ürün detay sayfasındaki galeri tüm fotoğrafları (sırayla) gösterir.',
       type: 'array',
       of: [
         defineArrayMember({

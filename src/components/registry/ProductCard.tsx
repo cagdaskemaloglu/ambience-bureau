@@ -3,6 +3,7 @@
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { getLocalizedValue, formatPrice, getPricingForLocale } from '@/lib/sanity'
+import { useTheme } from '@/components/theme/ThemeProvider'
 import { AddToCartMini } from './AddToCartMini'
 import { CustomizeButtonMini } from './CustomizeButtonMini'
 import { ProductCardMedia } from './ProductCardMedia'
@@ -32,11 +33,16 @@ export function ProductCard({
   compact?: boolean
 }) {
   const locale = useLocale()
+  const { theme } = useTheme()
   const name = getLocalizedValue(product.name, locale, '—')
   const statusLabel = STATUS_LABEL[product.status]?.[locale as 'tr' | 'en'] ?? product.status
   const statusClass = STATUS_CLASS[product.status] ?? 'status-certified'
   const pricing = getPricingForLocale(product, locale)
   const intlLocale = locale === 'tr' ? 'tr-TR' : 'en-US'
+  // Aydınlık modda Sanity'deki 1. fotoğraf (product.image), karanlık modda
+  // 2. fotoğraf (product.imageDark) gösterilir. 2. fotoğraf girilmemişse
+  // (imageDark yoksa) her modda 1. fotoğrafa düşer — kart hiç boş kalmaz.
+  const cardImage = theme === 'dark' && product.imageDark ? product.imageDark : product.image
 
   return (
     <Link
@@ -56,8 +62,8 @@ export function ProductCard({
       <ProductCardMedia
         slug={product.slug.current}
         isConfigurable={product.isConfigurable}
-        image={product.image}
-        alt={product.image?.alt ?? name ?? ''}
+        image={cardImage}
+        alt={cardImage?.alt ?? name ?? ''}
         {...(mediaAspectClassName ? { aspectClassName: mediaAspectClassName } : {})}
       />
 

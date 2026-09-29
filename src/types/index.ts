@@ -65,7 +65,10 @@ export interface ProductCard {
   isConfigurable: boolean
   name: LocalizedString[]
   shortDescription?: LocalizedString[]
+  /** Site aydınlık moddayken gösterilir (Sanity'de 1. fotoğraf). */
   image?: SanityImage
+  /** Site karanlık moddayken gösterilir (Sanity'de 2. fotoğraf). Boşsa `image`'a düşer. */
+  imageDark?: SanityImage
   collection?: {
     key: { current: string }
     name: LocalizedString[]

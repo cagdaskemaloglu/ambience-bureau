@@ -1,0 +1,7 @@
+{
+  "folders": ["helicalCollection", "orbitalCollection", "extrudedCollection", "newCollection"],
+  "files": {
+    "_body01": "helicalCollection/body01.stl",
+    "_head05": "orbitalCollection/head05.stl"
+  }
+}

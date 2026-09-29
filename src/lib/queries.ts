@@ -30,6 +30,9 @@ const PRODUCT_CARD_FRAGMENT = `
   "image": images[0]{
     ${IMAGE_FRAGMENT}
   },
+  "imageDark": images[1]{
+    ${IMAGE_FRAGMENT}
+  },
   collection->{ key, ${LOCALIZED_FIELD('name')} }
 `
 
