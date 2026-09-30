@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useLocale } from 'next-intl'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { MobileSlotPicker } from './MobileSlotPicker'
@@ -7,6 +8,19 @@ import { MaterialPicker } from './MaterialPicker'
 import { ConfigSummary } from './ConfigSummary'
 import { getLocalizedValue } from '@/lib/sanity'
 
+type Tab = 'base' | 'body' | 'head'
+
+/**
+ * Masaüstündeki ControlPanel.tsx ile BİREBİR AYNI sekme/otomatik-geçiş
+ * mantığı — Taban'da başlanır, malzeme seçilince Gövde'ye (veya gövde
+ * yoksa Başlık'a) otomatik geçilir; Gövde'den "Devam Et" butonuyla
+ * Başlık'a geçilir. data-tutorial selector'ları da masaüstüyle birebir
+ * aynı isimde (picker-base, material-base, picker-body, remove-body-0,
+ * continue-to-head, picker-head) — CustomRegistryTutorial.tsx bu ikisini
+ * (SCOPE_ID_DESKTOP / SCOPE_ID_MOBILE) ekran genişliğine göre ayırıp aynı
+ * STEPS listesini kullanıyor; selector isimleri burada değişirse tutorial
+ * mobilde hedefi bulamaz.
+ */
 export function MobileControlPanel({
   onClearCollection,
   onRegister,
@@ -23,6 +37,9 @@ export function MobileControlPanel({
   onGoCart: () => void
 }) {
   const locale = useLocale()
+  const tr = locale === 'tr'
+  const [activeTab, setActiveTab] = useState<Tab>('base')
+
   const availableParts = useConfiguratorStore((s) => s.availableParts)
   const base = useConfiguratorStore((s) => s.base)
   const body = useConfiguratorStore((s) => s.body)
@@ -36,12 +53,16 @@ export function MobileControlPanel({
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
   const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
-  const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, bölüm gizlenir
+  const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, sekme gizlenir
   const bodyAtMax = body.length >= bodyLimits.max
   const bodyBelowMin = body.length < bodyLimits.min
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
   const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
+
+  const baseComplete = !!base.partId && !!base.materialId
+  const headComplete = !!head.partId && !!head.materialId
+
   const iotPrice =
     locale === 'tr'
       ? iotEnabled
@@ -50,6 +71,20 @@ export function MobileControlPanel({
       : iotEnabled
         ? `Hardware Allocation: $${hardwareFees.baseUSD + hardwareFees.iotUSD} ($${hardwareFees.baseUSD} + $${hardwareFees.iotUSD} IoT)`
         : `Hardware Allocation: $${hardwareFees.baseUSD}`
+
+  const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
+    { key: 'base', label: tr ? 'Taban' : 'Base', done: baseComplete },
+    ...(hasBodySlot
+      ? [
+          {
+            key: 'body' as Tab,
+            label: (tr ? 'Gövde' : 'Body') + (body.length > 0 ? ` (${body.length})` : ''),
+            done: body.length >= Math.max(1, bodyLimits.min),
+          },
+        ]
+      : []),
+    { key: 'head', label: tr ? 'Başlık' : 'Head', done: headComplete },
+  ]
 
   return (
     <div className="flex flex-col">
@@ -90,115 +125,165 @@ export function MobileControlPanel({
         </div>
       </div>
 
-      {/* Base */}
-      <Section label={locale === 'tr' ? 'Taban' : 'Base'}>
-        <MobileSlotPicker
-          slotType="base"
-          parts={availableParts}
-          isPartSelected={(id) => base.partId === id}
-          onPartClick={(id) => toggleSinglePart('base', id)}
-          dataTutorial="picker-base"
-        />
-        <MaterialPicker
-          part={getSelectedPart('base')}
-          selectedMaterialId={base.materialId}
-          onSelectMaterial={(m) => selectMaterial('base', m)}
-          dataTutorial="material-base"
-        />
-      </Section>
+      {/* Sekme başlıkları — masaüstüyle aynı mantık, mobil boyutlarda */}
+      <div className="flex items-center gap-4 overflow-x-auto border-b border-bureau-black px-3">
+        {TABS.map((tabItem) => (
+          <button
+            key={tabItem.key}
+            onClick={() => setActiveTab(tabItem.key)}
+            className={`flex flex-shrink-0 items-center gap-1 border-b-2 py-2 font-mono text-[10px] uppercase tracking-wider transition-colors ${
+              activeTab === tabItem.key
+                ? 'border-bureau-amber text-bureau-black'
+                : 'border-transparent text-bureau-muted'
+            }`}
+          >
+            {tabItem.done && <span className="text-bureau-amber">✓</span>}
+            {tabItem.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Body */}
-      {hasBodySlot && (
-      <Section
-        label={locale === 'tr' ? 'Gövde' : 'Body'}
-        hint={
-          (locale === 'tr' ? 'Eklemek için dokun' : 'Tap to add') +
-          ` · ${body.length}/${bodyLimits.max}` +
-          (bodyLimits.min > 0 ? ` (${locale === 'tr' ? 'en az' : 'min'} ${bodyLimits.min})` : '')
-        }
-      >
-        <MobileSlotPicker
-          slotType="body"
-          parts={availableParts}
-          getPartCount={getBodyPartCount}
-          onPartClick={(id) => addBodyPart(id)}
-          disabled={bodyAtMax}
-          dataTutorial="picker-body"
-        />
-        {body.map((slot, idx) => {
-          const part = availableParts.find((p) => p.partId === slot.partId)
-          if (!part) return null
-          return (
-            <div key={idx} className="mt-1.5 border border-bureau-rule px-1.5 pb-1.5 pt-1">
-              <div className="mb-0.5 flex items-center justify-between gap-2">
-                <span className="min-w-0 flex-1 truncate font-mono text-[9px] uppercase text-bureau-muted">
-                  {locale === 'tr' ? 'Gövde' : 'Body'} {idx + 1} — {getLocalizedValue(part.name, locale, '—')}
-                </span>
-                {/* Sağda üç dokunma alanı: Yukarı / Aşağı / Kaldır — dizideki
-                    sıra 3D viewer'daki dikey istifleme sırasıyla aynı. */}
-                <div className="flex flex-shrink-0 items-center gap-0.5">
-                  <button
-                    onClick={() => moveBodyLayer(idx, 'up')}
-                    disabled={idx === 0}
-                    aria-label={locale === 'tr' ? 'Yukarı taşı' : 'Move up'}
-                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
-                  >
-                    ▲
-                  </button>
-                  <button
-                    onClick={() => moveBodyLayer(idx, 'down')}
-                    disabled={idx === body.length - 1}
-                    aria-label={locale === 'tr' ? 'Aşağı taşı' : 'Move down'}
-                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
-                  >
-                    ▼
-                  </button>
-                  <button
-                    onClick={() => removeBodyLayer(idx)}
-                    data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
-                    aria-label={locale === 'tr' ? 'Bu gövdeyi kaldır' : 'Remove this body'}
-                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[12px] leading-none text-bureau-subtle hover:text-bureau-amber"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-              <MaterialPicker
-                part={part}
-                selectedMaterialId={slot.materialId}
-                onSelectMaterial={(m) => selectMaterial('body', m, idx)}
-                compact
-              />
-            </div>
-          )
-        })}
-        {bodyBelowMin && (
-          <p className="mt-2 font-mono text-[9px] uppercase text-bureau-amber">
-            {locale === 'tr'
-              ? `En az ${bodyLimits.min} gövde ekleyin.`
-              : `Add at least ${bodyLimits.min} bod${bodyLimits.min === 1 ? 'y' : 'ies'}.`}
-          </p>
-        )}
-      </Section>
+      {/* Taban */}
+      {activeTab === 'base' && (
+        <Section label={locale === 'tr' ? 'Taban' : 'Base'}>
+          <MobileSlotPicker
+            slotType="base"
+            parts={availableParts}
+            isPartSelected={(id) => base.partId === id}
+            onPartClick={(id) => toggleSinglePart('base', id)}
+            dataTutorial="picker-base"
+          />
+          <MaterialPicker
+            part={getSelectedPart('base')}
+            selectedMaterialId={base.materialId}
+            onSelectMaterial={(m) => {
+              selectMaterial('base', m)
+              // Taban tamamlanınca otomatik olarak Gövde sekmesine geç
+              // (bu koleksiyonda gövde yoksa doğrudan Başlık'a) — masaüstüyle aynı.
+              setActiveTab(hasBodySlot ? 'body' : 'head')
+            }}
+            dataTutorial="material-base"
+          />
+        </Section>
       )}
 
-      {/* Head */}
-      <Section label={locale === 'tr' ? 'Başlık' : 'Head'}>
-        <MobileSlotPicker
-          slotType="head"
-          parts={availableParts}
-          isPartSelected={(id) => head.partId === id}
-          onPartClick={(id) => toggleSinglePart('head', id)}
-          dataTutorial="picker-head"
-        />
-        <MaterialPicker
-          part={getSelectedPart('head')}
-          selectedMaterialId={head.materialId}
-          onSelectMaterial={(m) => selectMaterial('head', m)}
-        />
-      </Section>
+      {/* Gövde */}
+      {activeTab === 'body' && hasBodySlot && (
+        <Section
+          label={locale === 'tr' ? 'Gövde' : 'Body'}
+          hint={
+            (locale === 'tr' ? 'Eklemek için dokun' : 'Tap to add') +
+            ` · ${body.length}/${bodyLimits.max}` +
+            (bodyLimits.min > 0 ? ` (${locale === 'tr' ? 'en az' : 'min'} ${bodyLimits.min})` : '')
+          }
+        >
+          <MobileSlotPicker
+            slotType="body"
+            parts={availableParts}
+            getPartCount={getBodyPartCount}
+            onPartClick={(id) => addBodyPart(id)}
+            disabled={bodyAtMax}
+            dataTutorial="picker-body"
+          />
+          {body.map((slot, idx) => {
+            const part = availableParts.find((p) => p.partId === slot.partId)
+            if (!part) return null
+            return (
+              <div key={idx} className="mt-1.5 border border-bureau-rule px-1.5 pb-1.5 pt-1">
+                <div className="mb-0.5 flex items-center justify-between gap-2">
+                  <span className="min-w-0 flex-1 truncate font-mono text-[9px] uppercase text-bureau-muted">
+                    {locale === 'tr' ? 'Gövde' : 'Body'} {idx + 1} — {getLocalizedValue(part.name, locale, '—')}
+                  </span>
+                  {/* Sağda üç dokunma alanı: Yukarı / Aşağı / Kaldır — dizideki
+                      sıra 3D viewer'daki dikey istifleme sırasıyla aynı. */}
+                  <div className="flex flex-shrink-0 items-center gap-0.5">
+                    <button
+                      onClick={() => moveBodyLayer(idx, 'up')}
+                      disabled={idx === 0}
+                      aria-label={locale === 'tr' ? 'Yukarı taşı' : 'Move up'}
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
+                    >
+                      ▲
+                    </button>
+                    <button
+                      onClick={() => moveBodyLayer(idx, 'down')}
+                      disabled={idx === body.length - 1}
+                      aria-label={locale === 'tr' ? 'Aşağı taşı' : 'Move down'}
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
+                    >
+                      ▼
+                    </button>
+                    <button
+                      onClick={() => removeBodyLayer(idx)}
+                      data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
+                      aria-label={locale === 'tr' ? 'Bu gövdeyi kaldır' : 'Remove this body'}
+                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[12px] leading-none text-bureau-subtle hover:text-bureau-amber"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                </div>
+                <MaterialPicker
+                  part={part}
+                  selectedMaterialId={slot.materialId}
+                  onSelectMaterial={(m) => selectMaterial('body', m, idx)}
+                  compact
+                />
+              </div>
+            )
+          })}
+          {bodyBelowMin && (
+            <p className="mt-2 font-mono text-[9px] uppercase text-bureau-amber">
+              {locale === 'tr'
+                ? `En az ${bodyLimits.min} gövde ekleyin.`
+                : `Add at least ${bodyLimits.min} bod${bodyLimits.min === 1 ? 'y' : 'ies'}.`}
+            </p>
+          )}
 
-      {/* Summary + kaydet */}
+          {/* "Devam Et: Başlık" — masaüstündekiyle aynı data-tutorial
+              ("continue-to-head"), tutorial bu adımı bekliyor. */}
+          <button
+            onClick={() => setActiveTab('head')}
+            disabled={bodyBelowMin}
+            data-tutorial="continue-to-head"
+            className={`btn-bureau mt-3 w-full text-[10px] ${bodyBelowMin ? 'cursor-not-allowed opacity-40' : ''}`}
+          >
+            {bodyBelowMin
+              ? locale === 'tr'
+                ? `En az ${bodyLimits.min} gövde ekleyin`
+                : `Add at least ${bodyLimits.min} bod${bodyLimits.min === 1 ? 'y' : 'ies'}`
+              : body.length === 0
+                ? locale === 'tr'
+                  ? 'Gövde Eklemeden Devam Et →'
+                  : 'Continue Without Body →'
+                : locale === 'tr'
+                  ? 'Devam Et: Başlık →'
+                  : 'Continue: Head →'}
+          </button>
+        </Section>
+      )}
+
+      {/* Başlık */}
+      {activeTab === 'head' && (
+        <Section label={locale === 'tr' ? 'Başlık' : 'Head'}>
+          <MobileSlotPicker
+            slotType="head"
+            parts={availableParts}
+            isPartSelected={(id) => head.partId === id}
+            onPartClick={(id) => toggleSinglePart('head', id)}
+            dataTutorial="picker-head"
+          />
+          <MaterialPicker
+            part={getSelectedPart('head')}
+            selectedMaterialId={head.materialId}
+            onSelectMaterial={(m) => selectMaterial('head', m)}
+          />
+        </Section>
+      )}
+
+      {/* Summary + kaydet — sekmelerden BAĞIMSIZ, her zaman görünür
+          (masaüstünde de ConfigSummary sekme alanının dışında, ayrı bir
+          sabit alanda — bkz. CustomRegistryClient.tsx). */}
       <div className="border-t border-bureau-rule px-3 py-3">
         <ConfigSummary onRegister={onRegister} />
         {isSaving && (

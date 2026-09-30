@@ -44,8 +44,8 @@ const STEPS: TutorialStep[] = [
     selector: 'continue-to-head',
     titleTr: 'Adım 5 — Devam',
     titleEn: 'Step 5 — Continue',
-    descTr: 'Gövdeye istediğiniz kadar parça ekledikten sonra, Başlık adımına geçmek için buraya tıklayın.',
-    descEn: "Once you've added as many body parts as you like, click here to move on to the Head step.",
+    descTr: 'Gövde eklemeyi tamamladığınızda Başlık adımına geçmek için bu butona tıklayın.',
+    descEn: 'When you\u2019re done adding bodies, click this button to continue to the Head step.',
   },
   {
     selector: 'picker-head',
