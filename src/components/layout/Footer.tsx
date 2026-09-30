@@ -10,7 +10,7 @@ export function Footer() {
   const tr = locale === 'tr'
 
   return (
-    <footer className="hidden border-t border-bureau-black sm:block">
+    <footer className="hidden border-t border-bureau-line-header sm:block">
       <div className="flex items-center justify-between px-10 py-4">
         <span className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase">
           <span>© 2026</span>

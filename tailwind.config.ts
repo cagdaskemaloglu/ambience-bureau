@@ -47,6 +47,24 @@ const config: Config = {
           surface: '#FAFAFA',
           amber: '#E6792E',
         },
+        // Karanlık modda "Space Blue"/"Space Gray" olması istenen üç özel
+        // çizgi. ÖNEMLİ: her biri KENDİ CSS değişkenine bağlı, TEK bir
+        // class — light/dark değerini `globals.css`'teki :root/.dark
+        // bloklarında kendi içinde taşıyor. Bunu BİLEREK `bureau-fixed-*
+        // dark:bureau-dark-line-*` gibi İKİ AYRI class'ı karıştırarak değil,
+        // tek class olarak kurduk: iki farklı renk class'ını aynı özellikte
+        // (border-color) karıştırmak, Tailwind'in derlediği CSS'te hangisinin
+        // kazanacağını sıralamaya bırakır — garanti değildir. Tek class,
+        // garanti sonuç.
+        'bureau-line': {
+          // Header altı / footer üstü DÜZ çizgi — ışıkta siyah, karanlıkta Space Blue.
+          header: 'rgb(var(--bureau-line-header) / <alpha-value>)',
+          // Drop isimlerinin altındaki KESİKLİ çizgi — ışıkta gri, karanlıkta Space Gray.
+          dashed: 'rgb(var(--bureau-line-dashed) / <alpha-value>)',
+        },
+        // Drop panelinin kenarlığı/arka planı — ışıkta siyah, karanlıkta
+        // sayfanın gerçek koyu-mod arka planıyla (#0D0D0D) birebir eşleşir.
+        'bureau-panel-edge': 'rgb(var(--bureau-panel-edge) / <alpha-value>)',
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],

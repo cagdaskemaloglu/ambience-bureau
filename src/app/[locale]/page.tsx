@@ -33,14 +33,14 @@ export default async function HomePage({ params }: Props) {
 
   if (dropsWithProducts.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center border-t border-bureau-black">
+      <div className="flex h-64 items-center justify-center border-t border-bureau-line-header">
         <p className="font-mono text-[12px] uppercase tracking-wide text-bureau-muted">{t('noDrops')}</p>
       </div>
     )
   }
 
   return (
-    <div className="border-t border-bureau-black">
+    <div className="border-t border-bureau-line-header">
       {dropsWithProducts.map((drop, i) => (
         <DropRow
           key={drop._id}

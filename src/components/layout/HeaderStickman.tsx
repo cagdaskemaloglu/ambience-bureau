@@ -353,7 +353,10 @@ export function HeaderStickman({ locale }: { locale: string }) {
   const isSeated = phase === 'sitting' || phase === 'seated'
 
   return (
-    <div ref={containerRef} className="pointer-events-none absolute inset-0">
+    <div
+      ref={containerRef}
+      className="pointer-events-none absolute inset-0 text-[#141414] dark:text-white"
+    >
       <svg
         viewBox={`0 0 ${anchors.headerWidth} ${anchors.headerHeight}`}
         className="h-full w-full"
@@ -377,13 +380,13 @@ export function HeaderStickman({ locale }: { locale: string }) {
             fill="url(#stickmanLampGlow)"
             style={{ opacity: lamp1On ? 1 : 0, transition: 'opacity 800ms ease-out' }}
           />
-          <line x1="0" y1="11" x2="0" y2="1.5" stroke="#141414" strokeWidth="1.6" />
-          <path d="M -8.5 1.5 L 8.5 1.5 L 5 -10 L -5 -10 Z" fill="none" stroke="#141414" strokeWidth="1.6" strokeLinejoin="round" />
+          <line x1="0" y1="11" x2="0" y2="1.5" stroke="currentColor" strokeWidth="1.6" />
+          <path d="M -8.5 1.5 L 8.5 1.5 L 5 -10 L -5 -10 Z" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
           <circle
             cx="0" cy="-3" r="2.8"
             className="transition-colors duration-500"
             fill={lamp1On ? '#F5D78E' : '#EDEDED'}
-            stroke="#141414"
+            stroke="currentColor"
             strokeWidth="0.9"
           />
         </g>
@@ -393,7 +396,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
             kadar LADDER_STEPS basamaklı ── */}
         <g
           style={{ opacity: ladderVisible ? 1 : 0, transition: 'opacity 400ms ease-out' }}
-          stroke="#141414" strokeWidth="1.1" fill="none"
+          stroke="currentColor" strokeWidth="1.1" fill="none"
         >
           <line
             x1={anchors.ladderX - LADDER_RAIL_HALF_WIDTH} y1={anchors.groundY}
@@ -423,21 +426,21 @@ export function HeaderStickman({ locale }: { locale: string }) {
             fill="url(#stickmanLampGlow)"
             style={{ opacity: lamp2On ? 1 : 0, transition: 'opacity 800ms ease-out' }}
           />
-          <ellipse cx="0" cy="-1" rx="3.5" ry="1.2" fill="none" stroke="#141414" strokeWidth="1" />
-          <ellipse cx="0" cy="-4" rx="3.2" ry="1.6" fill="#6B9B5E" stroke="#141414" strokeWidth="0.7" />
-          <ellipse cx="0" cy="-7" rx="2.8" ry="1.4" fill="#4A6B96" stroke="#141414" strokeWidth="0.7" />
-          <ellipse cx="0" cy="-10" rx="2.6" ry="1.3" fill="#6B9B5E" stroke="#141414" strokeWidth="0.7" />
-          <ellipse cx="0" cy="-13" rx="2.2" ry="1.1" fill="#4A6B96" stroke="#141414" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-1" rx="3.5" ry="1.2" fill="none" stroke="currentColor" strokeWidth="1" />
+          <ellipse cx="0" cy="-4" rx="3.2" ry="1.6" fill="#6B9B5E" stroke="currentColor" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-7" rx="2.8" ry="1.4" fill="#4A6B96" stroke="currentColor" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-10" rx="2.6" ry="1.3" fill="#6B9B5E" stroke="currentColor" strokeWidth="0.7" />
+          <ellipse cx="0" cy="-13" rx="2.2" ry="1.1" fill="#4A6B96" stroke="currentColor" strokeWidth="0.7" />
           <path
             d="M -3.5 -15 L 3.5 -15 L 2 -18 L -2 -18 Z"
             fill={lamp2On ? '#FFFFFF' : '#EDEDED'}
-            stroke="#141414" strokeWidth="0.9" strokeLinejoin="round"
+            stroke="currentColor" strokeWidth="0.9" strokeLinejoin="round"
             className="transition-colors duration-500"
           />
           <path
             d="M -7.5 -18 L 7.5 -18 L 3.8 -27 L -3.8 -27 Z"
             fill={lamp2On ? '#FFFFFF' : '#EDEDED'}
-            stroke="#141414" strokeWidth="1.1" strokeLinejoin="round"
+            stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"
             className="transition-colors duration-500"
           />
         </g>
@@ -450,22 +453,22 @@ export function HeaderStickman({ locale }: { locale: string }) {
             fill="url(#stickmanLampGlow)"
             style={{ opacity: lamp3On ? 1 : 0, transition: 'opacity 800ms ease-out' }}
           />
-          <ellipse cx="0" cy="-1" rx="3" ry="1" fill="none" stroke="#141414" strokeWidth="1" />
-          <rect x="-2.6" y="-11" width="5.2" height="9" rx="2.4" fill="#D97F4E" stroke="#141414" strokeWidth="0.8" />
-          <rect x="-2.6" y="-18" width="5.2" height="7.2" fill="#7FC9B0" stroke="#141414" strokeWidth="0.8" />
+          <ellipse cx="0" cy="-1" rx="3" ry="1" fill="none" stroke="currentColor" strokeWidth="1" />
+          <rect x="-2.6" y="-11" width="5.2" height="9" rx="2.4" fill="#D97F4E" stroke="currentColor" strokeWidth="0.8" />
+          <rect x="-2.6" y="-18" width="5.2" height="7.2" fill="#7FC9B0" stroke="currentColor" strokeWidth="0.8" />
           <rect
             x="-2.6" y="-28.5" width="5.2" height="10.7" rx="2.6"
             fill={lamp3On ? '#FFFFFF' : '#EDEDED'}
-            stroke="#141414" strokeWidth="0.8"
+            stroke="currentColor" strokeWidth="0.8"
             className="transition-colors duration-500"
           />
         </g>
 
         {/* ── Masa ("BUREAU" kelimesiyle hizalı) ── */}
         <g transform={`translate(${anchors.deskX} ${anchors.groundY - 34})`}>
-          <line x1="-11" y1="24" x2="11" y2="24" stroke="#141414" strokeWidth="1.6" />
-          <line x1="-9" y1="24" x2="-9" y2="34" stroke="#141414" strokeWidth="1.4" />
-          <line x1="9" y1="24" x2="9" y2="34" stroke="#141414" strokeWidth="1.4" />
+          <line x1="-11" y1="24" x2="11" y2="24" stroke="currentColor" strokeWidth="1.6" />
+          <line x1="-9" y1="24" x2="-9" y2="34" stroke="currentColor" strokeWidth="1.4" />
+          <line x1="9" y1="24" x2="9" y2="34" stroke="currentColor" strokeWidth="1.4" />
         </g>
 
         {/* ── Çubuk adam ── */}
@@ -493,9 +496,9 @@ export function HeaderStickman({ locale }: { locale: string }) {
             }
           >
             {/* Kafa */}
-            <circle cx="0" cy="-13" r="4" fill="none" stroke="#141414" strokeWidth="1.4" />
+            <circle cx="0" cy="-13" r="4" fill="none" stroke="currentColor" strokeWidth="1.4" />
             {/* Gövde */}
-            <line x1="0" y1="-9" x2="0" y2="0" stroke="#141414" strokeWidth="1.4" />
+            <line x1="0" y1="-9" x2="0" y2="0" stroke="currentColor" strokeWidth="1.4" />
 
             {/* Sol kol (omuz) — lamba 1'e (solunda) düz uzanır, lamba 2/3'e
                 (sağında) yukarı-sağa uzanır */}
@@ -515,7 +518,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
                           : {}),
                 }}
               >
-                <line x1="0" y1="0" x2="0" y2="8" stroke="#141414" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="0" y1="0" x2="0" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </g>
             </g>
 
@@ -534,7 +537,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
                         : {}),
                 }}
               >
-                <line x1="0" y1="0" x2="0" y2="8" stroke="#141414" strokeWidth="1.4" strokeLinecap="round" />
+                <line x1="0" y1="0" x2="0" y2="8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               </g>
             </g>
 
@@ -549,7 +552,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
                       ...(isJumping ? { transform: 'rotate(-14deg)', transition: 'transform 200ms ease-out' } : {}),
                     }}
                   >
-                    <line x1="0" y1="0" x2="0" y2="7" stroke="#141414" strokeWidth="1.4" strokeLinecap="round" />
+                    <line x1="0" y1="0" x2="0" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                   </g>
                 </g>
                 <g transform="translate(0 0)">
@@ -560,7 +563,7 @@ export function HeaderStickman({ locale }: { locale: string }) {
                       ...(isJumping ? { transform: 'rotate(14deg)', transition: 'transform 200ms ease-out' } : {}),
                     }}
                   >
-                    <line x1="0" y1="0" x2="0" y2="7" stroke="#141414" strokeWidth="1.4" strokeLinecap="round" />
+                    <line x1="0" y1="0" x2="0" y2="7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                   </g>
                 </g>
               </>

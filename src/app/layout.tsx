@@ -8,13 +8,17 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider'
 // çalışması gereken script — aksi halde sayfa bir anlığına yanlış temayla
 // (ör. localStorage karanlık dese bile beyaz arka planla) çizilip hemen
 // ardından karanlığa döner ("flaş"). ThemeProvider.tsx'teki
-// resolveInitialTheme() ile BİREBİR AYNI mantığı izler; ikisi
-// birbirinden bağımsız güncellenmemeli.
+// resolveInitialTheme()/isNightTime() ile BİREBİR AYNI mantığı izler; ikisi
+// birbirinden bağımsız güncellenmemeli. Kullanıcı elle bir tema seçmediyse
+// (localStorage boşsa) saat 18:00–06:00 arasında karanlık mod varsayılan
+// olarak açılır.
 const THEME_INIT_SCRIPT = `
 (function () {
   try {
     var stored = localStorage.getItem('ambience-bureau-theme');
-    var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var hour = new Date().getHours();
+    var isNight = hour >= 18 || hour < 6;
+    var isDark = stored === 'dark' || (stored !== 'light' && isNight);
     if (isDark) document.documentElement.classList.add('dark');
   } catch (e) {}
 })();
