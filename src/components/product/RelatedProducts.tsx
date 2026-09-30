@@ -14,7 +14,7 @@ export function RelatedProducts({ products }: { products: ProductCardType[] }) {
       <div className="px-9 py-7">
         <div className="label-mono mb-1">{t('section')}</div>
         <h2 className="text-[20px] font-light uppercase tracking-wide">
-          Related Objects
+          {t('relatedObjects')}
         </h2>
       </div>
       <div className="grid grid-cols-1 border-t border-l border-bureau-black sm:grid-cols-2 lg:grid-cols-4">

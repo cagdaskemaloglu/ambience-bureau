@@ -18,6 +18,7 @@
   "registry": {
     "section": "SECTION 01",
     "title": "Object Registry",
+    "relatedObjects": "Related Objects",
     "description": "Certified objects for the regulation of spatial photons.",
     "sortLabel": "SORT",
     "sortRegistryNo": "REGISTRY NO. ASC",

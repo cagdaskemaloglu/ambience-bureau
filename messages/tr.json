@@ -18,6 +18,7 @@
   "registry": {
     "section": "BÖLÜM 01",
     "title": "Nesne Kaydı",
+    "relatedObjects": "İlgili Nesneler",
     "description": "Mekânsal foton düzenlemesi için sertifikalı nesneler.",
     "sortLabel": "SIRALAMA",
     "sortRegistryNo": "KAYIT NO. ARTAN",
