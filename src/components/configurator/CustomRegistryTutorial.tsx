@@ -56,10 +56,10 @@ const STEPS: TutorialStep[] = [
   },
   {
     selector: null,
-    titleTr: 'Adım 7 — Sicile Kayıt',
-    titleEn: 'Step 7 — Registration',
-    descTr: 'Tasarımınız tamamlandı. Sipariş onay adımlarına geçmek için kaydedin.',
-    descEn: 'Your design is complete. Register it to proceed to order confirmation.',
+    titleTr: 'Adım 7 — Tamamlandı',
+    titleEn: 'Step 7 — Complete',
+    descTr: 'Tasarımınız tamamlandı. Turu bitirmek ve modeli temizlemek için aşağıdaki "Bitir" butonuna tıklayın.',
+    descEn: 'Your design is complete. Click the "Finish" button below to end the tour and clear the model.',
   },
 ]
 
@@ -158,13 +158,16 @@ export function CustomRegistryTutorial({
     const step = STEPS[stepIndex]
     let cancelled = false
 
-    // Son adım: belirli bir hedef yok — ekranın herhangi bir yerine
-    // tıklamak tutorial'ı bitirir (ve tasarımı sıfırlar).
+    // Son adım: belirli bir hedef yok — spot ışığı kapanır, ama tasarımı
+    // TEMİZLEME işlemi artık SADECE bilgi çubuğundaki "Bitir" butonuna
+    // (handleDismiss, onClick ile bağlı) tıklanınca olur. Önceden burada
+    // "ekranın HERHANGİ bir yerine tıklama" da aynı işi (reset + dismiss)
+    // yapıyordu — kullanıcı başlık parçasını seçtikten sonra ilk
+    // yaptığı tıklama (ör. renk seçmeye çalışırken) tasarımı aniden
+    // sıfırlıyordu. Artık sadece o buton bu davranışı tetikliyor.
     if (step.selector === null) {
       setRect(null)
-      const handleAnyClick = () => handleDismiss()
-      document.addEventListener('click', handleAnyClick)
-      return () => document.removeEventListener('click', handleAnyClick)
+      return
     }
 
     function poll() {
@@ -256,22 +259,30 @@ export function CustomRegistryTutorial({
           <p className="mb-3 text-[13px] leading-snug text-bureau-black">{desc}</p>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-bureau-muted">
-              {isDesktop ? <MouseClickIcon /> : <TapIcon />}
-              <span className="font-mono text-[9.5px] uppercase tracking-wide">
-                {isFinalStep
-                  ? (locale === 'tr' ? 'Devam etmek için ekrana tıklayın' : 'Click anywhere to continue')
-                  : isDesktop
+            {isFinalStep ? (
+              <span className="font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
+                {locale === 'tr' ? 'Tur tamamlandı' : 'Tour complete'}
+              </span>
+            ) : (
+              <div className="flex items-center gap-2 text-bureau-muted">
+                {isDesktop ? <MouseClickIcon /> : <TapIcon />}
+                <span className="font-mono text-[9.5px] uppercase tracking-wide">
+                  {isDesktop
                     ? (locale === 'tr' ? 'İşaretli alana tıklayın' : 'Click the highlighted area')
                     : (locale === 'tr' ? 'İşaretli alana dokunun' : 'Tap the highlighted area')}
-              </span>
-            </div>
+                </span>
+              </div>
+            )}
             <button
               onClick={handleDismiss}
-              className="font-mono text-[9.5px] uppercase tracking-wider text-bureau-subtle hover:text-bureau-black"
+              className={
+                isFinalStep
+                  ? 'btn-bureau-amber text-[10px]'
+                  : 'font-mono text-[9.5px] uppercase tracking-wider text-bureau-subtle hover:text-bureau-black'
+              }
             >
               {isFinalStep
-                ? (locale === 'tr' ? 'Bitir ✕' : 'Finish ✕')
+                ? (locale === 'tr' ? 'Bitir' : 'Finish')
                 : (locale === 'tr' ? 'Atla ✕' : 'Skip ✕')}
             </button>
           </div>
