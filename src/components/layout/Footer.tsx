@@ -34,44 +34,62 @@ export function Footer() {
             className="h-4 w-auto opacity-90"
           />
 
-          <a
-            href={APP_STORE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 border border-bureau-black bg-black px-3 py-1.5 text-white no-underline transition-colors hover:border-bureau-amber hover:bg-bureau-amber"
-          >
-            <span className="leading-tight">
-              <span className="block font-mono text-[7px] uppercase tracking-wide text-white/70">
-                {tr ? 'Uygulamayı İndirin' : 'Download on the'}
+          <div className="flex flex-col gap-1.5">
+            <a
+              href={APP_STORE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 border border-bureau-black bg-black px-3 py-1.5 text-white no-underline transition-colors hover:border-bureau-amber hover:bg-bureau-amber"
+            >
+              <span className="leading-tight">
+                <span className="block font-mono text-[7px] uppercase tracking-wide text-white/70">
+                  {tr ? 'Uygulamayı İndirin' : 'Download on the'}
+                </span>
+                <span className="block font-mono text-[11px] font-semibold uppercase tracking-wide">
+                  App Store
+                </span>
               </span>
-              <span className="block font-mono text-[11px] font-semibold uppercase tracking-wide">
-                App Store
-              </span>
-            </span>
-          </a>
+            </a>
 
-          <div className="flex items-center gap-5">
+            {/* Play Store — henüz yayınlanmadı, bu yüzden tıklanınca hiçbir
+                yere yönlendirmiyor (href/onClick yok, sadece görsel yer tutucu). */}
+            <button
+              type="button"
+              className="flex items-center gap-2 border border-bureau-black bg-black px-3 py-1.5 text-white transition-colors hover:border-bureau-amber hover:bg-bureau-amber"
+            >
+              <span className="leading-tight">
+                <span className="block font-mono text-[7px] uppercase tracking-wide text-white/70">
+                  {tr ? 'Uygulamayı İndirin' : 'Download on the'}
+                </span>
+                <span className="block font-mono text-[11px] font-semibold uppercase tracking-wide">
+                  Play Store
+                </span>
+              </span>
+            </button>
+          </div>
+
+          <div className="flex flex-col gap-1">
             <Link
               href="/shipping-returns"
-              className="font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+              className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
             >
               {tr ? 'Teslimat ve İade' : 'Shipping & Returns'}
             </Link>
             <Link
               href="/distance-sales-agreement"
-              className="font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+              className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
             >
               {tr ? 'Mesafeli Satış Sözleşmesi' : 'Distance Sales Agreement'}
             </Link>
             <Link
               href="/privacy-policy"
-              className="font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+              className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
             >
               {tr ? 'Gizlilik Politikası' : 'Privacy Policy'}
             </Link>
             <Link
               href="/terms-of-use"
-              className="font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+              className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
             >
               {tr ? 'Kullanım Koşulları' : 'Terms of Use'}
             </Link>
