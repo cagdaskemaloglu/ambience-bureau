@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { formatPrice } from '@/lib/sanity'
@@ -241,6 +242,18 @@ export function CheckoutForm() {
         >
           {isSubmitting ? t('submitting') : t('submit')}
         </button>
+
+        {/* Güven rozeti — dile göre değişir (TR: "iyzico ile Öde",
+            EN: "Pay with iyzico"). iyzico'nun onay kriterlerinden biri. */}
+        <div className="flex justify-center">
+          <Image
+            src={locale === 'tr' ? '/payments/checkout-iyzico-tr.png' : '/payments/checkout-iyzico-en.png'}
+            alt={locale === 'tr' ? 'iyzico ile Öde' : 'Pay with iyzico'}
+            width={140}
+            height={48}
+            className="h-9 w-auto"
+          />
+        </div>
       </form>
 
       {/* Sipariş özeti */}
