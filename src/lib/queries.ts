@@ -14,6 +14,7 @@ const LOCALIZED_FIELD = (name: string) => `
 `
 
 const PRODUCT_CARD_FRAGMENT = `
+  ownerUserId,
   _id,
   registryNo,
   slug,
@@ -226,6 +227,7 @@ export async function getAllDropsWithProducts() {
     `*[_type == "drop"] | order(sortOrder asc) {
       _id,
       dropNo,
+      plannedQuantity,
       ${LOCALIZED_FIELD('name')},
       "configuratorCollectionKey": coalesce(
         collection->key.current,

@@ -37,7 +37,7 @@ export interface SanityImage {
 
 // ── Ürün ─────────────────────────────────────────────────
 
-export type ProductStatus = 'certified' | 'limited' | 'decommissioned'
+export type ProductStatus = 'certified' | 'limited' | 'decommissioned' | 'owned'
 
 export type ProductCategory = 'pendant' | 'wall' | 'desk' | 'floor' | 'strip'
 
@@ -55,6 +55,8 @@ export interface ProductCard {
   registryNo: string
   slug: { current: string }
   status: ProductStatus
+  /** SADECE status === 'owned' iken dolu — bu ürünü satın alan Supabase kullanıcısının UUID'si. */
+  ownerUserId?: string
   category: ProductCategory
   priceTRY: number
   priceUSD: number
@@ -143,6 +145,8 @@ export interface Drop {
    * birinin configuratorCollection'ı. Hiçbiri yoksa null.
    */
   configuratorCollectionKey?: string | null
+  /** Bu Drop'tan toplam kaç adet satılacağı — registryNo'nun paydası ve stok kontrolü için. */
+  plannedQuantity?: number
 }
 
 export interface DropWithProducts extends Drop {

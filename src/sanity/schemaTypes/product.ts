@@ -1,5 +1,6 @@
 import { defineField, defineType, defineArrayMember } from 'sanity'
 import { localizedStringField, localizedBlockField } from './localeHelper'
+import { RegistryNoHint } from '../components/RegistryNoHint'
 
 export const productSchema = defineType({
   name: 'product',
@@ -11,9 +12,11 @@ export const productSchema = defineType({
     defineField({
       name: 'registryNo',
       title: 'Registry Number',
-      description: 'Örn: 001/050 — seri numara / toplam adet',
+      description:
+        'Örn: 001/050 — seri numara / toplam adet. Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
       type: 'string',
       validation: (R) => R.required(),
+      components: { field: RegistryNoHint },
     }),
 
     defineField({
@@ -33,11 +36,36 @@ export const productSchema = defineType({
           { title: '● Certified (Available)', value: 'certified' },
           { title: '● Limited Series', value: 'limited' },
           { title: '● Decommissioned (Sold Out)', value: 'decommissioned' },
+          // Custom Registry üzerinden tasarlanıp SATIN ALINMIŞ, tek bir
+          // müşteriye ait belge. "Decommissioned"tan farkı: bu durum
+          // "üretimden kaldırıldı" değil, "bu adet artık birinin" anlamına
+          // gelir. Normalde kod tarafından (satın alma sonrası) otomatik
+          // atanır; admin elle de seçebilir ama bu durumda aşağıdaki
+          // "Sahip (Kullanıcı ID)" alanının da doldurulması gerekir.
+          { title: '◆ Owned (Sold via Custom Registry)', value: 'owned' },
         ],
         layout: 'radio',
       },
       initialValue: 'certified',
       validation: (R) => R.required(),
+    }),
+
+    // ── Sahiplik (SADECE status: "owned" iken anlamlı) ────
+    defineField({
+      name: 'ownerUserId',
+      title: 'Sahip (Kullanıcı ID)',
+      description:
+        'SADECE Registry Status "Owned" iken doldurulur. Supabase\'teki auth.users/profiles tablosundaki kullanıcı UUID\'si — bu ürünü satın alan müşteri. Herkese açık profil sayfasında (sansürlü isim + şehir + ürün arşivi) bu ID kullanılır. Satın alma sonrası kod tarafından otomatik dolar; admin elle bir ürünü birine "atamak" isterse de buraya UUID\'yi yapıştırabilir.',
+      type: 'string',
+      hidden: ({ document }) => document?.status !== 'owned',
+      validation: (R) =>
+        R.custom((value, context) => {
+          const status = (context.document as { status?: string } | undefined)?.status
+          if (status === 'owned' && !value) {
+            return 'Registry Status "Owned" iken Sahip (Kullanıcı ID) zorunludur.'
+          }
+          return true
+        }),
     }),
 
     // ── Çok Dilli İsim & Açıklama ────────────────────────
