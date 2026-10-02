@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useClient, useFormValue, type StringInputProps } from 'sanity'
+import { useClient, useFormValue, type StringFieldProps } from 'sanity'
 import { Card, Stack, Text } from '@sanity/ui'
 
 /**
@@ -14,7 +14,7 @@ import { Card, Stack, Text } from '@sanity/ui'
  * zaten programatik olarak dolduruluyor — bu bileşen sadece Studio'dan
  * ELLE ürün ekleyen admin için bir kolaylık.
  */
-export function RegistryNoHint(props: StringInputProps) {
+export function RegistryNoHint(props: StringFieldProps) {
   const client = useClient({ apiVersion: '2024-01-01' })
   const dropRef = useFormValue(['drop']) as { _ref?: string } | undefined
   const currentId = useFormValue(['_id']) as string | undefined

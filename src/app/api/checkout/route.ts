@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createCheckoutForm } from '@/lib/iyzico/client'
 import type { CartItem } from '@/types'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
+import { checkCustomDesignCapacity } from '@/lib/sanity-fulfillment'
 
 interface CheckoutRequestBody {
   items: CartItem[]
@@ -42,6 +43,20 @@ export async function POST(request: Request) {
         { error: 'Teslimat bilgileri eksik.' },
         { status: 400 }
       )
+    }
+
+    // Stok kontrolü — SADECE Custom Registry (type: 'custom') kalemleri için.
+    // Bağlı olduğu Drop'un "Planlanan Satış Adedi"ni doldurmuş sepet
+    // kalemleri varsa, sipariş burada (ödeme adımına hiç gitmeden) reddedilir.
+    // Konfigüratör ekranı kendisi kapanmaz — sadece bu checkout adımında
+    // engellenir (bkz. sanity-fulfillment.ts).
+    for (const item of items) {
+      if (item.type === 'custom' && item.customDesign?.collectionKey) {
+        const capacity = await checkCustomDesignCapacity(item.customDesign.collectionKey)
+        if (!capacity.ok) {
+          return NextResponse.json({ error: capacity.reason }, { status: 409 })
+        }
+      }
     }
 
     // Üye kullanıcı kontrolü

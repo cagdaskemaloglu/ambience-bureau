@@ -1,0 +1,73 @@
+# Bir ürünün 24 kareli 360° spin-frame dizisini üretir ve Supabase Storage'a
+# yükler. NEDEN Vercel'de DEĞİL: scripts/generate-spin-frames.ts gerçek
+# Puppeteer (headless Chrome) kullanıyor — bu, Vercel'in sunucusuz fonksiyon
+# ortamında güvenilir çalışmaz. GitHub Actions'ın tam Linux runner'ı bunun
+# için uygun bir ortam.
+#
+# NASIL TETİKLENİR:
+#   1) OTOMATİK — src/lib/sanity-fulfillment.ts#triggerSpinFrameGeneration()
+#      bir Custom Registry siparişi ödeme onayı aldığında bu workflow'u
+#      "workflow_dispatch" ile GitHub REST API üzerinden tetikler.
+#   2) ELLE — GitHub'da Actions sekmesinden "Run workflow" ile, "slug"
+#      girdisine ürünün Sanity slug'ını yazarak.
+#
+# KURULUM (bu dosyayı eklemek YETMEZ, ayrıca gerekli):
+#   - Repo Settings → Secrets and variables → Actions → "New repository
+#     secret" ile aşağıdakileri ekleyin (değerleri .env.local'inizdeki
+#     ile AYNI olmalı):
+#       NEXT_PUBLIC_SANITY_PROJECT_ID
+#       NEXT_PUBLIC_SANITY_DATASET
+#       NEXT_PUBLIC_SUPABASE_URL
+#       SUPABASE_SERVICE_ROLE_KEY
+#   - SPIN_BASE_URL secret'ı: canlı sitenizin adresi (ör.
+#     https://ambiencebureau.com) — script bu adresi gerçek bir tarayıcıda
+#     açıp kareleri yakalıyor, yani YAYINDA olmalı.
+#   - Vercel'de (checkout/callback route'unun otomatik tetikleyebilmesi
+#     için) iki YENİ ortam değişkeni:
+#       GITHUB_REPO = "kullanici-adi/repo-adi"
+#       GITHUB_ACTIONS_TOKEN = "repo" + "workflow" yetkili bir GitHub
+#         Personal Access Token (Settings → Developer settings → Personal
+#         access tokens → Fine-grained/Classic)
+#   İkisi de eksikse otomatik tetikleme sessizce atlanır (sipariş/ödeme
+#   akışı etkilenmez) — bu durumda "ELLE" seçeneğini kullanabilirsiniz.
+
+name: Generate Spin Frames
+
+on:
+  workflow_dispatch:
+    inputs:
+      slug:
+        description: 'Ürünün Sanity slug değeri (boş bırakılırsa TÜM configurable/owned ürünler için çalışır)'
+        required: false
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Repo'yu çek
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Spin frame'leri üret
+        env:
+          NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+          NEXT_PUBLIC_SANITY_DATASET: ${{ secrets.NEXT_PUBLIC_SANITY_DATASET }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SPIN_BASE_URL: ${{ secrets.SPIN_BASE_URL }}
+        run: |
+          if [ -n "${{ inputs.slug }}" ]; then
+            npm run spin-frames -- --slug="${{ inputs.slug }}" --base-url="$SPIN_BASE_URL"
+          else
+            npm run spin-frames -- --base-url="$SPIN_BASE_URL"
+          fi
