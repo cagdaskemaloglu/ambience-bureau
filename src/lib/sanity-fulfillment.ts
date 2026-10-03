@@ -156,8 +156,12 @@ async function resolvePartsToReferences(
 export type CreateOwnedProductInput = {
   /** Supabase custom_designs.id */
   customDesignId: string
-  /** Supabase auth.users.id — bu tasarımı satın alan kullanıcı. */
-  ownerUserId: string
+  /** Registry kartında gösterilecek sansürlü isim — üye/misafir fark etmez, ikisi de aynı formatta (bkz. nameCensor.ts). */
+  ownerDisplayName: string
+  /** Sahibin şehri — sipariş adresinden gelir. */
+  ownerCity?: string
+  /** OPSİYONEL — SADECE gerçek bir üye hesabı varsa (misafir siparişlerinde undefined). Doluysa profil sayfası linki için kullanılır. */
+  ownerUserId?: string
   /** Custom Registry'de tasarlanan koleksiyonun key'i (custom_designs.design_data.collectionKey). */
   collectionKey: string
   /** custom_designs.design_data.parts */
@@ -227,6 +231,8 @@ export async function createOwnedProductFromCustomDesign(input: CreateOwnedProdu
     registryNo,
     slug: { _type: 'slug', current: `owned-${slugBase}-${Date.now().toString(36)}` },
     status: 'owned',
+    ownerDisplayName: input.ownerDisplayName,
+    ownerCity: input.ownerCity,
     ownerUserId: input.ownerUserId,
     name: [
       { _key: 'tr', locale: 'tr', value: input.productName },

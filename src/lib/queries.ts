@@ -14,6 +14,8 @@ const LOCALIZED_FIELD = (name: string) => `
 `
 
 const PRODUCT_CARD_FRAGMENT = `
+  ownerDisplayName,
+  ownerCity,
   ownerUserId,
   _id,
   registryNo,

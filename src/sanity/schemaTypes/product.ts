@@ -51,21 +51,42 @@ export const productSchema = defineType({
     }),
 
     // ── Sahiplik (SADECE status: "owned" iken anlamlı) ────
+    // Üçü birlikte çalışır: ownerDisplayName + ownerCity her zaman
+    // gösterilir (üye VEYA misafir fark etmeksizin — ikisi de aynı
+    // sansürlü formatta: "Ça*** KE***", bkz. src/lib/nameCensor.ts).
+    // ownerUserId İSE SADECE gerçek bir üye hesabı varsa dolar ve
+    // SADECE profil sayfasına (Faz 3) tıklanabilir link vermek için
+    // kullanılır — boşsa kart yine görünür, sadece link yok.
     defineField({
-      name: 'ownerUserId',
-      title: 'Sahip (Kullanıcı ID)',
+      name: 'ownerDisplayName',
+      title: 'Sahip — Görünen Ad (sansürlü)',
       description:
-        'SADECE Registry Status "Owned" iken doldurulur. Supabase\'teki auth.users/profiles tablosundaki kullanıcı UUID\'si — bu ürünü satın alan müşteri. Herkese açık profil sayfasında (sansürlü isim + şehir + ürün arşivi) bu ID kullanılır. Satın alma sonrası kod tarafından otomatik dolar; admin elle bir ürünü birine "atamak" isterse de buraya UUID\'yi yapıştırabilir.',
+        'SADECE Registry Status "Owned" iken doldurulur. Registry kartında görünecek sansürlü isim — örn. "Ça*** KE***". Satın alma sonrası kod tarafından otomatik dolar (üye: gerçek adının sansürlüsü; misafir: rastgele üretilmiş bir isim). Admin elle bir ürünü "satıldı" işaretlerken de buraya istediği bir görünen ad yazabilir — gerçek bir isim olmak zorunda değil.',
       type: 'string',
       hidden: ({ document }) => document?.status !== 'owned',
       validation: (R) =>
         R.custom((value, context) => {
           const status = (context.document as { status?: string } | undefined)?.status
           if (status === 'owned' && !value) {
-            return 'Registry Status "Owned" iken Sahip (Kullanıcı ID) zorunludur.'
+            return 'Registry Status "Owned" iken Sahip — Görünen Ad zorunludur.'
           }
           return true
         }),
+    }),
+    defineField({
+      name: 'ownerCity',
+      title: 'Sahip — Şehir',
+      description: 'SADECE Registry Status "Owned" iken doldurulur. Örn. "Mersin". Sipariş adresinden otomatik gelir; admin elle de yazabilir.',
+      type: 'string',
+      hidden: ({ document }) => document?.status !== 'owned',
+    }),
+    defineField({
+      name: 'ownerUserId',
+      title: 'Sahip — Kullanıcı ID (opsiyonel)',
+      description:
+        'OPSİYONEL — sadece bu ürünü satın alan GERÇEK bir üye hesabı varsa (misafir siparişlerinde boş kalır). Supabase\'teki auth.users/profiles tablosundaki kullanıcı UUID\'si. Doluysa Registry kartındaki isim, o kullanıcının herkese açık profil sayfasına (ürün arşivi) link verir; boşsa isim sadece düz metin olarak görünür, link olmaz.',
+      type: 'string',
+      hidden: ({ document }) => document?.status !== 'owned',
     }),
 
     // ── Çok Dilli İsim & Açıklama ────────────────────────

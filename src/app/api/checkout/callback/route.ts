@@ -4,6 +4,7 @@ import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from 
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
 import { createOwnedProductFromCustomDesign } from '@/lib/sanity-fulfillment'
+import { censorName, generateGuestDisplayName } from '@/lib/nameCensor'
 
 /**
  * iyzico, Checkout Form ödemesi tamamlandığında bu URL'e POST yapar.
@@ -132,58 +133,79 @@ export async function POST(request: Request) {
         console.error('[iyzico callback] E-posta gönderim hatası:', emailError)
       }
 
-      // Custom Registry kalemlerini gerçek Sanity "owned" ürününe
-      // dönüştür — SADECE üye siparişlerinde (user_id varsa). Misafir
-      // siparişlerinde bağlanacak bir hesap/profil olmadığı için bu adım
-      // atlanır (sipariş yine Supabase'de normal şekilde kayıtlı kalır,
-      // sadece Sanity'de bir Registry kaydı OLUŞMAZ).
+      // Custom Registry kalemlerini gerçek Sanity "owned" ürününe dönüştür
+      // — hem ÜYE hem MİSAFİR siparişlerinde. Üye ise gerçek adının
+      // sansürlüsü + profil sayfası linki için ownerUserId; misafirse
+      // rastgele üretilmiş bir isim (gerçek kimlik hiç kullanılmaz) ve
+      // ownerUserId boş kalır (link yok).
       //
       // Bu blok KASITLI olarak ödeme akışını BLOKLAMAZ: Sanity tarafında
       // bir hata olsa bile (ör. token yetkisiz, parça bulunamadı) müşteri
       // ödemeyi zaten yapmıştır ve sipariş onaylanmıştır — hata sadece
       // loglanır, admin panelden sonradan elle düzeltilebilir.
-      if (order.user_id) {
-        try {
-          const admin = createSupabaseAdminClient()
-          for (const item of order.order_items ?? []) {
-            if (!item.custom_design_id) continue
+      try {
+        const admin = createSupabaseAdminClient()
 
-            const { data: design } = await (admin as any)
-              .from('custom_designs')
-              .select('collection_key, design_data, snapshot_url')
-              .eq('id', item.custom_design_id)
-              .single()
-
-            if (!design?.collection_key || !design?.design_data?.parts) {
-              console.error(
-                `[iyzico callback] custom_design ${item.custom_design_id} eksik veri, Sanity ürünü oluşturulamadı`
-              )
-              continue
-            }
-
-            // NOT: Sadece ödemenin yapıldığı para biriminin fiyatı kesin
-            // olarak biliniyor (order.currency + item.unit_price). Diğer
-            // para birimi için ayrı bir snapshot tutulmadığından, aynı
-            // sayısal değer geçici bir yaklaşıklık olarak kullanılıyor —
-            // admin isterse Studio'dan düzeltebilir.
-            const unitPriceMajor = Number(item.unit_price ?? 0) / 100
-            const priceTRY = order.currency === 'TRY' ? unitPriceMajor : unitPriceMajor
-            const priceUSD = order.currency === 'USD' ? unitPriceMajor : unitPriceMajor
-
-            await createOwnedProductFromCustomDesign({
-              customDesignId: item.custom_design_id,
-              ownerUserId: order.user_id,
-              collectionKey: design.collection_key,
-              parts: design.design_data.parts,
-              productName: item.product_name ?? 'Custom Registry Object',
-              priceTRY,
-              priceUSD,
-              snapshotUrl: design.snapshot_url ?? undefined,
-            })
-          }
-        } catch (sanityError) {
-          console.error('[iyzico callback] Sanity "owned" ürün oluşturma hatası:', sanityError)
+        // Sahip bilgisi: üye ise profildeki GERÇEK ad/şehir sansürlenerek,
+        // misafirse tamamen rastgele üretilerek belirlenir. Şehir her
+        // durumda bu SİPARİŞİN teslimat adresinden (order.shipping_city)
+        // alınır — profildeki şehir güncel olmayabilir/boş olabilir.
+        let ownerDisplayName: string
+        let ownerUserId: string | undefined
+        if (order.user_id) {
+          const { data: profile } = await (admin as any)
+            .from('profiles')
+            .select('full_name')
+            .eq('id', order.user_id)
+            .single()
+          ownerDisplayName = censorName(profile?.full_name ?? 'Üye')
+          ownerUserId = order.user_id
+        } else {
+          ownerDisplayName = generateGuestDisplayName()
+          ownerUserId = undefined
         }
+        const ownerCity = order.shipping_city ?? undefined
+
+        for (const item of order.order_items ?? []) {
+          if (!item.custom_design_id) continue
+
+          const { data: design } = await (admin as any)
+            .from('custom_designs')
+            .select('collection_key, design_data, snapshot_url')
+            .eq('id', item.custom_design_id)
+            .single()
+
+          if (!design?.collection_key || !design?.design_data?.parts) {
+            console.error(
+              `[iyzico callback] custom_design ${item.custom_design_id} eksik veri, Sanity ürünü oluşturulamadı`
+            )
+            continue
+          }
+
+          // NOT: Sadece ödemenin yapıldığı para biriminin fiyatı kesin
+          // olarak biliniyor (order.currency + item.unit_price). Diğer
+          // para birimi için ayrı bir snapshot tutulmadığından, aynı
+          // sayısal değer geçici bir yaklaşıklık olarak kullanılıyor —
+          // admin isterse Studio'dan düzeltebilir.
+          const unitPriceMajor = Number(item.unit_price ?? 0) / 100
+          const priceTRY = order.currency === 'TRY' ? unitPriceMajor : unitPriceMajor
+          const priceUSD = order.currency === 'USD' ? unitPriceMajor : unitPriceMajor
+
+          await createOwnedProductFromCustomDesign({
+            customDesignId: item.custom_design_id,
+            ownerDisplayName,
+            ownerCity,
+            ownerUserId,
+            collectionKey: design.collection_key,
+            parts: design.design_data.parts,
+            productName: item.product_name ?? 'Custom Registry Object',
+            priceTRY,
+            priceUSD,
+            snapshotUrl: design.snapshot_url ?? undefined,
+          })
+        }
+      } catch (sanityError) {
+        console.error('[iyzico callback] Sanity "owned" ürün oluşturma hatası:', sanityError)
       }
 
       // Bureau Credits işlemleri — üye siparişleri için

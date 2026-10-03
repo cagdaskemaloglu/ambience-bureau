@@ -55,7 +55,11 @@ export interface ProductCard {
   registryNo: string
   slug: { current: string }
   status: ProductStatus
-  /** SADECE status === 'owned' iken dolu — bu ürünü satın alan Supabase kullanıcısının UUID'si. */
+  /** SADECE status === 'owned' iken dolu — Registry kartında gösterilen sansürlü isim (üye veya misafir, ikisi de aynı formatta). */
+  ownerDisplayName?: string
+  /** SADECE status === 'owned' iken dolu — sahibin şehri. */
+  ownerCity?: string
+  /** OPSİYONEL, SADECE gerçek üye hesabı varsa dolu — profil sayfası linki için. Misafirlerde boş. */
   ownerUserId?: string
   category: ProductCategory
   priceTRY: number
