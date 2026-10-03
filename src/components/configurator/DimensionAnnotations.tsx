@@ -21,7 +21,7 @@ function Chevron({ points }: { points: [Vec3, Vec3, Vec3] }) {
 function Label({ position, mm }: { position: Vec3; mm: number }) {
   return (
     <Html position={position} center distanceFactor={220} zIndexRange={[10, 0]}>
-      <div className="whitespace-nowrap rounded-[2px] border border-bureau-black/30 bg-white/90 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-bureau-ink">
+      <div className="whitespace-nowrap rounded-[2px] border border-bureau-fixed-black/30 bg-white/90 px-1.5 py-0.5 font-mono text-[10px] tracking-wide text-bureau-fixed-black">
         {Math.round(mm)} mm
       </div>
     </Html>
