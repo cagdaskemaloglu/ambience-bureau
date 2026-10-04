@@ -181,7 +181,7 @@ export function ControlPanel() {
               {body.map((slot, idx) => {
                 const part = availableParts.find((p) => p.partId === slot.partId)
                 if (!part) return null
-                const partName = getLocalizedValue(part.name, locale, '—')
+                const partName = getLocalizedValue(part.name, locale, '—') ?? '—'
                 return (
                   // Tek satır: küçük thumbnail + (adı yazılmayan) renk
                   // çemberleri thumbnail'in yanında + sağda Yukarı/Aşağı/

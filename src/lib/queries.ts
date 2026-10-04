@@ -225,7 +225,7 @@ export async function getFeaturedPosts(limit = 3) {
 // drop'lar da döner — anasayfa bileşeni bunları (boş satır göstermemek
 // için) kendi filtreler.
 export async function getAllDropsWithProducts() {
-  return sanityClient.fetch(
+  const drops = await sanityClient.fetch(
     `*[_type == "drop"] | order(sortOrder asc) {
       _id,
       dropNo,
@@ -235,10 +235,56 @@ export async function getAllDropsWithProducts() {
         collection->key.current,
         *[_type == "product" && references(^._id) && defined(configuratorCollection)][0].configuratorCollection->key.current
       ),
+      // Bu Drop'tan Custom Registry ile satılmış (status: "owned") ürün
+      // sayısı — "kaç adet satışta kaldı" göstergesi için (plannedQuantity
+      // - soldCount). SADECE "owned" sayılıyor, Drop'a elle eklenmiş
+      // standart (satışa açık) ürünler stoktan düşmüyor.
+      "soldCount": count(*[_type == "product" && references(^._id) && status == "owned"]),
       "products": *[_type == "product" && references(^._id)] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
     }`,
     {},
     { next: { tags: ['drops', 'products'] } }
+  )
+
+  // "XXX Different Combinations" — koleksiyonun taban/gövde/başlık
+  // parça+malzeme kataloğundan hesaplanıyor. VARSAYIM/BASİTLEŞTİRME:
+  // gövdenin çok katmanlı istiflenebilmesi (sıra önemli, tekrar serbest)
+  // yüzünden GERÇEK tüm olası tasarım sayısı matematiksel olarak
+  // astronomik büyüklükte olurdu (anlamlı bir "XXX kombinasyon" rakamı
+  // olmaz) — bu yüzden gövdeyi de TEK bir seçim gibi sayıyoruz:
+  //   taban_varyant_sayısı × gövde_varyant_sayısı × başlık_varyant_sayısı
+  // (varyant = o slottaki tüm parçaların malzeme sayılarının TOPLAMI).
+  const comboCache = new Map<string, number>()
+  async function getCombinationCount(collectionKey: string): Promise<number> {
+    if (comboCache.has(collectionKey)) return comboCache.get(collectionKey)!
+    const rows = await sanityClient.fetch<Array<{ slotType: string; materialCount: number }>>(
+      `*[_type == "lampPart" && $collectionKey in collections[]->key.current]{
+        slotType,
+        "materialCount": count(materials)
+      }`,
+      { collectionKey }
+    )
+    const bySlot: Record<string, number> = {}
+    for (const row of rows) {
+      bySlot[row.slotType] = (bySlot[row.slotType] ?? 0) + (row.materialCount ?? 0)
+    }
+    const base = bySlot.base ?? 0
+    const body = bySlot.body ?? 0
+    const head = bySlot.head ?? 0
+    // Herhangi bir slot boşsa (ör. henüz başlık parçası girilmemiş)
+    // anlamlı bir rakam olmaz — 0 döndürüp arayüzde gizletiyoruz.
+    const total = base > 0 && body > 0 && head > 0 ? base * body * head : 0
+    comboCache.set(collectionKey, total)
+    return total
+  }
+
+  return Promise.all(
+    drops.map(async (drop: { configuratorCollectionKey: string | null }) => ({
+      ...drop,
+      totalCombinations: drop.configuratorCollectionKey
+        ? await getCombinationCount(drop.configuratorCollectionKey)
+        : 0,
+    }))
   )
 }
 

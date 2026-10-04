@@ -85,9 +85,21 @@ export function DropRow({
     <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-panel-edge">
       {/* Eski sistemdeki başlık satırı */}
       <div className="border-b border-dashed border-bureau-line-dashed px-5 py-2.5 md:px-9">
-        <h2 className="font-mono text-[11px] font-semibold uppercase tracking-wider text-bureau-fixed-black">
-          <span className="text-bureau-fixed-amber">DROP-{drop.dropNo}</span>
-          <span className="ml-2 font-normal text-bureau-fixed-muted">{name}</span>
+        <h2 className="flex flex-wrap items-baseline gap-x-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-bureau-fixed-black">
+          <span>
+            <span className="text-bureau-fixed-amber">DROP-{drop.dropNo}</span>
+            <span className="ml-2 font-normal text-bureau-fixed-muted">{name}</span>
+          </span>
+          {/* Taban × gövde × başlık varyant sayısının çarpımı — bkz.
+              queries.ts'teki getCombinationCount() hesaplama notu
+              (gövdenin çok katmanlı istiflenmesi matematiksel olarak göz
+              ardı edilir, aksi halde rakam anlamsız büyüklükte olur). */}
+          {drop.totalCombinations > 0 && (
+            <span className="font-normal normal-case tracking-normal text-bureau-fixed-muted">
+              {drop.totalCombinations.toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}{' '}
+              {locale === 'tr' ? 'Farklı Kombinasyon' : 'Different Combinations'}
+            </span>
+          )}
         </h2>
       </div>
 
@@ -184,6 +196,17 @@ export function DropRow({
               >
                 {t('create')}
               </Link>
+              {/* Kaç adet satışta kaldığı — plannedQuantity girilmemişse
+                  (sınırsız kabul edilir) hiç gösterilmez. */}
+              {typeof drop.plannedQuantity === 'number' && (
+                <p className="mt-1.5 font-mono text-[9.5px] uppercase tracking-wide text-white/70">
+                  {Math.max(0, drop.plannedQuantity - drop.soldCount).toLocaleString(
+                    locale === 'tr' ? 'tr-TR' : 'en-US'
+                  )}
+                  /{drop.plannedQuantity.toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}{' '}
+                  {locale === 'tr' ? 'adet kaldı' : 'available'}
+                </p>
+              )}
             </div>
 
             {(prevDrop || nextDrop) && (

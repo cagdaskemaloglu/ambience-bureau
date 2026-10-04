@@ -155,6 +155,10 @@ export interface Drop {
 
 export interface DropWithProducts extends Drop {
   products: ProductCard[]
+  /** Bu Drop'tan Custom Registry ile satılmış (status: "owned") ürün sayısı. */
+  soldCount: number
+  /** Koleksiyonun taban×gövde×başlık varyant sayısının çarpımı — bkz. queries.ts'teki hesaplama notu. */
+  totalCombinations: number
 }
 
 // ── Lamba Parçası (Konfigüratör) ──────────────────────────
