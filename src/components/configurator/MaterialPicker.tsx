@@ -10,6 +10,8 @@ export function MaterialPicker({
   onSelectMaterial,
   dataTutorial,
   compact,
+  hideLabel,
+  ringClassName,
 }: {
   part: LampPart | undefined
   selectedMaterialId: string | null
@@ -20,6 +22,13 @@ export function MaterialPicker({
    *  dizilirken (ControlPanel/MobileControlPanel) 5-6 kartın kaydırma
    *  olmadan sığması için kullanılır. */
   compact?: boolean
+  /** "Renk" kategori yazısını ve seçili rengin adını (alt satır) TAMAMEN
+   *  gizler — gövde kartlarında thumbnail + renk çemberlerini TEK SATIRA
+   *  sığdırmak için kullanılır. Daireler de bu modda daha da küçülür. */
+  hideLabel?: boolean
+  /** Seçili daireyi saran halkanın rengi — varsayılan amber, gövde
+   *  kartlarında daha belirgin olsun diye mavi (`border-blue-500`) geçilir. */
+  ringClassName?: string
 }) {
   const locale = useLocale()
 
@@ -32,13 +41,16 @@ export function MaterialPicker({
       ? selected.priceModifierTRY
       : selected.priceModifierUSD
     : 0
+  const ring = ringClassName ?? 'border-bureau-amber'
 
   return (
-    <div className={compact ? 'mt-1' : 'mt-2'} data-tutorial={dataTutorial}>
-      <div className={`flex items-center ${compact ? 'gap-1.5' : 'gap-2'}`}>
-        <span className="font-mono text-[9px] uppercase tracking-wide text-bureau-muted">
-          {locale === 'tr' ? 'Renk' : 'Color'}
-        </span>
+    <div className={hideLabel ? '' : compact ? 'mt-1' : 'mt-2'} data-tutorial={dataTutorial}>
+      <div className={`flex items-center ${hideLabel ? 'gap-1' : compact ? 'gap-1.5' : 'gap-2'}`}>
+        {!hideLabel && (
+          <span className="font-mono text-[9px] uppercase tracking-wide text-bureau-muted">
+            {locale === 'tr' ? 'Renk' : 'Color'}
+          </span>
+        )}
         {part.materials.map((material) => {
           const isSelected = selectedMaterialId === material.materialId
           const label = getLocalizedValue(material.label, locale, material.materialId)
@@ -48,8 +60,8 @@ export function MaterialPicker({
               key={material.materialId}
               onClick={() => onSelectMaterial(material.materialId)}
               className={`flex-shrink-0 rounded-full border-2 transition-transform ${
-                compact ? 'h-5 w-5' : 'h-6 w-6'
-              } ${isSelected ? 'scale-110 border-bureau-amber' : 'border-bureau-rule hover:border-bureau-black'}`}
+                hideLabel ? 'h-4 w-4' : compact ? 'h-5 w-5' : 'h-6 w-6'
+              } ${isSelected ? `scale-110 ${ring}` : 'border-bureau-rule hover:border-bureau-black'}`}
               style={{ backgroundColor: material.color }}
               title={label}
               aria-label={label}
@@ -57,7 +69,7 @@ export function MaterialPicker({
           )
         })}
       </div>
-      {selected && (
+      {!hideLabel && selected && (
         <p className={`${compact ? 'mt-0.5' : 'mt-1'} font-mono text-[9.5px] uppercase text-bureau-subtle`}>
           {selectedLabel}
           {selectedPriceMod > 0 && (

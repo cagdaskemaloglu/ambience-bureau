@@ -22,6 +22,7 @@ export function ConfigSummary({
   const isComplete = useConfiguratorStore((s) => s.isComplete)
   const removeBodyLayer = useConfiguratorStore((s) => s.removeBodyLayer)
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
+  const toggleIot = useConfiguratorStore((s) => s.toggleIot)
   const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
 
   const total = getTotalPrice(locale as 'tr' | 'en')
@@ -154,14 +155,38 @@ export function ConfigSummary({
         </div>
 
         <div className="flex items-center justify-between px-4 py-2.5 text-[12px]">
-          <span className="text-bureau-muted">
-            {locale === 'tr' ? 'Donanım Tahsisi' : 'Hardware Allocation'}
-            {iotEnabled && (
-              <span className="ml-1.5 text-[9.5px] text-bureau-amber">
-                ({locale === 'tr' ? 'IoT dahil' : 'incl. IoT'})
-              </span>
+          <div className="flex items-center gap-2">
+            <span className="text-bureau-muted">
+              {locale === 'tr' ? 'Donanım Tahsisi' : 'Hardware Allocation'}
+              {iotEnabled && (
+                <span className="ml-1.5 text-[9.5px] text-bureau-amber">
+                  ({locale === 'tr' ? 'IoT dahil' : 'incl. IoT'})
+                </span>
+              )}
+            </span>
+            {/* Akıllı Cihaz (IoT) toggle'ı — SADECE mobilde görünür (bu
+                bileşenin `compact` olmayan hali sadece MobileControlPanel'de
+                kullanılıyor, masaüstü `compact` modu bunu hiç render etmez). */}
+            {!compact && (
+              <button
+                onClick={toggleIot}
+                className={`relative h-4 w-7 flex-shrink-0 border transition-colors ${
+                  iotEnabled ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
+                }`}
+                aria-pressed={iotEnabled}
+                aria-label={locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
+                title={locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
+              >
+                <span
+                  className={`absolute top-0.5 h-2.5 w-2.5 border transition-transform ${
+                    iotEnabled
+                      ? 'translate-x-3.5 border-white bg-white'
+                      : 'translate-x-0.5 border-bureau-rule bg-bureau-subtle'
+                  }`}
+                />
+              </button>
             )}
-          </span>
+          </div>
           <span className="font-mono text-[11px] text-bureau-subtle">
             {formatPrice(
               (locale === 'tr' ? hardwareFees.baseTRY : hardwareFees.baseUSD) +

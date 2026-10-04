@@ -58,8 +58,8 @@ const STEPS: TutorialStep[] = [
     selector: null,
     titleTr: 'Adım 7 — Tamamlandı',
     titleEn: 'Step 7 — Complete',
-    descTr: 'Tasarımınız tamamlandı. Turu bitirmek ve modeli temizlemek için aşağıdaki "Bitir" butonuna tıklayın.',
-    descEn: 'Your design is complete. Click the "Finish" button below to end the tour and clear the model.',
+    descTr: 'Tasarımınız tamamlandı. Turu bitirmek ve modeli temizlemek için ekranın herhangi bir yerine tıklayın ya da aşağıdaki "Bitir" butonuna basın.',
+    descEn: 'Your design is complete. Click anywhere on the screen, or press the "Finish" button below, to end the tour and clear the model.',
   },
 ]
 
@@ -158,16 +158,19 @@ export function CustomRegistryTutorial({
     const step = STEPS[stepIndex]
     let cancelled = false
 
-    // Son adım: belirli bir hedef yok — spot ışığı kapanır, ama tasarımı
-    // TEMİZLEME işlemi artık SADECE bilgi çubuğundaki "Bitir" butonuna
-    // (handleDismiss, onClick ile bağlı) tıklanınca olur. Önceden burada
-    // "ekranın HERHANGİ bir yerine tıklama" da aynı işi (reset + dismiss)
-    // yapıyordu — kullanıcı başlık parçasını seçtikten sonra ilk
-    // yaptığı tıklama (ör. renk seçmeye çalışırken) tasarımı aniden
-    // sıfırlıyordu. Artık sadece o buton bu davranışı tetikliyor.
+    // Son adım: belirli bir hedef yok — spot ışığı kapanır. Ekranın/
+    // sayfanın (mobilde dokunma, masaüstünde tıklama) HERHANGİ bir
+    // yerine yapılan tıklama, bilgi çubuğundaki "Bitir" butonuna
+    // basılmış gibi algılanır (handleDismiss — tasarımı sıfırlar ve
+    // turu kapatır). BİLİNEREK böyle: kullanıcı son adımda tasarımı
+    // değiştirmeye devam etmek isterse (ör. başlığın rengini
+    // değiştirmek), yapacağı İLK tıklama turu bitirip tasarımı
+    // sıfırlayacaktır — bu artık istenen davranış.
     if (step.selector === null) {
       setRect(null)
-      return
+      const handleAnyClick = () => handleDismiss()
+      document.addEventListener('click', handleAnyClick)
+      return () => document.removeEventListener('click', handleAnyClick)
     }
 
     function poll() {
@@ -260,9 +263,14 @@ export function CustomRegistryTutorial({
 
           <div className="flex items-center justify-between">
             {isFinalStep ? (
-              <span className="font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
-                {locale === 'tr' ? 'Tur tamamlandı' : 'Tour complete'}
-              </span>
+              <div className="flex items-center gap-2 text-bureau-muted">
+                {isDesktop ? <MouseClickIcon /> : <TapIcon />}
+                <span className="font-mono text-[9.5px] uppercase tracking-wide">
+                  {isDesktop
+                    ? (locale === 'tr' ? 'Devam etmek için ekrana tıklayın' : 'Click anywhere to continue')
+                    : (locale === 'tr' ? 'Devam etmek için ekrana dokunun' : 'Tap anywhere to continue')}
+                </span>
+              </div>
             ) : (
               <div className="flex items-center gap-2 text-bureau-muted">
                 {isDesktop ? <MouseClickIcon /> : <TapIcon />}

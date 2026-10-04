@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { MobileSlotPicker } from './MobileSlotPicker'
@@ -56,21 +57,8 @@ export function MobileControlPanel({
   const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, sekme gizlenir
   const bodyAtMax = body.length >= bodyLimits.max
   const bodyBelowMin = body.length < bodyLimits.min
-  const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
-  const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
-  const toggleIot = useConfiguratorStore((s) => s.toggleIot)
-
   const baseComplete = !!base.partId && !!base.materialId
   const headComplete = !!head.partId && !!head.materialId
-
-  const iotPrice =
-    locale === 'tr'
-      ? iotEnabled
-        ? `Donanım Tahsisi: ₺${(hardwareFees.baseTRY + hardwareFees.iotTRY).toLocaleString('tr-TR')} (₺${hardwareFees.baseTRY.toLocaleString('tr-TR')} + ₺${hardwareFees.iotTRY.toLocaleString('tr-TR')} IoT)`
-        : `Donanım Tahsisi: ₺${hardwareFees.baseTRY.toLocaleString('tr-TR')}`
-      : iotEnabled
-        ? `Hardware Allocation: $${hardwareFees.baseUSD + hardwareFees.iotUSD} ($${hardwareFees.baseUSD} + $${hardwareFees.iotUSD} IoT)`
-        : `Hardware Allocation: $${hardwareFees.baseUSD}`
 
   const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
     { key: 'base', label: tr ? 'Taban' : 'Base', done: baseComplete },
@@ -98,32 +86,6 @@ export function MobileControlPanel({
         </button>
       </div>
 
-      {/* IoT Toggle — en üstte */}
-      <div className="border-b border-bureau-rule px-3 py-2.5">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="block font-mono text-[9.5px] uppercase tracking-wide text-bureau-black">
-              {locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
-            </span>
-            <span className="font-mono text-[9px] text-bureau-muted">{iotPrice}</span>
-          </div>
-          <button
-            onClick={toggleIot}
-            className={`relative h-5 w-9 flex-shrink-0 border transition-colors ${
-              iotEnabled ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
-            }`}
-            aria-pressed={iotEnabled}
-          >
-            <span
-              className={`absolute top-0.5 h-3.5 w-3.5 border transition-transform ${
-                iotEnabled
-                  ? 'translate-x-4 border-white bg-white'
-                  : 'translate-x-0.5 border-bureau-rule bg-bureau-subtle'
-              }`}
-            />
-          </button>
-        </div>
-      </div>
 
       {/* Sekme başlıkları — masaüstüyle aynı mantık, mobil boyutlarda */}
       <div className="flex items-center gap-4 overflow-x-auto border-b border-bureau-black px-3">
@@ -188,47 +150,71 @@ export function MobileControlPanel({
           {body.map((slot, idx) => {
             const part = availableParts.find((p) => p.partId === slot.partId)
             if (!part) return null
+            const partName = getLocalizedValue(part.name, locale, '—')
             return (
-              <div key={idx} className="mt-1.5 border border-bureau-rule px-1.5 pb-1.5 pt-1">
-                <div className="mb-0.5 flex items-center justify-between gap-2">
-                  <span className="min-w-0 flex-1 truncate font-mono text-[9px] uppercase text-bureau-muted">
-                    {locale === 'tr' ? 'Gövde' : 'Body'} {idx + 1} — {getLocalizedValue(part.name, locale, '—')}
-                  </span>
-                  {/* Sağda üç dokunma alanı: Yukarı / Aşağı / Kaldır — dizideki
-                      sıra 3D viewer'daki dikey istifleme sırasıyla aynı. */}
-                  <div className="flex flex-shrink-0 items-center gap-0.5">
-                    <button
-                      onClick={() => moveBodyLayer(idx, 'up')}
-                      disabled={idx === 0}
-                      aria-label={locale === 'tr' ? 'Yukarı taşı' : 'Move up'}
-                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      onClick={() => moveBodyLayer(idx, 'down')}
-                      disabled={idx === body.length - 1}
-                      aria-label={locale === 'tr' ? 'Aşağı taşı' : 'Move down'}
-                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
-                    >
-                      ▼
-                    </button>
-                    <button
-                      onClick={() => removeBodyLayer(idx)}
-                      data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
-                      aria-label={locale === 'tr' ? 'Bu gövdeyi kaldır' : 'Remove this body'}
-                      className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[12px] leading-none text-bureau-subtle hover:text-bureau-amber"
-                    >
-                      ✕
-                    </button>
-                  </div>
+              // Tek satır: küçük thumbnail + (adı yazılmayan) renk
+              // çemberleri thumbnail'in yanında + sağda Yukarı/Aşağı/
+              // Kaldır — parça adı artık metin olarak değil, sadece
+              // thumbnail + hover/dokunma tooltip (title) ile belirtiliyor.
+              <div key={idx} className="mt-1.5 flex items-center gap-1.5 border border-bureau-rule px-1.5 py-1">
+                <div
+                  className="flex h-7 w-7 flex-shrink-0 items-center justify-center overflow-hidden bg-bureau-surface"
+                  title={partName}
+                >
+                  {part.thumbnail ? (
+                    <Image
+                      src={part.thumbnail}
+                      alt={partName}
+                      width={28}
+                      height={28}
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <span className="font-mono text-[6px] text-bureau-subtle">
+                      {part.partId.slice(0, 3).toUpperCase()}
+                    </span>
+                  )}
                 </div>
-                <MaterialPicker
-                  part={part}
-                  selectedMaterialId={slot.materialId}
-                  onSelectMaterial={(m) => selectMaterial('body', m, idx)}
-                  compact
-                />
+
+                <div className="min-w-0 flex-1 overflow-x-auto">
+                  <MaterialPicker
+                    part={part}
+                    selectedMaterialId={slot.materialId}
+                    onSelectMaterial={(m) => selectMaterial('body', m, idx)}
+                    compact
+                    hideLabel
+                    ringClassName="border-blue-500"
+                  />
+                </div>
+
+                {/* Sağda üç dokunma alanı: Yukarı / Aşağı / Kaldır — dizideki
+                    sıra 3D viewer'daki dikey istifleme sırasıyla aynı. */}
+                <div className="flex flex-shrink-0 items-center gap-0.5">
+                  <button
+                    onClick={() => moveBodyLayer(idx, 'up')}
+                    disabled={idx === 0}
+                    aria-label={locale === 'tr' ? 'Yukarı taşı' : 'Move up'}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    onClick={() => moveBodyLayer(idx, 'down')}
+                    disabled={idx === body.length - 1}
+                    aria-label={locale === 'tr' ? 'Aşağı taşı' : 'Move down'}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[11px] leading-none text-bureau-subtle disabled:pointer-events-none disabled:opacity-20"
+                  >
+                    ▼
+                  </button>
+                  <button
+                    onClick={() => removeBodyLayer(idx)}
+                    data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
+                    aria-label={locale === 'tr' ? 'Bu gövdeyi kaldır' : 'Remove this body'}
+                    className="flex h-6 w-6 flex-shrink-0 items-center justify-center text-[12px] leading-none text-bureau-subtle hover:text-bureau-amber"
+                  >
+                    ✕
+                  </button>
+                </div>
               </div>
             )
           })}

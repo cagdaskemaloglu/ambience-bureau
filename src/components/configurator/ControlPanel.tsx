@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { SlotPicker } from './SlotPicker'
@@ -182,48 +183,72 @@ export function ControlPanel() {
                 if (!part) return null
                 const partName = getLocalizedValue(part.name, locale, '—')
                 return (
-                  <div key={idx} className="border border-bureau-rule p-1.5">
-                    <div className="mb-1 flex items-center justify-between gap-2">
-                      <span className="min-w-0 flex-1 truncate font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted">
-                        {tr ? 'Gövde' : 'Body'} {idx + 1} — {partName}
-                      </span>
-                      {/* Sağ tarafta üç buton: sırayla Yukarı Taşı / Aşağı
-                          Taşı / Kaldır — dizideki sıra 3D viewer'daki dikey
-                          istifleme sırasıyla birebir aynı (bkz. LampModel.tsx). */}
-                      <div className="flex flex-shrink-0 items-center gap-0.5">
-                        <button
-                          onClick={() => moveBodyLayer(idx, 'up')}
-                          disabled={idx === 0}
-                          aria-label={tr ? 'Yukarı taşı' : 'Move up'}
-                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] leading-none text-bureau-muted transition-colors hover:bg-bureau-subtle hover:text-bureau-black disabled:pointer-events-none disabled:opacity-20"
-                        >
-                          ▲
-                        </button>
-                        <button
-                          onClick={() => moveBodyLayer(idx, 'down')}
-                          disabled={idx === body.length - 1}
-                          aria-label={tr ? 'Aşağı taşı' : 'Move down'}
-                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] leading-none text-bureau-muted transition-colors hover:bg-bureau-subtle hover:text-bureau-black disabled:pointer-events-none disabled:opacity-20"
-                        >
-                          ▼
-                        </button>
-                        {/* Kaldırma ikonu — gerçek bir tıklama alanı (24x24px) olan buton. */}
-                        <button
-                          onClick={() => removeBodyLayer(idx)}
-                          data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
-                          aria-label={tr ? 'Bu gövdeyi kaldır' : 'Remove this body'}
-                          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[14px] leading-none text-bureau-muted transition-colors hover:bg-red-50 hover:text-red-600"
-                        >
-                          ✕
-                        </button>
-                      </div>
+                  // Tek satır: küçük thumbnail + (adı yazılmayan) renk
+                  // çemberleri thumbnail'in yanında + sağda Yukarı/Aşağı/
+                  // Kaldır — parça adı artık metin olarak değil, sadece
+                  // thumbnail + hover tooltip (title) ile belirtiliyor
+                  // (SlotPicker'daki thumbnail-öncelikli dille tutarlı).
+                  <div key={idx} className="flex items-center gap-2 border border-bureau-rule p-1.5">
+                    <div
+                      className="flex h-8 w-8 flex-shrink-0 items-center justify-center overflow-hidden bg-bureau-surface"
+                      title={partName}
+                    >
+                      {part.thumbnail ? (
+                        <Image
+                          src={part.thumbnail}
+                          alt={partName}
+                          width={32}
+                          height={32}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="font-mono text-[6.5px] text-bureau-subtle">
+                          {part.partId.slice(0, 3).toUpperCase()}
+                        </span>
+                      )}
                     </div>
-                    <MaterialPicker
-                      part={part}
-                      selectedMaterialId={slot.materialId}
-                      onSelectMaterial={(materialId) => selectMaterial('body', materialId, idx)}
-                      compact
-                    />
+
+                    <div className="min-w-0 flex-1 overflow-x-auto">
+                      <MaterialPicker
+                        part={part}
+                        selectedMaterialId={slot.materialId}
+                        onSelectMaterial={(materialId) => selectMaterial('body', materialId, idx)}
+                        compact
+                        hideLabel
+                        ringClassName="border-blue-500"
+                      />
+                    </div>
+
+                    {/* Sağ tarafta üç buton: sırayla Yukarı Taşı / Aşağı
+                        Taşı / Kaldır — dizideki sıra 3D viewer'daki dikey
+                        istifleme sırasıyla birebir aynı (bkz. LampModel.tsx). */}
+                    <div className="flex flex-shrink-0 items-center gap-0.5">
+                      <button
+                        onClick={() => moveBodyLayer(idx, 'up')}
+                        disabled={idx === 0}
+                        aria-label={tr ? 'Yukarı taşı' : 'Move up'}
+                        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] leading-none text-bureau-muted transition-colors hover:bg-bureau-subtle hover:text-bureau-black disabled:pointer-events-none disabled:opacity-20"
+                      >
+                        ▲
+                      </button>
+                      <button
+                        onClick={() => moveBodyLayer(idx, 'down')}
+                        disabled={idx === body.length - 1}
+                        aria-label={tr ? 'Aşağı taşı' : 'Move down'}
+                        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[12px] leading-none text-bureau-muted transition-colors hover:bg-bureau-subtle hover:text-bureau-black disabled:pointer-events-none disabled:opacity-20"
+                      >
+                        ▼
+                      </button>
+                      {/* Kaldırma ikonu — gerçek bir tıklama alanı (24x24px) olan buton. */}
+                      <button
+                        onClick={() => removeBodyLayer(idx)}
+                        data-tutorial={idx === 0 ? 'remove-body-0' : undefined}
+                        aria-label={tr ? 'Bu gövdeyi kaldır' : 'Remove this body'}
+                        className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[14px] leading-none text-bureau-muted transition-colors hover:bg-red-50 hover:text-red-600"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 )
               })}

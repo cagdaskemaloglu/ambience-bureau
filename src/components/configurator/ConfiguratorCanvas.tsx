@@ -8,7 +8,6 @@ import { CameraFit } from './CameraFit'
 import { CameraFitButton } from './CameraFitButton'
 import { SpinCaptureHook } from './SpinCaptureHook'
 import { DimensionAnnotations } from './DimensionAnnotations'
-import { LightControlsOverlay } from './LightControlsOverlay'
 import { ScreenshotCapture } from './ScreenshotCapture'
 
 interface ConfiguratorCanvasProps {
@@ -18,7 +17,6 @@ interface ConfiguratorCanvasProps {
 export function ConfiguratorCanvas({ onScreenshotReady }: ConfiguratorCanvasProps) {
   return (
     <div className="relative h-full w-full">
-      <LightControlsOverlay />
       <CameraFitButton />
       <Scene>
         <LampModel />

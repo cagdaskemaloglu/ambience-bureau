@@ -350,13 +350,14 @@ export function CustomRegistryClient({
           </div>
         ) : (
           <>
-            {/* 3D Viewer — üst %60 */}
-            <div className="min-h-0 flex-[3] overflow-hidden border-b border-bureau-black">
+            {/* 3D Viewer — üst %50 (önceden %60'tı; seçim paneline daha
+                fazla yer açmak için %10 küçültüldü, kalan alan bu). */}
+            <div className="min-h-0 flex-1 overflow-hidden border-b border-bureau-black">
               <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
             </div>
 
-            {/* Parts paneli — alt %40 */}
-            <div className="min-h-0 flex-[2] overflow-y-auto" id="tutorial-scope-mobile">
+            {/* Parts paneli — alt %50 (önceden %40'tı, %10 büyütüldü) */}
+            <div className="min-h-0 flex-1 overflow-y-auto" id="tutorial-scope-mobile">
               {isLoadingParts ? (
                 <div className="flex h-full items-center justify-center">
                   <span className="font-mono text-[11px] uppercase text-bureau-muted">
