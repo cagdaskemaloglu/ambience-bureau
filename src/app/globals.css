@@ -25,7 +25,7 @@
     /* ── Sadece karanlık modda farklılaşan ÖZEL çizgi renkleri ────────
        Işıkta bu üç değişken, sitedeki karşılığı olan sabit rengin AYNISI
        — yani aydınlık modda görsel hiçbir değişiklik yok. */
-    --bureau-line-header: 0 0 0;       /* header altı / footer üstü — ışıkta siyah */
+    --bureau-line-header: 47 93 138;   /* #2F5D8A — "Space Blue" — artık ışıkta da aynı */
     --bureau-line-dashed: 224 224 224; /* Drop isminin altındaki kesikli çizgi — ışıkta açık gri */
     --bureau-panel-edge: 0 0 0;        /* Drop panelinin kenarı/zemini — ışıkta siyah */
   }
