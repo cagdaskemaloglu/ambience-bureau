@@ -8,6 +8,14 @@ export const dropSchema = defineType({
 
   fields: [
     defineField({
+      name: 'active',
+      title: 'Aktif',
+      description:
+        'KAPALI (pasif) ise bu Drop sitede HİÇBİR YERDE görünmez — anasayfadaki Drop satırından ve bu Drop\'a göre filtrelenen Registry görünümünden kaybolur. Bu Drop\'a bağlı ürünler kendi "Aktif" durumlarına göre ayrı ayrı görünürlüğünü korur (bu alan sadece Drop\'un KENDİSİNİ, ürünlerini değil gizler).',
+      type: 'boolean',
+      initialValue: true,
+    }),
+    defineField({
       name: 'dropNo',
       title: 'Drop No',
       description: 'Örn: 001 — anasayfada "DROP-001" olarak görünür. Elle girilir, sıralamayla otomatik hesaplanmaz.',

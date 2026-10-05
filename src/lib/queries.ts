@@ -103,7 +103,8 @@ export async function getAllProducts(filters?: {
   maxPrice?: number
   drop?: string
 }) {
-  let filter = `_type == "product"`
+  // active != false → alan boşsa (eski kayıtlar) da GÖRÜNÜR kabul edilir.
+  let filter = `_type == "product" && active != false`
   const params: Record<string, string | number> = {}
 
   if (filters?.category) {
@@ -145,7 +146,7 @@ export async function getAllProducts(filters?: {
 
 export async function getProductBySlug(slug: string) {
   return sanityClient.fetch(
-    `*[_type == "product" && slug.current == $slug][0] {${PRODUCT_FULL_FRAGMENT}}`,
+    `*[_type == "product" && active != false && slug.current == $slug][0] {${PRODUCT_FULL_FRAGMENT}}`,
     { slug },
     { next: { tags: [`product-${slug}`] } }
   )
@@ -168,7 +169,7 @@ export async function getProductById(id: string) {
 
 export async function getRelatedProducts(category: string, excludeSlug: string, limit = 4) {
   return sanityClient.fetch(
-    `*[_type == "product" && category == $category && slug.current != $excludeSlug]
+    `*[_type == "product" && active != false && category == $category && slug.current != $excludeSlug]
       | order(publishedAt desc) [0...$limit] {${PRODUCT_CARD_FRAGMENT}}`,
     { category, excludeSlug, limit },
     { next: { tags: ['products'] } }
@@ -177,7 +178,7 @@ export async function getRelatedProducts(category: string, excludeSlug: string, 
 
 export async function getProductCount(): Promise<number> {
   return sanityClient.fetch(
-    `count(*[_type == "product"])`,
+    `count(*[_type == "product" && active != false])`,
     {},
     { next: { tags: ['products'] } }
   )
@@ -185,7 +186,7 @@ export async function getProductCount(): Promise<number> {
 
 export async function getFeaturedProducts(limit = 4) {
   return sanityClient.fetch(
-    `*[_type == "product" && status == "certified"] | order(publishedAt desc) [0...$limit] {${PRODUCT_CARD_FRAGMENT}}`,
+    `*[_type == "product" && active != false && status == "certified"] | order(publishedAt desc) [0...$limit] {${PRODUCT_CARD_FRAGMENT}}`,
     { limit },
     { next: { tags: ['products'] } }
   )
@@ -226,7 +227,7 @@ export async function getFeaturedPosts(limit = 3) {
 // için) kendi filtreler.
 export async function getAllDropsWithProducts() {
   const drops = await sanityClient.fetch(
-    `*[_type == "drop"] | order(sortOrder asc) {
+    `*[_type == "drop" && active != false] | order(sortOrder asc) {
       _id,
       dropNo,
       plannedQuantity,
@@ -240,7 +241,7 @@ export async function getAllDropsWithProducts() {
       // - soldCount). SADECE "owned" sayılıyor, Drop'a elle eklenmiş
       // standart (satışa açık) ürünler stoktan düşmüyor.
       "soldCount": count(*[_type == "product" && references(^._id) && status == "owned"]),
-      "products": *[_type == "product" && references(^._id)] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
+      "products": *[_type == "product" && active != false && references(^._id)] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
     }`,
     {},
     { next: { tags: ['drops', 'products'] } }
@@ -346,7 +347,7 @@ export async function getLampPartsByCollection(collectionKey: string) {
 
 export async function getAllLampCollections() {
   return sanityClient.fetch(
-    `*[_type == "collection" && count(*[_type == "lampPart" && references(^._id)]) > 0]
+    `*[_type == "collection" && active != false && count(*[_type == "lampPart" && references(^._id)]) > 0]
       | order(sortOrder asc) {
         _id,
         key,
@@ -369,7 +370,7 @@ export async function getAllLampCollections() {
 
 export async function getAllProductSlugs(): Promise<Array<{ slug: { current: string }; _updatedAt: string }>> {
   return sanityClient.fetch(
-    `*[_type == "product"]{ slug, _updatedAt }`,
+    `*[_type == "product" && active != false]{ slug, _updatedAt }`,
     {},
     { next: { revalidate: 3600 } }
   )

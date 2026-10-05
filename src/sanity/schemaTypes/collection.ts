@@ -8,6 +8,14 @@ export const collectionSchema = defineType({
 
   fields: [
     defineField({
+      name: 'active',
+      title: 'Aktif',
+      description:
+        'KAPALI (pasif) ise bu koleksiyon sitede HİÇBİR YERDE görünmez — Custom Registry\'deki koleksiyon seçim ekranından kaybolur ve bu koleksiyonla yeni bir tasarım satın alınamaz (checkout "stok tükendi" ile aynı şekilde reddedilir). Zaten bu koleksiyonu kullanarak ÖNCEDEN oluşturulmuş ürünler/siparişler etkilenmez.',
+      type: 'boolean',
+      initialValue: true,
+    }),
+    defineField({
       name: 'key',
       title: 'Collection Key',
       description: 'Kod içinde referans için. Örn: "totem", "waves", "bureau-series"',

@@ -76,6 +76,19 @@ export async function resolveDropForCollection(collectionKey: string): Promise<D
 export async function checkCustomDesignCapacity(
   collectionKey: string
 ): Promise<{ ok: true } | { ok: false; reason: string }> {
+  // Koleksiyon Sanity'de "Pasif" işaretlenmişse (bkz. collection.ts şema
+  // notu), bu koleksiyonla checkout tamamen reddedilir — Custom Registry
+  // koleksiyon seçim ekranından zaten kaldırılmış olsa da, biri eski bir
+  // linkle (?collection=...) doğrudan tasarım ekranına gelip satın almaya
+  // çalışabilir; bu kontrol o yolu da kapatır.
+  const collectionActive = await sanityClient.fetch<boolean | null>(
+    `*[_type == "collection" && key.current == $collectionKey][0].active`,
+    { collectionKey }
+  )
+  if (collectionActive === false) {
+    return { ok: false, reason: 'Bu koleksiyon artık satışa açık değil.' }
+  }
+
   const drop = await resolveDropForCollection(collectionKey)
   if (!drop) return { ok: true }
   if (drop.plannedQuantity == null) return { ok: true }

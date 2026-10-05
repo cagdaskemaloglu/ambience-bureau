@@ -8,6 +8,14 @@ export const productSchema = defineType({
   type: 'document',
 
   fields: [
+    defineField({
+      name: 'active',
+      title: 'Aktif',
+      description:
+        'KAPALI (pasif) ise bu ürün sitede HİÇBİR YERDE görünmez — Registry listesinden, Drop satırından, ilgili ürünlerden ve ürünün kendi detay sayfasından (doğrudan linkle bile) kaybolur. Sitemap\'ten de çıkar. Bu ürünü daha önce satın almış bir müşterinin sipariş/kimlik (dossier) sayfası ETKİLENMEZ — o ayrı bir kayıt.',
+      type: 'boolean',
+      initialValue: true,
+    }),
     // ── Kimlik / Registry ────────────────────────────────
     defineField({
       name: 'registryNo',
