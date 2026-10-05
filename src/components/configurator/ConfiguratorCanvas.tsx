@@ -9,6 +9,7 @@ import { CameraFitButton } from './CameraFitButton'
 import { SpinCaptureHook } from './SpinCaptureHook'
 import { DimensionAnnotations } from './DimensionAnnotations'
 import { ScreenshotCapture } from './ScreenshotCapture'
+import { CombinationCountBadge } from './CombinationCountBadge'
 
 interface ConfiguratorCanvasProps {
   onScreenshotReady?: (fn: () => string) => void
@@ -17,6 +18,7 @@ interface ConfiguratorCanvasProps {
 export function ConfiguratorCanvas({ onScreenshotReady }: ConfiguratorCanvasProps) {
   return (
     <div className="relative h-full w-full">
+      <CombinationCountBadge />
       <CameraFitButton />
       <Scene>
         <LampModel />
