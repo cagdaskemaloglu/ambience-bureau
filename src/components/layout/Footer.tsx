@@ -1,6 +1,5 @@
 'use client'
 
-import Image from 'next/image'
 import { useLocale } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
@@ -59,19 +58,11 @@ export function Footer() {
           </button>
         </div>
 
-        {/* Sağ: ödeme logosu + linkler (2x2 — dikey yüksekliği yarıya indirir) */}
+        {/* Sağ: linkler (2x2 — dikey yüksekliği yarıya indirir) */}
         <div className="flex items-center gap-6">
-          {/* iyzico + Mastercard/Visa/Amex/Troy — güven rozeti, iyzico'nun
-              onay kriterlerinden biri ("Visa ve MasterCard Logoları" +
-              "iyzico ile Öde Logosu"). Tek bir birleşik görsel, dilden
-              bağımsız (ödeme ağı logoları genelde çevrilmez). */}
-          <Image
-            src="/payments/footer-logo.png"
-            alt="iyzico ile Öde — Mastercard, Visa, American Express, Troy"
-            width={214}
-            height={16}
-            className="h-4 w-auto opacity-90"
-          />
+          {/* iyzico/Mastercard/Visa/Amex/Troy rozeti KALDIRILDI — iyzico
+              anlaşması sona erdi, ödeme altyapısı PayTR'ye geçiyor. PayTR
+              logosu hazır olunca buraya aynı yöntemle eklenebilir. */}
 
           {/* Sol sütun: Teslimat ve İade / Mesafeli Satış Sözleşmesi.
               Sağ sütun: Gizlilik Politikası / Kullanım Koşulları. */}
