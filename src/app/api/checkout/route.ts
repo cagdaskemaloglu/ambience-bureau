@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createOrder, updateOrderStatus } from '@/lib/supabase/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { createCheckoutForm } from '@/lib/iyzico/client'
+import { createPaymentToken } from '@/lib/paytr/client'
 import type { CartItem } from '@/types'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { checkCustomDesignCapacity } from '@/lib/sanity-fulfillment'
@@ -129,110 +129,67 @@ export async function POST(request: Request) {
       })),
     })
 
-    // 2. iyzico Checkout Form'unu başlat
+    // 2. PayTR ödeme token'ını oluştur
+    // NOT: PayTR'nin para birimi kısaltması "TL" — ISO kodu "TRY" DEĞİL.
+    const paytrCurrency = currency === 'TRY' ? 'TL' : 'USD'
 
-    const basketItems: Array<{
-      id: string
-      name: string
-      category1: string
-      itemType: 'PHYSICAL' | 'VIRTUAL'
-      price: string
-    }> = items.map((item) => ({
-      id: item.id,
+    // PayTR basket formatı [isim, birim_fiyat, adet] — iyzico'dan farklı
+    // olarak quantity AYRI bir alan, fiyatı adetle çarpıp tek satıra
+    // sıkıştırmaya gerek yok.
+    const basket: Array<{ name: string; price: string; quantity: number }> = items.map((item) => ({
       name: item.name[locale],
-      category1: item.type === 'custom' ? 'Custom Registry' : 'Object Registry',
-      itemType: 'PHYSICAL' as const,
-      price: (
-        (toMinorUnit(currency === 'TRY' ? item.priceTRY : item.priceUSD) * item.quantity) /
-        100
-      ).toFixed(2),
+      price: (toMinorUnit(currency === 'TRY' ? item.priceTRY : item.priceUSD) / 100).toFixed(2),
+      quantity: item.quantity,
     }))
 
-    // iyzico kuralı: price = basketItems toplamı, paidPrice = gerçek ödeme (indirimli olabilir)
-    const basketTotalMinor = basketItems.reduce(
-      (sum, i) => sum + Math.round(parseFloat(i.price) * 100),
-      0
-    )
-    const priceDecimal = (basketTotalMinor / 100).toFixed(2)
-    const paidPriceDecimal = (totalMinor / 100).toFixed(2)
-
+    // payment_amount = GERÇEK tahsil edilecek tutar (kredi indirimi sonrası
+    // olabilir) — sepet toplamından farklı olabilir, PayTR iyzico kadar
+    // katı bir eşleşme aramıyor (sepet daha çok fatura/makbuz amaçlı).
     const [nameSplit, ...surnameParts] = shippingInfo.name.trim().split(' ')
-    const surname = surnameParts.join(' ') || nameSplit // tek kelimelik isimler için fallback
+    const fullName = surnameParts.length > 0 ? shippingInfo.name.trim() : nameSplit
+
+    const localePrefix = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}`
 
     try {
-      const iyzicoResult = await createCheckoutForm({
-        locale,
-        conversationId: order.order_number,
-        price: priceDecimal,
-        paidPrice: paidPriceDecimal,
-        currency,
-        basketId: order.order_number,
-        paymentGroup: 'PRODUCT',
-        callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/checkout/callback?locale=${locale}`,
-        enabledInstallments: currency === 'TRY' ? [1, 2, 3, 6, 9, 12] : [1],
-        buyer: {
-          id: userId ?? `guest-${order.order_number}`,
-          name: nameSplit,
-          surname,
-          gsmNumber: (() => {
-            const raw = shippingInfo.phone.replace(/\s+/g, '').replace(/-/g, '')
-            if (raw.startsWith('+')) return raw
-            if (raw.startsWith('00')) return '+' + raw.slice(2)
-            if (raw.startsWith('0')) return '+90' + raw.slice(1)
-            return '+90' + raw
-          })(),
-          email: userEmail ?? '',
-          identityNumber: '11111111111', // KVKK: gerçek TC kimlik no istenmiyor, iyzico zorunlu alanı için placeholder
-          lastLoginDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          registrationDate: new Date().toISOString().slice(0, 19).replace('T', ' '),
-          registrationAddress: shippingInfo.address1,
-          ip: request.headers.get('x-forwarded-for') ?? '85.34.78.112',
-          city: shippingInfo.city,
-          country: shippingInfo.country ?? 'Turkey',
-          zipCode: shippingInfo.postal,
-        },
-        shippingAddress: {
-          contactName: shippingInfo.name,
-          city: shippingInfo.city,
-          country: shippingInfo.country ?? 'Turkey',
-          address: shippingInfo.address1,
-          zipCode: shippingInfo.postal,
-        },
-        billingAddress: {
-          contactName: shippingInfo.name,
-          city: shippingInfo.city,
-          country: shippingInfo.country ?? 'Turkey',
-          address: shippingInfo.address1,
-          zipCode: shippingInfo.postal,
-        },
-        basketItems,
+      const paytrResult = await createPaymentToken({
+        merchantOid: order.order_number,
+        userIp: request.headers.get('x-forwarded-for') ?? '85.34.78.112',
+        email: userEmail ?? guestEmail ?? '',
+        paymentAmountMinor: totalMinor,
+        basket,
+        userName: fullName,
+        userAddress: `${shippingInfo.address1}${shippingInfo.address2 ? ', ' + shippingInfo.address2 : ''}, ${shippingInfo.city}`,
+        userPhone: (() => {
+          const raw = shippingInfo.phone.replace(/\s+/g, '').replace(/-/g, '')
+          if (raw.startsWith('+')) return raw
+          if (raw.startsWith('00')) return '+' + raw.slice(2)
+          if (raw.startsWith('0')) return '+90' + raw.slice(1)
+          return '+90' + raw
+        })(),
+        // Bu URL'leri BİZ belirliyoruz, PayTR dinamik parametre eklemiyor —
+        // bu yüzden sipariş numarasını kendimiz gömüyoruz (onay sayfası
+        // bunu okuyor, bkz. ConfirmationContent.tsx). Asıl sipariş onayı
+        // (DB güncelleme, e-posta, Sanity kaydı) BURADA DEĞİL,
+        // /api/checkout/paytr-notify'da olur — bu sadece tarayıcı yönlendirmesi.
+        merchantOkUrl: `${localePrefix}/checkout/confirmation?order=${order.order_number}&status=success`,
+        merchantFailUrl: `${localePrefix}/checkout/confirmation?order=${order.order_number}&status=error&reason=payment_failed`,
+        currency: paytrCurrency,
+        lang: locale,
       })
 
-      if (iyzicoResult.status !== 'success') {
-        console.error('[iyzico] FULL RESPONSE:', JSON.stringify(iyzicoResult, null, 2))
+      if (paytrResult.status !== 'success') {
+        console.error('[PayTR] FULL RESPONSE:', JSON.stringify(paytrResult, null, 2))
         await updateOrderStatus(order.id, 'cancelled')
         return NextResponse.json(
-          {
-            error: iyzicoResult.errorMessage ?? 'Ödeme başlatılamadı.',
-            errorCode: (iyzicoResult as any).errorCode,
-            iyzicoStatus: iyzicoResult.status,
-          },
+          { error: paytrResult.reason ?? 'Ödeme başlatılamadı.' },
           { status: 400 }
         )
       }
 
-      return NextResponse.json(
-        {
-          order,
-          checkoutFormContent: iyzicoResult.checkoutFormContent,
-          paymentPageUrl: iyzicoResult.paymentPageUrl,
-          token: iyzicoResult.token,
-        },
-        { status: 201 }
-      )
-    } catch (iyzicoError) {
-      // iyzico hatası — siparişi iptal et, kullanıcıya bildir
-      console.error('[checkout API] iyzico hatası:', iyzicoError)
+      return NextResponse.json({ order, token: paytrResult.token }, { status: 201 })
+    } catch (paytrError) {
+      // PayTR hatası — siparişi iptal et, kullanıcıya bildir
+      console.error('[checkout API] PayTR hatası:', paytrError)
       await updateOrderStatus(order.id, 'cancelled')
       return NextResponse.json(
         { error: 'Ödeme sistemine bağlanılamadı. Lütfen tekrar deneyin.' },

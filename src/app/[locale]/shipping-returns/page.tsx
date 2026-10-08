@@ -76,7 +76,7 @@ const SECTIONS_TR: LegalSection[] = [
   {
     heading: 'Geri Ödeme',
     paragraphs: [
-      'İade edilen ürün elimize ulaşıp kontrol edildikten sonra, ödemeniz 14 (on dört) gün içinde, ödemeyi yaptığınız yöntemle (kredi/banka kartına iyzico üzerinden) iade edilir. Kredi kartına yapılan iadelerin hesabınıza yansıma süresi bankanızın işlem sürelerine bağlı olarak değişebilir.',
+      'İade edilen ürün elimize ulaşıp kontrol edildikten sonra, ödemeniz 14 (on dört) gün içinde, ödemeyi yaptığınız yöntemle (kredi/banka kartına PayTR üzerinden) iade edilir. Kredi kartına yapılan iadelerin hesabınıza yansıma süresi bankanızın işlem sürelerine bağlı olarak değişebilir.',
     ],
   },
   {
@@ -147,7 +147,7 @@ const SECTIONS_EN: LegalSection[] = [
   {
     heading: 'Refunds',
     paragraphs: [
-      'Once the returned product reaches us and is inspected, your payment will be refunded within 14 (fourteen) days, using the same method you paid with (credit/debit card, via iyzico). The time it takes for a refund to appear on your card statement depends on your bank\u2019s processing times.',
+      'Once the returned product reaches us and is inspected, your payment will be refunded within 14 (fourteen) days, using the same method you paid with (credit/debit card, via PayTR). The time it takes for a refund to appear on your card statement depends on your bank\u2019s processing times.',
     ],
   },
   {

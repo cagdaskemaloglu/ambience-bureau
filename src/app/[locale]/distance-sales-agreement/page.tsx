@@ -58,7 +58,7 @@ const SECTIONS_TR: LegalSection[] = [
     heading: 'Madde 3 — Sözleşme Konusu Ürün ve Ödeme Bilgileri',
     paragraphs: [
       'Ürünün türü, miktarı, marka/modeli, satış bedeli (KDV dahil), ödeme şekli ve teslimat bilgileri, sipariş sırasında internet sitesinde Alıcıya gösterilen ve sipariş onayı ile Alıcıya e-posta yoluyla da iletilen sipariş özetinde yer alan bilgilerdir; bu bilgiler sözleşmenin eki ve ayrılmaz bir parçasıdır.',
-      'Ödeme, Satıcının anlaşmalı ödeme kuruluşu iyzico altyapısı üzerinden kredi/banka kartı ile tahsil edilir. Ürün fiyatlarına KDV dahildir.',
+      'Ödeme, Satıcının anlaşmalı ödeme kuruluşu PayTR altyapısı üzerinden kredi/banka kartı ile tahsil edilir. Ürün fiyatlarına KDV dahildir.',
     ],
   },
   {
@@ -123,7 +123,7 @@ const SECTIONS_EN: LegalSection[] = [
     heading: 'Article 3 — Product and Payment Information',
     paragraphs: [
       'The type, quantity, brand/model, sale price (VAT included), payment method, and delivery information of the product are as shown to the Buyer on the website at the time of ordering and also sent to the Buyer by email as an order summary upon confirmation; this information forms an integral part of this agreement.',
-      'Payment is collected by credit/debit card through the Seller\u2019s payment partner, iyzico. Product prices include VAT.',
+      'Payment is collected by credit/debit card through the Seller\u2019s payment partner, PayTR. Product prices include VAT.',
     ],
   },
   {

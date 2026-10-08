@@ -6,7 +6,7 @@ import { Link } from '@/i18n/navigation'
 import { formatPrice } from '@/lib/sanity'
 import { useCartStore } from '@/lib/store/cart'
 import { getCurrentUser } from '@/lib/supabase/auth'
-import { IyzicoPaymentForm } from './IyzicoPaymentForm'
+import { PayTRPaymentForm } from './PayTRPaymentForm'
 
 type CheckoutMode = 'guest' | 'member' | 'checking'
 
@@ -21,7 +21,7 @@ export function CheckoutForm() {
   const [mode, setMode] = useState<CheckoutMode>('checking')
   const [userEmail, setUserEmail] = useState<string | null>(null)
   const [guestEmail, setGuestEmail] = useState('')
-  const [formContent, setFormContent] = useState<string | null>(null)
+  const [paymentToken, setPaymentToken] = useState<string | null>(null)
 
   const [form, setForm] = useState({
     name: '',
@@ -95,16 +95,16 @@ export function CheckoutForm() {
         throw new Error(data.error ?? t('errors.generic'))
       }
 
-      const { checkoutFormContent } = await res.json()
+      const { token } = await res.json()
 
-      if (!checkoutFormContent) {
+      if (!token) {
         throw new Error(t('errors.generic'))
       }
 
       // Ödeme formu hazır — sepeti BURADA temizlemiyoruz, sadece
       // ödeme başarıyla tamamlandığında (onay sayfasında) temizlenecek.
-      setFormContent(checkoutFormContent)
-      // Kredi store'u sıfırla — iyzico'ya gönderildi
+      setPaymentToken(token)
+      // Kredi store'u sıfırla — PayTR'ye gönderildi
       setCreditsToUse(0)
 
     } catch (err) {
@@ -114,9 +114,9 @@ export function CheckoutForm() {
     }
   }
 
-  // Ödeme formu hazırsa, checkout formunu değil iyzico widget'ını göster
-  if (formContent) {
-    return <IyzicoPaymentForm htmlContent={formContent} />
+  // Ödeme formu hazırsa, checkout formunu değil PayTR iframe'ini göster
+  if (paymentToken) {
+    return <PayTRPaymentForm token={paymentToken} />
   }
 
   if (items.length === 0) {
