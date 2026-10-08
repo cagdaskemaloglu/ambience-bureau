@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createOrder, updateOrderStatus } from '@/lib/supabase/queries'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
-import { createPaymentToken } from '@/lib/paytr/client'
+import { createPaymentToken, toPaytrOid } from '@/lib/paytr/client'
 import type { CartItem } from '@/types'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { checkCustomDesignCapacity } from '@/lib/sanity-fulfillment'
@@ -148,12 +148,28 @@ export async function POST(request: Request) {
     const [nameSplit, ...surnameParts] = shippingInfo.name.trim().split(' ')
     const fullName = surnameParts.length > 0 ? shippingInfo.name.trim() : nameSplit
 
-    const localePrefix = `${process.env.NEXT_PUBLIC_APP_URL}/${locale}`
+    // Site adresi: önce NEXT_PUBLIC_APP_URL, yoksa NEXT_PUBLIC_SITE_URL,
+    // o da yoksa isteğin geldiği adres (localhost'ta da Vercel'de de doğru
+    // çalışır). ESKİSİ fallback'siz `undefined/tr/...` üretip PayTR'nin
+    // "merchant_ok_url geçersiz" hatasına yol açıyordu.
+    const baseUrl = (
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      new URL(request.url).origin
+    )
+      .trim()
+      .replace(/\/+$/, '')
+    const localePrefix = `${baseUrl}/${locale}`
+
+    // x-forwarded-for Vercel'de "istemci, proxy1, proxy2" gibi birden fazla
+    // IP içerebilir — PayTR TEK bir IP bekliyor, ilkini alıyoruz.
+    const userIp = (request.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || '85.34.78.112'
 
     try {
       const paytrResult = await createPaymentToken({
-        merchantOid: order.order_number,
-        userIp: request.headers.get('x-forwarded-for') ?? '85.34.78.112',
+        // PayTR merchant_oid'de tire kabul etmiyor: TAB-2026-AB12C → TAB2026AB12C
+        merchantOid: toPaytrOid(order.order_number),
+        userIp,
         email: userEmail ?? guestEmail ?? '',
         paymentAmountMinor: totalMinor,
         basket,

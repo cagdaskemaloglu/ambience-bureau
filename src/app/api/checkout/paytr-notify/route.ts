@@ -1,4 +1,4 @@
-import { verifyNotificationHash, type PayTRNotification } from '@/lib/paytr/client'
+import { verifyNotificationHash, fromPaytrOid, type PayTRNotification } from '@/lib/paytr/client'
 import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
@@ -42,14 +42,26 @@ export async function POST(request: Request) {
       return new Response('hash mismatch', { status: 400 })
     }
 
-    const orderNumber = notification.merchant_oid
-    const order = (await getOrderByNumber(orderNumber)) as any
+    // PayTR'ye tiresiz gönderdik (TAB2026AB12C), veritabanında tireli
+    // duruyor (TAB-2026-AB12C) — önce çevrilmiş halini, olmazsa ham halini dene.
+    let order: any = null
+    let orderNumber = notification.merchant_oid
+    for (const candidate of [fromPaytrOid(notification.merchant_oid), notification.merchant_oid]) {
+      try {
+        order = await getOrderByNumber(candidate)
+        orderNumber = candidate
+        break
+      } catch {
+        // bu aday bulunamadı, diğerini dene
+      }
+    }
 
     if (!order) {
-      console.error('[PayTR notify] Sipariş veritabanında bulunamadı:', orderNumber)
-      // Sipariş bizde yoksa PayTR'nin tekrar denemesinin bir anlamı yok —
-      // yine de "OK" döndürüyoruz ki sonsuz tekrar denemesin.
-      return new Response('OK')
+      // "OK" DÖNMÜYORUZ: geçici bir DB hatası olabilir; "OK" dönersek PayTR
+      // tekrar denemeyi bırakır ve ödemesi alınmış sipariş onaylanmadan
+      // kalır. Tekrar denesin.
+      console.error('[PayTR notify] Sipariş veritabanında bulunamadı:', notification.merchant_oid)
+      return new Response('order not found', { status: 500 })
     }
 
     if (notification.status === 'success') {

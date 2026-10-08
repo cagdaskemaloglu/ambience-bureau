@@ -32,6 +32,26 @@ const TEST_MODE = process.env.PAYTR_TEST_MODE === '1' ? '1' : '0'
 
 const TOKEN_URL = 'https://www.paytr.com/odeme/api/get-token'
 
+/**
+ * PayTR `merchant_oid` için SADECE harf/rakam kabul ediyor (tire, alt çizgi
+ * vb. özel karakter yok). Bizim sipariş numaramız "TAB-2026-AB12C"
+ * formatında (bkz. supabase/schema.sql → generate_order_number) — PayTR'ye
+ * gönderirken tireleri atıyoruz ("TAB2026AB12C"), bildirim geldiğinde
+ * (paytr-notify) geri çeviriyoruz.
+ */
+export function toPaytrOid(orderNumber: string): string {
+  return orderNumber.replace(/[^a-zA-Z0-9]/g, '')
+}
+
+/**
+ * "TAB2026AB12C" → "TAB-2026-AB12C". Format tanınmazsa girdiyi olduğu gibi
+ * döndürür (çağıran taraf ayrıca ham değeri de deneyebilir).
+ */
+export function fromPaytrOid(merchantOid: string): string {
+  const match = /^([A-Za-z]+)(\d{4})([A-Za-z0-9]+)$/.exec(merchantOid)
+  return match ? `${match[1]}-${match[2]}-${match[3]}` : merchantOid
+}
+
 export interface PayTRBasketItem {
   name: string
   /** Birim fiyat, "34.56" gibi ondalıklı STRING (kuruş değil — sadece payment_amount kuruş cinsinden). */

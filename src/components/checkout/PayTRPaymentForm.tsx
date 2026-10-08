@@ -3,6 +3,19 @@
 import { useEffect } from 'react'
 import { useLocale } from 'next-intl'
 
+const RESIZER_SCRIPT_ID = 'paytr-iframe-resizer'
+const RESIZER_SCRIPT_SRC = 'https://www.paytr.com/js/iframeResizer.min.js'
+
+// PayTR'nin resizer script'i global olarak window.iFrameResize tanımlıyor.
+type IFrameResizeFn = (options: Record<string, unknown>, selector: string) => unknown
+
+function initResize() {
+  const fn = (window as unknown as { iFrameResize?: IFrameResizeFn }).iFrameResize
+  if (typeof fn === 'function') {
+    fn({}, '#paytr-iframe')
+  }
+}
+
 /**
  * PayTR iFrame API — IyzicoPaymentForm.tsx'in yerini alıyor. iyzico'nun
  * script-enjeksiyonu gerektiren karmaşık widget'ının aksine, PayTR sadece
@@ -14,28 +27,19 @@ export function PayTRPaymentForm({ token }: { token: string }) {
   const locale = useLocale()
 
   useEffect(() => {
-    // PayTR'nin resmi resizer script'i — zaten yüklenmişse tekrar eklemiyoruz.
-    const existing = document.getElementById('paytr-iframe-resizer')
-    const script = existing ?? document.createElement('script')
-    if (!existing) {
-      script.id = 'paytr-iframe-resizer'
-      script.src = 'https://www.paytr.com/js/iframeResizer.min.js'
-      document.body.appendChild(script)
-    }
+    const existing = document.getElementById(RESIZER_SCRIPT_ID)
 
-    function initResize() {
-      // @ts-expect-error — iFrameResize, PayTR'nin script'i tarafından global olarak tanımlanıyor.
-      if (typeof window.iFrameResize === 'function') {
-        // @ts-expect-error
-        window.iFrameResize({}, '#paytr-iframe')
-      }
-    }
-
+    // Script zaten yüklüyse tekrar eklemiyoruz, sadece yeniden başlatıyoruz.
     if (existing) {
       initResize()
-    } else {
-      script.addEventListener('load', initResize)
+      return
     }
+
+    const script = document.createElement('script')
+    script.id = RESIZER_SCRIPT_ID
+    script.src = RESIZER_SCRIPT_SRC
+    script.addEventListener('load', initResize)
+    document.body.appendChild(script)
 
     return () => {
       script.removeEventListener('load', initResize)
