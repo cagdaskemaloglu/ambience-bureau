@@ -1,5 +1,5 @@
 import { verifyNotificationHash, fromPaytrOid, type PayTRNotification } from '@/lib/paytr/client'
-import { updateOrderStatus, getOrderByNumber, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
+import { updateOrderStatus, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
 import { createOwnedProductFromCustomDesign } from '@/lib/sanity-fulfillment'
@@ -44,24 +44,41 @@ export async function POST(request: Request) {
 
     // PayTR'ye tiresiz gönderdik (TAB2026AB12C), veritabanında tireli
     // duruyor (TAB-2026-AB12C) — önce çevrilmiş halini, olmazsa ham halini dene.
+    // "Bulunamadı" ile "DB hatası"nı AYIRIYORUZ: bulunamadı kalıcı bir durum,
+    // DB hatası geçici.
+    const lookupAdmin = createSupabaseAdminClient()
     let order: any = null
     let orderNumber = notification.merchant_oid
+    let dbError: unknown = null
     for (const candidate of [fromPaytrOid(notification.merchant_oid), notification.merchant_oid]) {
-      try {
-        order = await getOrderByNumber(candidate)
+      const { data, error } = await (lookupAdmin as any)
+        .from('orders')
+        .select('*, order_items(*)')
+        .eq('order_number', candidate)
+        .maybeSingle()
+      if (error) {
+        dbError = error
+        continue
+      }
+      if (data) {
+        order = data
         orderNumber = candidate
         break
-      } catch {
-        // bu aday bulunamadı, diğerini dene
       }
     }
 
     if (!order) {
-      // "OK" DÖNMÜYORUZ: geçici bir DB hatası olabilir; "OK" dönersek PayTR
-      // tekrar denemeyi bırakır ve ödemesi alınmış sipariş onaylanmadan
-      // kalır. Tekrar denesin.
-      console.error('[PayTR notify] Sipariş veritabanında bulunamadı:', notification.merchant_oid)
-      return new Response('order not found', { status: 500 })
+      if (dbError) {
+        // Geçici DB hatası: PayTR tekrar denesin.
+        console.error('[PayTR notify] Sipariş sorgusu DB hatası:', dbError)
+        return new Response('db error', { status: 500 })
+      }
+      // Hash GEÇERLİ ama bu sipariş bizde yok (ör. PayTR panelinin canlı mod
+      // "Bildirim URL" test bildirimi sahte merchant_oid gönderir). 500
+      // dönersek PayTR "bildirim URL'de sorun var" der ve tekrar dener —
+      // bu yüzden OK ile onaylıyoruz.
+      console.warn('[PayTR notify] Bilinmeyen sipariş için geçerli bildirim, OK dönülüyor:', notification.merchant_oid)
+      return new Response('OK')
     }
 
     if (notification.status === 'success') {
