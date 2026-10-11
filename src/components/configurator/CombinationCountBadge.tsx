@@ -4,13 +4,14 @@ import { useMemo } from 'react'
 import { useLocale } from 'next-intl'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { computeCurrentModelCombinationCount, formatCombinationCount } from '@/lib/combinatorics'
+import { useAnimatedNumber } from '@/lib/useAnimatedNumber'
 
 /**
  * 3D viewer'ın sol üst köşesinde duran, müşterinin O AN eklediği
  * SPESİFİK gövde setinden kaç farklı tasarım çıkarılabileceğini gösteren
- * rozet — DİNAMİK: her gövde ekleme/çıkarma/yer değiştirmede yeniden
- * hesaplanır (bkz. src/lib/combinatorics.ts). Taban ve başlık sabit
- * kabul edilir, sadece gövde seti değişkendir.
+ * rozet — DİNAMİK ve ANİMASYONLU: ilk göründüğünde 0'dan hedef değere
+ * sayarak artar; gövde ekleme/çıkarma/yer değiştirmede de eski değerden
+ * yeni değere akar.
  */
 export function CombinationCountBadge() {
   const locale = useLocale()
@@ -23,8 +24,13 @@ export function CombinationCountBadge() {
     [body, bodyLimits]
   )
 
-  // Henüz gövde eklenmemişse gösterecek anlamlı bir şey yok (sonuç hep 1
-  // olurdu — "tek olası tasarım: boş" demenin bir değeri yok).
+  // Hook koşulsuz çağrılmalı (erken return'den ÖNCE).
+  const { value } = useAnimatedNumber(total > 0 ? total : 0, {
+    from: 0,
+    duration: 1400,
+    startWhenVisible: false,
+  })
+
   if (!collectionKey || body.length === 0 || total <= 0) return null
 
   return (
@@ -34,11 +40,11 @@ export function CombinationCountBadge() {
         title={
           locale === 'tr'
             ? 'Eklediğiniz gövde parçalarını yer değiştirerek veya bir kısmını çıkararak kaç farklı tasarım elde edebileceğiniz'
-            : 'How many different designs you can get by rearranging or removing some of the body parts you\u2019ve added'
+            : 'How many different designs you can get by rearranging or removing some of the body parts you’ve added'
         }
       >
-        <span className="font-semibold text-bureau-fixed-amber">
-          {formatCombinationCount(total, locale)}
+        <span className="inline-block min-w-[1ch] font-semibold tabular-nums text-bureau-fixed-amber">
+          {formatCombinationCount(value, locale)}
         </span>{' '}
         {locale === 'tr' ? 'Farklı Kombinasyon' : 'Different Combinations'}
       </div>

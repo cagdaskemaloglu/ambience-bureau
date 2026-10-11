@@ -4,6 +4,7 @@ import { useRef } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 import { getLocalizedValue } from '@/lib/sanity'
+import { useAnimatedNumber } from '@/lib/useAnimatedNumber'
 import { ProductCard } from './ProductCard'
 import type { DropWithProducts, LocalizedString } from '@/types'
 
@@ -15,6 +16,56 @@ import type { DropWithProducts, LocalizedString } from '@/types'
 const CARD_WIDTH = 263
 const CARD_GAP = 12 // gap-3
 const CARD_MEDIA_ASPECT = 'aspect-[3/4]'
+
+/** Drop başlığındaki "N Farklı Kombinasyon" — görününce 0'dan N'e sayar. */
+function AnimatedCombinations({ total, locale }: { total: number; locale: string }) {
+  const { value, ref } = useAnimatedNumber<HTMLSpanElement>(total, { from: 0, duration: 2000 })
+  return (
+    <span
+      ref={ref}
+      className="font-normal normal-case tracking-normal text-bureau-fixed-muted"
+    >
+      <span className="tabular-nums">
+        {value.toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}
+      </span>{' '}
+      {locale === 'tr' ? 'Farklı Kombinasyon' : 'Different Combinations'}
+    </span>
+  )
+}
+
+/**
+ * "kalan/toplam adet kaldı" — kalan kısmı, söz verilen toplamdan gerçek
+ * kalana 1'er azalarak iner; toplam (payda) kısmı 0'dan söz verilen
+ * adede 1'er artarak çıkar. İkisi aynı anda biter.
+ */
+function AnimatedAvailability({
+  planned,
+  remaining,
+  locale,
+}: {
+  planned: number
+  remaining: number
+  locale: string
+}) {
+  const fmt = (n: number) => n.toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')
+  const rem = useAnimatedNumber<HTMLParagraphElement>(remaining, { from: planned, duration: 2000 })
+  const tot = useAnimatedNumber(planned, {
+    from: 0,
+    duration: 2000,
+    startWhenVisible: false,
+    enabled: rem.started,
+  })
+  return (
+    <p
+      ref={rem.ref}
+      className="mt-1.5 font-mono text-[9.5px] uppercase tracking-wide text-white/70"
+    >
+      <span className="tabular-nums">{fmt(rem.value)}</span>/
+      <span className="tabular-nums">{fmt(tot.value)}</span>{' '}
+      {locale === 'tr' ? 'adet kaldı' : 'available'}
+    </p>
+  )
+}
 
 export interface DropNavInfo {
   dropNo: string
@@ -95,10 +146,7 @@ export function DropRow({
               (gövdenin çok katmanlı istiflenmesi matematiksel olarak göz
               ardı edilir, aksi halde rakam anlamsız büyüklükte olur). */}
           {drop.totalCombinations > 0 && (
-            <span className="font-normal normal-case tracking-normal text-bureau-fixed-muted">
-              {drop.totalCombinations.toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}{' '}
-              {locale === 'tr' ? 'Farklı Kombinasyon' : 'Different Combinations'}
-            </span>
+            <AnimatedCombinations total={drop.totalCombinations} locale={locale} />
           )}
         </h2>
       </div>
@@ -199,13 +247,11 @@ export function DropRow({
               {/* Kaç adet satışta kaldığı — plannedQuantity girilmemişse
                   (sınırsız kabul edilir) hiç gösterilmez. */}
               {typeof drop.plannedQuantity === 'number' && (
-                <p className="mt-1.5 font-mono text-[9.5px] uppercase tracking-wide text-white/70">
-                  {Math.max(0, drop.plannedQuantity - drop.soldCount).toLocaleString(
-                    locale === 'tr' ? 'tr-TR' : 'en-US'
-                  )}
-                  /{drop.plannedQuantity.toLocaleString(locale === 'tr' ? 'tr-TR' : 'en-US')}{' '}
-                  {locale === 'tr' ? 'adet kaldı' : 'available'}
-                </p>
+                <AnimatedAvailability
+                  planned={drop.plannedQuantity}
+                  remaining={Math.max(0, drop.plannedQuantity - drop.soldCount)}
+                  locale={locale}
+                />
               )}
             </div>
 
