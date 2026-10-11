@@ -29,32 +29,22 @@ export function Footer() {
             href={APP_STORE_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 border border-bureau-black bg-black px-3 py-1.5 text-white no-underline transition-colors hover:border-bureau-amber hover:bg-bureau-amber"
+            aria-label="App Store"
+            className="block transition-opacity hover:opacity-80"
           >
-            <span className="leading-tight">
-              <span className="block font-mono text-[7px] uppercase tracking-wide text-white/70">
-                {tr ? 'Uygulamayı İndirin' : 'Download on the'}
-              </span>
-              <span className="block font-mono text-[11px] font-semibold uppercase tracking-wide">
-                App Store
-              </span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/badges/app-store.svg" alt="Download on the App Store" className="h-9 w-auto" />
           </a>
 
           {/* Play Store — henüz yayınlanmadı, bu yüzden tıklanınca hiçbir
               yere yönlendirmiyor (href/onClick yok, sadece görsel yer tutucu). */}
           <button
             type="button"
-            className="flex items-center gap-2 border border-bureau-black bg-black px-3 py-1.5 text-white transition-colors hover:border-bureau-amber hover:bg-bureau-amber"
+            aria-label="Google Play"
+            className="block cursor-default p-0 transition-opacity hover:opacity-80"
           >
-            <span className="leading-tight">
-              <span className="block font-mono text-[7px] uppercase tracking-wide text-white/70">
-                {tr ? 'Uygulamayı İndirin' : 'Download on the'}
-              </span>
-              <span className="block font-mono text-[11px] font-semibold uppercase tracking-wide">
-                Play Store
-              </span>
-            </span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/badges/google-play.svg" alt="Get it on Google Play" className="h-9 w-auto" />
           </button>
         </div>
 
