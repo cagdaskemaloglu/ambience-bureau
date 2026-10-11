@@ -11,10 +11,21 @@ export const dropSchema = defineType({
       name: 'active',
       title: 'Aktif',
       description:
-        'KAPALI (pasif) ise bu Drop sitede HİÇBİR YERDE görünmez — anasayfadaki Drop satırından ve bu Drop\'a göre filtrelenen Registry görünümünden kaybolur. Bu Drop\'a bağlı ürünler kendi "Aktif" durumlarına göre ayrı ayrı görünürlüğünü korur (bu alan sadece Drop\'un KENDİSİNİ, ürünlerini değil gizler).',
+        'KAPALI (pasif) ise bu Drop sitede HİÇBİR YERDE görünmez — TEK İSTİSNA: aşağıdaki "Yayın Zamanı" doluysa Drop, o zamana kadar anasayfada "yakında" olarak (geri sayımla, ürünleri gizli) görünür ve zamanı gelince OTOMATİK yayına girer. Aksi halde bu Drop sitede HİÇBİR YERDE görünmez — anasayfadaki Drop satırından ve bu Drop\'a göre filtrelenen Registry görünümünden kaybolur. Bu Drop\'a bağlı ürünler kendi "Aktif" durumlarına göre ayrı ayrı görünürlüğünü korur (bu alan sadece Drop\'un KENDİSİNİ, ürünlerini değil gizler).',
       type: 'boolean',
       initialValue: true,
     }),
+    // ── Zamanlanmış Yayın ───────────────────────────────────
+    defineField({
+      name: 'scheduledAt',
+      title: 'Yayın Zamanı (Zamanlanmış Yayın)',
+      description:
+        'SADECE "Aktif" KAPALIYKEN anlamlıdır. Dolu ve gelecekteyse: Drop anasayfada görünür ama ürün kartları gizlidir ("?" kartlar), Drop kartında bu zamana geri sayım, çıkacak adet ve kombinasyon sayısı gösterilir. Zaman gelince Drop OTOMATİK olarak yayına girer (ürünler görünür, "Oluştur" açılır) — "Aktif"i elle açmanıza gerek yoktur. Zaman geçtikten sonra Drop\'u gerçekten kapatmak isterseniz bu alanı BOŞALTIN. Saat dilimi: tarayıcınızın yerel saati.',
+      type: 'datetime',
+      options: { timeStep: 5 },
+      hidden: ({ document }) => document?.active !== false,
+    }),
+
     defineField({
       name: 'dropNo',
       title: 'Drop No',
@@ -56,6 +67,39 @@ export const dropSchema = defineType({
         'Bu Drop\'tan toplam kaç adet satılacağı (Registry Number\'ın paydası — "003/050"teki 050). Bu sayıya ulaşınca Custom Registry\'de bu koleksiyon için checkout "stok tükendi" hatası verir (tasarlama ekranı kapanmaz, sadece ödeme engellenir).',
       type: 'number',
       validation: (R) => R.required().integer().positive(),
+    }),
+
+    // ── Donanım Tahsisi & IoT (OPSİYONEL — Drop'a özel) ──────────
+    // Boş bırakılırsa Drop'un koleksiyonundaki ücret geçerlidir. Dolu
+    // olan alan, o koleksiyonun ücretini SADECE bu Drop için ezer
+    // (0 yazılırsa "ücretsiz" demektir — boş bırakmakla aynı şey değildir).
+    defineField({
+      name: 'hardwareBaseFeeTRY',
+      title: 'Donanım Tahsisi — Taban Ücret (TRY) — Drop\'a özel',
+      description: 'OPSİYONEL. Boşsa koleksiyondaki değer kullanılır. 0 = ücretsiz.',
+      type: 'number',
+      validation: (R) => R.min(0),
+    }),
+    defineField({
+      name: 'hardwareBaseFeeUSD',
+      title: 'Hardware Allocation — Base Fee (USD) — Drop override',
+      description: 'OPTIONAL. If empty, the collection value is used. 0 = free.',
+      type: 'number',
+      validation: (R) => R.min(0),
+    }),
+    defineField({
+      name: 'iotFeeTRY',
+      title: 'IoT Ek Ücreti (TRY) — Drop\'a özel',
+      description: 'OPSİYONEL. Boşsa koleksiyondaki değer kullanılır. 0 = ücretsiz.',
+      type: 'number',
+      validation: (R) => R.min(0),
+    }),
+    defineField({
+      name: 'iotFeeUSD',
+      title: 'IoT Surcharge (USD) — Drop override',
+      description: 'OPTIONAL. If empty, the collection value is used. 0 = free.',
+      type: 'number',
+      validation: (R) => R.min(0),
     }),
   ],
 

@@ -18,7 +18,7 @@ const CARD_GAP = 12 // gap-3
 const CARD_MEDIA_ASPECT = 'aspect-[3/4]'
 
 /** Drop başlığındaki "N Farklı Kombinasyon" — görününce 0'dan N'e sayar. */
-function AnimatedCombinations({ total, locale }: { total: number; locale: string }) {
+export function AnimatedCombinations({ total, locale }: { total: number; locale: string }) {
   const { value, ref } = useAnimatedNumber<HTMLSpanElement>(total, { from: 0, duration: 2000 })
   return (
     <span

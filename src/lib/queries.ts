@@ -1,3 +1,4 @@
+import { resolveDropState } from '@/lib/dropSchedule'
 import { sanityClient } from './sanity'
 
 // ── Fragment'lar (tekrar kullanılan GROQ parçaları) ───────
@@ -137,11 +138,24 @@ export async function getAllProducts(filters?: {
     params.drop = filters.drop
   }
 
-  return sanityClient.fetch(
-    `*[${filter}] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}`,
+  const rows = await sanityClient.fetch(
+    `*[${filter}] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}, "_dropActive": drop->active, "_dropScheduledAt": drop->scheduledAt, "_hasDrop": defined(drop)}`,
     params,
     { next: { tags: ['products'] } }
   )
+  // Henüz yayınlanmamış ("yakında") bir Drop'a bağlı ürünler Registry
+  // listesinde de görünmesin.
+  const now = Date.now()
+  return rows
+    .filter(
+      (r: { _hasDrop?: boolean; _dropActive?: boolean | null; _dropScheduledAt?: string | null }) =>
+        !r._hasDrop || resolveDropState(r._dropActive, r._dropScheduledAt, now) !== 'upcoming'
+    )
+    .map((r: Record<string, unknown>) => {
+      const { _dropActive, _dropScheduledAt, _hasDrop, ...rest } = r
+      void _dropActive; void _dropScheduledAt; void _hasDrop
+      return rest
+    })
 }
 
 export async function getProductBySlug(slug: string) {
@@ -220,6 +234,11 @@ export async function getFeaturedPosts(limit = 3) {
 }
 
 // ── Drop Sorguları ────────────────────────────────────────
+// NOT (Donanım Tahsisi/IoT): getAllCollections / getAllLampCollections
+// artık her ücret alanını `coalesce(drop override, koleksiyon değeri)`
+// olarak döndürüyor — yani bir Drop kendi koleksiyonunun ücretini
+// (dolu alanlar için) ezebilir; alan adları değişmediği için
+// konfigüratör tarafında ek değişiklik gerekmez.
 
 // Anasayfadaki Drop satırları için: her drop'u, ona ait ürünlerle
 // (ProductCard bilgisiyle) birlikte, TEK sorguda getirir. Ürünü olmayan
@@ -227,9 +246,11 @@ export async function getFeaturedPosts(limit = 3) {
 // için) kendi filtreler.
 export async function getAllDropsWithProducts() {
   const drops = await sanityClient.fetch(
-    `*[_type == "drop" && active != false] | order(sortOrder asc) {
+    `*[_type == "drop" && (active != false || defined(scheduledAt))] | order(sortOrder asc) {
       _id,
       dropNo,
+      active,
+      scheduledAt,
       plannedQuantity,
       ${LOCALIZED_FIELD('name')},
       "configuratorCollectionKey": coalesce(
@@ -279,14 +300,31 @@ export async function getAllDropsWithProducts() {
     return total
   }
 
-  return Promise.all(
-    drops.map(async (drop: { configuratorCollectionKey: string | null }) => ({
-      ...drop,
-      totalCombinations: drop.configuratorCollectionKey
-        ? await getCombinationCount(drop.configuratorCollectionKey)
-        : 0,
-    }))
+  // Zamana bağlı durum — Sanity sonucu cache'lense bile BURADA, her istekte
+  // hesaplanıyor (bkz. lib/dropSchedule.ts).
+  const now = Date.now()
+  const withState = await Promise.all(
+    drops.map(
+      async (drop: {
+        configuratorCollectionKey: string | null
+        active?: boolean | null
+        scheduledAt?: string | null
+        products: unknown[]
+      }) => {
+        const dropState = resolveDropState(drop.active, drop.scheduledAt, now)
+        return {
+          ...drop,
+          dropState,
+          // "Yakında" Drop'un ürünleri istemciye HİÇ gönderilmez (sızmasın).
+          products: dropState === 'upcoming' ? [] : drop.products,
+          totalCombinations: drop.configuratorCollectionKey
+            ? await getCombinationCount(drop.configuratorCollectionKey)
+            : 0,
+        }
+      }
+    )
   )
+  return withState.filter((d) => d.dropState !== 'hidden')
 }
 
 // ── Koleksiyon Sorguları ──────────────────────────────────
@@ -299,10 +337,10 @@ export async function getAllCollections() {
       ${LOCALIZED_FIELD('name')},
       ${LOCALIZED_FIELD('description')},
       "coverImage": coverImage{${IMAGE_FRAGMENT}},
-      hardwareBaseFeeTRY,
-      hardwareBaseFeeUSD,
-      iotFeeTRY,
-      iotFeeUSD,
+      "hardwareBaseFeeTRY": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(hardwareBaseFeeTRY)] | order(sortOrder desc)[0].hardwareBaseFeeTRY, hardwareBaseFeeTRY),
+      "hardwareBaseFeeUSD": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(hardwareBaseFeeUSD)] | order(sortOrder desc)[0].hardwareBaseFeeUSD, hardwareBaseFeeUSD),
+      "iotFeeTRY": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeTRY)] | order(sortOrder desc)[0].iotFeeTRY, iotFeeTRY),
+      "iotFeeUSD": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeUSD)] | order(sortOrder desc)[0].iotFeeUSD, iotFeeUSD),
       minBodyLayers,
       maxBodyLayers
     }`,
@@ -354,10 +392,10 @@ export async function getAllLampCollections() {
         ${LOCALIZED_FIELD('name')},
         ${LOCALIZED_FIELD('description')},
         "coverImage": coverImage{${IMAGE_FRAGMENT}},
-        hardwareBaseFeeTRY,
-        hardwareBaseFeeUSD,
-        iotFeeTRY,
-        iotFeeUSD,
+        "hardwareBaseFeeTRY": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(hardwareBaseFeeTRY)] | order(sortOrder desc)[0].hardwareBaseFeeTRY, hardwareBaseFeeTRY),
+        "hardwareBaseFeeUSD": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(hardwareBaseFeeUSD)] | order(sortOrder desc)[0].hardwareBaseFeeUSD, hardwareBaseFeeUSD),
+        "iotFeeTRY": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeTRY)] | order(sortOrder desc)[0].iotFeeTRY, iotFeeTRY),
+        "iotFeeUSD": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeUSD)] | order(sortOrder desc)[0].iotFeeUSD, iotFeeUSD),
         minBodyLayers,
         maxBodyLayers
       }`,

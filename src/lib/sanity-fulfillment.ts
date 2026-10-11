@@ -17,6 +17,7 @@
  * `sanityAdminClient` yazma yetkili bir token taşıyor.
  */
 import { sanityAdminClient, sanityClient } from './sanity'
+import { resolveDropState } from '@/lib/dropSchedule'
 
 type DropCapacityInfo = {
   dropId: string
@@ -87,6 +88,16 @@ export async function checkCustomDesignCapacity(
   )
   if (collectionActive === false) {
     return { ok: false, reason: 'Bu koleksiyon artık satışa açık değil.' }
+  }
+
+  // Zamanlanmış Drop henüz yayınlanmadıysa ("yakında"), doğrudan linkle
+  // tasarım ekranına gelinse bile ödeme reddedilir.
+  const dropSchedule = await sanityClient.fetch<{ active?: boolean | null; scheduledAt?: string | null } | null>(
+    `*[_type == "drop" && collection->key.current == $collectionKey][0]{ active, scheduledAt }`,
+    { collectionKey }
+  )
+  if (dropSchedule && resolveDropState(dropSchedule.active, dropSchedule.scheduledAt) === 'upcoming') {
+    return { ok: false, reason: 'Bu Drop henüz yayınlanmadı. Açılış zamanını bekleyin.' }
   }
 
   const drop = await resolveDropForCollection(collectionKey)
