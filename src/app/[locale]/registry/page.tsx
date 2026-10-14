@@ -61,10 +61,10 @@ export default async function RegistryPage({ params, searchParams }: Props) {
   return (
     <>
       {/* Mobil Custom Registry CTA banner */}
-      <div className="border-b border-bureau-black bg-bureau-black px-5 py-3 md:hidden">
+      <div className="border-b border-bureau-fixed-black bg-bureau-fixed-black px-5 py-3 dark:border-bureau-dark-line-blue dark:bg-bureau-dark-line-blue md:hidden">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/50">
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/60">
               {tr ? 'KENDİNİZ TASARLAYIN' : 'DESIGN YOUR OWN'}
             </p>
             <p className="mt-0.5 font-mono text-[11px] uppercase tracking-wider text-white">

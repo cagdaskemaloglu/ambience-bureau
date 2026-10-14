@@ -42,10 +42,10 @@ export function CategoryFilterBar({ count }: { count: number }) {
         value={activeCategory ?? ''}
         onChange={(e) => selectCategory(e.target.value === '' ? undefined : e.target.value)}
         aria-label={t('filters.category')}
-        className="border border-bureau-black bg-white px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-bureau-black transition-colors hover:border-bureau-amber focus:border-bureau-amber focus:outline-none"
+        className="surface-space-blue border border-bureau-black px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-bureau-black transition-colors dark:border-bureau-dark-line-blue dark:bg-bureau-dark-line-blue dark:text-white hover:border-bureau-amber focus:border-bureau-amber focus:outline-none"
       >
         {CATEGORIES.map(({ value, key }) => (
-          <option key={key} value={value ?? ''}>
+          <option key={key} value={value ?? ''} className="bg-white text-black dark:bg-bureau-dark-line-blue dark:text-white">
             {t(`filters.${key}` as never)}
           </option>
         ))}

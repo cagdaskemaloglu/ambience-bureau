@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocale } from 'next-intl'
 
 const RESIZER_SCRIPT_ID = 'paytr-iframe-resizer'
@@ -25,6 +25,8 @@ function initResize() {
  */
 export function PayTRPaymentForm({ token }: { token: string }) {
   const locale = useLocale()
+  // Karanlık modda PayTR formu görsel olarak koyulaştırılır (bkz. aşağıdaki not).
+  const [darkForm, setDarkForm] = useState(true)
 
   useEffect(() => {
     const existing = document.getElementById(RESIZER_SCRIPT_ID)
@@ -47,19 +49,39 @@ export function PayTRPaymentForm({ token }: { token: string }) {
   }, [token])
 
   return (
-    <div>
-      <div className="mb-4 border-b border-dashed border-bureau-rule pb-3">
+    <div className="mx-auto w-full max-w-[720px]">
+      <div className="mb-4 flex items-center justify-between gap-3 border-b border-dashed border-bureau-rule pb-3">
         <p className="font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
           {locale === 'tr'
             ? 'Güvenli ödeme sayfası yükleniyor...'
             : 'Loading secure payment page...'}
         </p>
+        {/* Sadece karanlık modda görünür: formu açık/koyu arasında çevirir. */}
+        <button
+          type="button"
+          onClick={() => setDarkForm((v) => !v)}
+          className="hidden flex-shrink-0 font-mono text-[9.5px] uppercase tracking-wider text-bureau-subtle hover:text-bureau-amber dark:block"
+        >
+          {darkForm
+            ? locale === 'tr' ? 'Açık form' : 'Light form'
+            : locale === 'tr' ? 'Koyu form' : 'Dark form'}
+        </button>
       </div>
+      {/*
+        PayTR formu KENDİ sayfası (cross-origin iframe) — içindeki renkleri
+        CSS/JS ile doğrudan değiştiremeyiz. Karanlık modda iframe'in
+        GÖRÜNÜŞÜNÜ tarayıcı filtresiyle çeviriyoruz: invert(.95) beyazı
+        site zeminiyle aynı #0D0D0D yapar, hue-rotate(180deg) mavi/turuncu
+        gibi renk tonlarını yaklaşık özgün haline döndürür. Sadece görsel —
+        formun çalışması/güvenliği etkilenmez. Okunaksız gelirse yukarıdaki
+        "Açık form" düğmesi filtreyi kapatır.
+      */}
       <iframe
         id="paytr-iframe"
         src={`https://www.paytr.com/odeme/guvenli/${token}`}
         frameBorder={0}
         scrolling="no"
+        className={darkForm ? 'dark:[filter:invert(.95)_hue-rotate(180deg)]' : ''}
         style={{ width: '100%', minHeight: 600 }}
       />
     </div>

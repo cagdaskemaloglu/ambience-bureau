@@ -246,9 +246,9 @@ export function CustomRegistryTutorial({
           görünümünü kapatmasın, hedef alan zaten daha aşağıda) */}
       <div
         style={{ position: 'fixed', zIndex: 9999 }}
-        className="top-4 left-1/2 w-[min(92vw,480px)] -translate-x-1/2 border border-bureau-black bg-white shadow-lg"
+        className="top-4 left-1/2 w-[min(92vw,480px)] -translate-x-1/2 surface-space-blue border border-bureau-black shadow-lg dark:border-bureau-dark-line-blue dark:bg-bureau-dark-line-blue"
       >
-        <div className="flex items-center justify-between border-b border-bureau-rule bg-bureau-black px-4 py-2">
+        <div className="flex items-center justify-between border-b border-bureau-rule bg-bureau-black px-4 py-2 dark:border-white/20 dark:bg-black/30">
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/70">
             FORM 300 // {locale === 'tr' ? 'OPERATÖR EĞİTİMİ' : 'OPERATOR TRAINING'}
           </span>
@@ -258,12 +258,12 @@ export function CustomRegistryTutorial({
         </div>
 
         <div className="px-4 py-3.5">
-          <p className="mb-1 font-mono text-[9.5px] uppercase tracking-wide text-bureau-amber">{title}</p>
-          <p className="mb-3 text-[13px] leading-snug text-bureau-black">{desc}</p>
+          <p className="mb-1 font-mono text-[9.5px] uppercase tracking-wide text-bureau-amber dark:text-white">{title}</p>
+          <p className="mb-3 text-[13px] leading-snug text-bureau-black dark:text-white">{desc}</p>
 
           <div className="flex items-center justify-between">
             {isFinalStep ? (
-              <div className="flex items-center gap-2 text-bureau-muted">
+              <div className="flex items-center gap-2 text-bureau-muted dark:text-white/70">
                 {isDesktop ? <MouseClickIcon /> : <TapIcon />}
                 <span className="font-mono text-[9.5px] uppercase tracking-wide">
                   {isDesktop
@@ -272,7 +272,7 @@ export function CustomRegistryTutorial({
                 </span>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-bureau-muted">
+              <div className="flex items-center gap-2 text-bureau-muted dark:text-white/70">
                 {isDesktop ? <MouseClickIcon /> : <TapIcon />}
                 <span className="font-mono text-[9.5px] uppercase tracking-wide">
                   {isDesktop
@@ -286,7 +286,7 @@ export function CustomRegistryTutorial({
               className={
                 isFinalStep
                   ? 'btn-bureau-amber text-[10px]'
-                  : 'font-mono text-[9.5px] uppercase tracking-wider text-bureau-subtle hover:text-bureau-black'
+                  : 'font-mono text-[9.5px] uppercase tracking-wider text-bureau-subtle hover:text-bureau-black dark:text-white/70 dark:hover:text-white'
               }
             >
               {isFinalStep

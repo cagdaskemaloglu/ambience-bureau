@@ -218,3 +218,19 @@
   0%, 100% { transform: translateY(3px); }
   50% { transform: translateY(2px); }
 }
+
+/* ── Karanlık modda "Space Blue" zemin (select/tutorial gibi yerlerde) ──
+   Tailwind'in `dark:bg-*` utility'si bu elemanlarda devreye girmediği için
+   düz CSS + !important ile garanti altına alındı. Aydınlık modda beyaz. */
+.surface-space-blue {
+  background-color: #ffffff;
+}
+.dark .surface-space-blue {
+  background-color: #2F5D8A !important;
+  border-color: #2F5D8A !important;
+  color: #ffffff !important;
+}
+.dark .surface-space-blue option {
+  background-color: #2F5D8A;
+  color: #ffffff;
+}

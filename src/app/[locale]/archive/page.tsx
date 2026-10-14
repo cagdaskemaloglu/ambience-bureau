@@ -49,7 +49,7 @@ export default async function ArchivePage({
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-px border border-bureau-black bg-bureau-black sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-px border border-bureau-black bg-bureau-black dark:border-bureau-dark-line-blue dark:bg-bureau-dark-line-blue sm:grid-cols-2 lg:grid-cols-3">
             {posts.map((post: any) => {
               const title = getLocalizedValue(post.title, locale, '—')
               const excerpt = getLocalizedValue(post.excerpt, locale, '')
@@ -61,7 +61,7 @@ export default async function ArchivePage({
                 <Link
                   key={post._id}
                   href={`/archive/${post.slug.current}`}
-                  className="flex flex-col bg-white p-5 no-underline transition-colors hover:bg-bureau-surface"
+                  className="flex flex-col bg-bureau-white p-5 no-underline transition-colors hover:bg-bureau-surface"
                 >
                   <div className="mb-3 flex h-40 items-center justify-center overflow-hidden bg-bureau-surface">
                     {post.coverImage ? (
@@ -111,7 +111,7 @@ export default async function ArchivePage({
             })}
             {/* Boş hücreler — grid gap'in siyah görünmemesi için */}
             {Array.from({ length: (3 - (posts.length % 3)) % 3 }).map((_, i) => (
-              <div key={`empty-${i}`} className="bg-white" />
+              <div key={`empty-${i}`} className="bg-bureau-white" />
             ))}
           </div>
         )}

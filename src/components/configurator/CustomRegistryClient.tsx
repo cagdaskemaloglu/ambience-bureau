@@ -310,7 +310,7 @@ export function CustomRegistryClient({
 
           {/* Fiyat özeti + Kaydet — scroll'un DIŞINDA, tek satır, panelin hemen altında */}
           {collectionKey && !isLoadingParts && (
-            <div className="flex-shrink-0 border-t border-bureau-black bg-white p-3">
+            <div className="flex-shrink-0 border-t border-bureau-black bg-bureau-white p-3 dark:border-bureau-dark-line-blue">
               <ConfigSummary onRegister={handleRegisterDesign} compact />
               {isSaving && (
                 <p className="mt-2 text-center font-mono text-[11px] uppercase text-bureau-muted">

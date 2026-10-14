@@ -81,7 +81,7 @@ export function ConfigSummary({
           onClick={onRegister}
           disabled={!complete}
           data-tutorial="register-design-btn"
-          className={`btn-bureau flex-shrink-0 px-5 py-1.5 text-[10px] ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
+          className={`btn-bureau flex-shrink-0 px-5 py-1.5 text-[10px] dark:border-bureau-amber dark:bg-bureau-amber dark:text-white dark:hover:bg-bureau-amber-dim dark:hover:text-white ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
         >
           {locale === 'tr' ? 'Tasarımı Kaydet' : 'Register Design'}
         </button>
@@ -212,7 +212,7 @@ export function ConfigSummary({
           onClick={onRegister}
           disabled={!complete}
           data-tutorial="register-design-btn"
-          className={`btn-bureau w-full ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
+          className={`btn-bureau w-full dark:border-bureau-amber dark:bg-bureau-amber dark:text-white dark:hover:bg-bureau-amber-dim dark:hover:text-white ${!complete ? 'cursor-not-allowed opacity-40' : ''}`}
         >
           {locale === 'tr' ? 'Tasarımı Kaydet' : 'Register Design'}
         </button>
