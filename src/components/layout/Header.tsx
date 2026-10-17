@@ -243,9 +243,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <Link
                 key={href}
                 href={href}
-                data-stickman-anchor={
-                  href === '/bureau' ? 'buro' : href === '/archive' ? 'arsiv' : undefined
-                }
                 className={`
                   font-mono text-[11px] tracking-wider uppercase no-underline
                   transition-opacity duration-150
