@@ -129,7 +129,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   return (
     <>
-      <header className="relative z-40 flex-shrink-0 border-b border-bureau-line-header bg-bureau-white">
+      <header className="relative z-40 flex-shrink-0 border-b border-bureau-fixed-black bg-bureau-white dark:border-bureau-dark-line-blue">
         <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
@@ -222,7 +222,24 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               )}
             </div>
 
-            {NAV_ITEMS.map(({ href, labelKey }) => (
+            {NAV_ITEMS.map(({ href, labelKey }) => {
+              // Büro ve Arşiv linkleri menüden KALDIRILDI (artık Footer'da).
+              // Ancak HeaderStickman animasyonu bu iki yazının konumunu
+              // referans alıyor (lambalar/masa) — bu yüzden aynı yerde,
+              // GÖRÜNMEZ birer yer tutucu bırakıyoruz.
+              if (href === '/bureau' || href === '/archive') {
+                return (
+                  <span
+                    key={href}
+                    aria-hidden="true"
+                    data-stickman-anchor={href === '/bureau' ? 'buro' : 'arsiv'}
+                    className="pointer-events-none invisible select-none font-mono text-[11px] font-semibold uppercase tracking-wider"
+                  >
+                    {t(labelKey)}
+                  </span>
+                )
+              }
+              return (
               <Link
                 key={href}
                 href={href}
@@ -237,7 +254,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               >
                 {t(labelKey)}
               </Link>
-            ))}
+              )
+            })}
           </nav>
 
           {/* Desktop right */}

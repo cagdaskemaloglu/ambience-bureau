@@ -36,7 +36,7 @@ export function CombinationCountBadge() {
   return (
     <div className="pointer-events-none absolute left-3 top-3 z-10">
       <div
-        className="border border-bureau-fixed-black bg-white/90 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-widest text-bureau-fixed-black backdrop-blur-sm"
+        className="border border-bureau-fixed-black bg-bureau-fixed-paper/90 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-widest text-bureau-fixed-black backdrop-blur-sm"
         title={
           locale === 'tr'
             ? 'Eklediğiniz gövde parçalarını yer değiştirerek veya bir kısmını çıkararak kaç farklı tasarım elde edebileceğiniz'

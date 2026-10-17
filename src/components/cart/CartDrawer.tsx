@@ -103,7 +103,7 @@ export function CartDrawer() {
     <>
       <div className="fixed inset-0 z-40 bg-black/20 backdrop-blur-[1px]" onClick={closeDrawer} />
 
-      <div ref={panelRef} className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col bg-white shadow-2xl">
+      <div ref={panelRef} className="fixed inset-y-0 right-0 z-50 flex w-full max-w-[420px] flex-col bg-bureau-white shadow-2xl">
         {/* Header */}
         <div className="flex flex-shrink-0 items-center justify-between border-b border-bureau-black px-5 py-4">
           <div>
@@ -152,7 +152,7 @@ export function CartDrawer() {
                   <button
                     onClick={handleToggleCredits}
                     className={`relative h-6 w-11 flex-shrink-0 border transition-colors ${
-                      useCredits ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
+                      useCredits ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-bureau-white'
                     }`}
                     aria-pressed={useCredits}
                   >

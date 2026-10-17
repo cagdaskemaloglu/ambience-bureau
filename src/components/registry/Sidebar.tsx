@@ -267,7 +267,7 @@ export function Sidebar({ objectCount }: { objectCount: number }) {
             onClick={() => setDrawerOpen(false)}
           />
           {/* Panel — sağdan kayar */}
-          <div className="fixed inset-y-0 right-0 z-50 w-[300px] bg-white shadow-xl md:hidden">
+          <div className="fixed inset-y-0 right-0 z-50 w-[300px] bg-bureau-white shadow-xl md:hidden">
             {/* Drawer header */}
             <div className="flex items-center justify-between border-b border-bureau-black px-5 py-4">
               <span className="font-mono text-[11px] uppercase tracking-widest">Filtreler</span>

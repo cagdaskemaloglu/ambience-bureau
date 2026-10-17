@@ -151,7 +151,37 @@ export function DropRow({
         </h2>
       </div>
 
-      <div className={`flex flex-col ${panelOnLeft ? 'md:flex-row-reverse' : 'md:flex-row'}`}>
+      <div
+        className={`group/row relative flex flex-col overflow-hidden md:bg-bureau-panel-edge ${panelOnLeft ? 'md:flex-row-reverse' : 'md:flex-row'}`}
+      >
+        {/* Masaüstü: Drop etiket panelinin zemini/glow'u TÜM satıra yayılır —
+            ürün kartlarının ARKASINDAN, kartların üst ve alt şeritlerinde
+            görünür (kartlar kendi opak zeminiyle üstte durur). Glow'un
+            merkezleri panelin durduğu (sağ/sol) kenara göre konumlanır. */}
+        <div className="pointer-events-none absolute inset-0 hidden md:block">
+          {/* AYDINLIK mod: panelin siyahı, panel genişliği (%20) boyunca düz
+              kalır, ardından ürün kartlarının arkasındaki şerit boyunca
+              beyaza geçer. Karanlık modda gizli (orada zemin zaten koyu). */}
+          <div
+            className="absolute inset-0 dark:hidden"
+            style={{
+              background: `linear-gradient(to ${panelOnLeft ? 'right' : 'left'}, #000000 0%, #000000 20%, #F7F5F0 71%, #F7F5F0 100%)`,
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-40 transition-all duration-700 ease-out group-hover/row:opacity-70"
+            style={{
+              background: `radial-gradient(circle 480px at ${panelOnLeft ? '6%' : '94%'} 25%, rgba(245,215,142,0.45), transparent 75%)`,
+            }}
+          />
+          <div
+            className="absolute inset-0 opacity-0 transition-opacity duration-700 ease-out group-hover/row:opacity-40"
+            style={{
+              background: `radial-gradient(circle 480px at ${panelOnLeft ? '15%' : '85%'} 80%, rgba(90,107,140,0.5), transparent 70%)`,
+            }}
+          />
+        </div>
+
         {/* Ürün satırı — SAĞA doğru kaydırılabilir bir slider. Sabit
             genişlikli kartlar (CARD_WIDTH) yan yana dizilir, satır
             dolduğunda `overflow-x-auto` ile kaydırma devreye girer.
@@ -160,13 +190,13 @@ export function DropRow({
             butonları da çalışır. snap-x sayesinde kartlar hizalı
             "yakalanır". Kaydırma çubuğu görsel gürültü yaratmasın diye
             gizlendi. */}
-        <div className="relative md:w-4/5">
+        <div className="relative z-10 md:w-4/5">
           <div
             ref={scrollRef}
             className="flex items-start gap-3 overflow-x-auto px-5 py-6 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden md:px-9"
           >
             {drop.products.map((product) => (
-              <div key={product._id} style={{ width: CARD_WIDTH, flexShrink: 0 }} className="snap-start">
+              <div key={product._id} style={{ width: CARD_WIDTH, flexShrink: 0 }} className="snap-start bg-bureau-white">
                 <ProductCard product={product} mediaAspectClassName={CARD_MEDIA_ASPECT} compact />
               </div>
             ))}
@@ -195,7 +225,7 @@ export function DropRow({
 
         {/* Siyah Drop etiket paneli — `group` + stretch sayesinde ürün
             satırıyla AYNI yükseklikte olur, içeriği ortalanır. */}
-        <div className="group relative flex w-full flex-shrink-0 flex-col items-center justify-center overflow-hidden border-t border-bureau-panel-edge bg-bureau-panel-edge p-6 text-center text-white md:w-1/5 md:border-t-0 md:border-l md:border-r-0">
+        <div className="group relative flex w-full flex-shrink-0 flex-col items-center justify-center z-10 overflow-hidden border-t border-bureau-panel-edge bg-bureau-panel-edge p-6 text-center text-white md:w-1/5 md:border-t-0 md:bg-transparent">
           {/* Düz siyahı kıran, hover'da hafifçe canlanan iki glow katmanı —
               biri sıcak/amber (sol-üst), biri soğuk/loş (sağ-alt), panelin
               KENDİ kutusuna göre sabit yüzdelerle konumlanıyor. Panel sayfada
@@ -208,7 +238,7 @@ export function DropRow({
               aynalıyoruz — böylece panel hangi tarafta olursa olsun sıcak
               glow hep dış kenarda kalıyor. */}
           <div
-            className={`pointer-events-none absolute inset-0 ${panelOnLeft ? '' : '[transform:scaleX(-1)]'}`}
+            className={`pointer-events-none absolute inset-0 md:hidden ${panelOnLeft ? '' : '[transform:scaleX(-1)]'}`}
           >
             <div
               className="absolute inset-0 opacity-40 transition-all duration-700 ease-out group-hover:scale-110 group-hover:opacity-70"

@@ -171,7 +171,7 @@ export function ConfigSummary({
               <button
                 onClick={toggleIot}
                 className={`relative h-4 w-7 flex-shrink-0 border transition-colors ${
-                  iotEnabled ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
+                  iotEnabled ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-bureau-white'
                 }`}
                 aria-pressed={iotEnabled}
                 aria-label={locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}

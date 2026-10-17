@@ -57,6 +57,21 @@ export function Footer() {
           {/* Sol sütun: Teslimat ve İade / Mesafeli Satış Sözleşmesi.
               Sağ sütun: Gizlilik Politikası / Kullanım Koşulları. */}
           <div className="flex gap-4">
+            {/* Arşiv / Büro — artık header menüsünde değil, burada. */}
+            <div className="flex flex-col gap-1">
+              <Link
+                href="/archive"
+                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+              >
+                {tr ? 'Arşiv' : 'Archive'}
+              </Link>
+              <Link
+                href="/bureau"
+                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+              >
+                {tr ? 'Büro' : 'Bureau'}
+              </Link>
+            </div>
             <div className="flex flex-col gap-1">
               <Link
                 href="/shipping-returns"

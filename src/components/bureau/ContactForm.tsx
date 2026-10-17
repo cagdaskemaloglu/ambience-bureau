@@ -89,7 +89,7 @@ export function ContactForm() {
             value={form.name}
             onChange={handleChange}
             required
-            className="w-full border border-bureau-black bg-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber"
+            className="w-full border border-bureau-black bg-bureau-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber"
           />
         </div>
         <div>
@@ -102,7 +102,7 @@ export function ContactForm() {
             value={form.email}
             onChange={handleChange}
             required
-            className="w-full border border-bureau-black bg-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber"
+            className="w-full border border-bureau-black bg-bureau-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber"
           />
         </div>
       </div>
@@ -117,7 +117,7 @@ export function ContactForm() {
           name="subject"
           value={form.subject}
           onChange={handleChange}
-          className="w-full border border-bureau-black bg-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber"
+          className="w-full border border-bureau-black bg-bureau-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber"
         />
       </div>
 
@@ -132,7 +132,7 @@ export function ContactForm() {
           onChange={handleChange}
           required
           rows={5}
-          className="w-full border border-bureau-black bg-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber resize-none"
+          className="w-full border border-bureau-black bg-bureau-white px-3 py-2.5 font-mono text-[12px] outline-none transition-colors focus:border-bureau-amber resize-none"
         />
       </div>
 

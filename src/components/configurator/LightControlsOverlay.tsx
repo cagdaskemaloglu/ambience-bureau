@@ -25,7 +25,7 @@ export function LightControlsOverlay() {
 
   return (
     <div className="pointer-events-none absolute left-3 top-3 z-10 w-[160px]">
-      <div className="pointer-events-auto border border-bureau-black bg-white/90 p-2.5 backdrop-blur-sm">
+      <div className="pointer-events-auto border border-bureau-black bg-bureau-fixed-paper/90 p-2.5 backdrop-blur-sm">
         {/* Header row */}
         <div className="mb-2 flex items-center justify-between">
           <span className="font-mono text-[9px] uppercase tracking-widest text-bureau-muted">

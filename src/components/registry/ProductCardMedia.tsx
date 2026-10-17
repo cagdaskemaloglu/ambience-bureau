@@ -163,7 +163,7 @@ export function ProductCardMedia({
         <button
           onClick={handleToggle}
           aria-label={view === 'photo' ? '3D' : 'Photo'}
-          className="absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center border border-bureau-black bg-white/90 text-bureau-muted backdrop-blur-sm transition-colors hover:border-bureau-amber hover:text-bureau-amber"
+          className="absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center border border-bureau-black bg-bureau-fixed-paper/90 text-bureau-muted backdrop-blur-sm transition-colors hover:border-bureau-amber hover:text-bureau-amber"
         >
           {view === 'photo' ? (
             // Küp/3D ikonu — tıklanınca 3D dönüşe geçer
@@ -203,7 +203,7 @@ export function ProductCardMedia({
             <polyline points="3,15 7,7 11,15" fill="none" stroke="#5A6B8C" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
             <polyline points="3,85 7,93 11,85" fill="none" stroke="#5A6B8C" strokeWidth="1.4" vectorEffect="non-scaling-stroke" />
           </svg>
-          <span className="whitespace-nowrap border border-bureau-black/30 bg-white/85 px-1 py-0.5 font-mono text-[8px] tracking-wide text-bureau-muted backdrop-blur-sm">
+          <span className="whitespace-nowrap border border-bureau-black/30 bg-bureau-fixed-paper/85 px-1 py-0.5 font-mono text-[8px] tracking-wide text-bureau-muted backdrop-blur-sm">
             {Math.round(heightMm!)} mm
           </span>
         </div>

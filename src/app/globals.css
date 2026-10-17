@@ -12,13 +12,13 @@
        tailwind.config.ts'te bunu `rgb(var(--bureau-x) / <alpha-value>)`
        kalıbıyla sarıp opacity modifier'larını (bg-bureau-amber/5 gibi)
        destekliyor. Aşağıdakiler AYDINLIK (varsayılan) değerler. */
-    --bureau-white: 255 255 255;
+    --bureau-white: 247 245 240;   /* #F7F5F0 — kırık beyaz */
     --bureau-black: 0 0 0;
     --bureau-ink: 10 10 10;
     --bureau-muted: 102 102 102;
     --bureau-subtle: 153 153 153;
-    --bureau-rule: 224 224 224;
-    --bureau-surface: 250 250 250;
+    --bureau-rule: 222 219 212;
+    --bureau-surface: 239 236 230;
     --bureau-amber: 230 121 46;
     --bureau-amber-dim: 184 94 32;
 
@@ -26,7 +26,7 @@
        Işıkta bu üç değişken, sitedeki karşılığı olan sabit rengin AYNISI
        — yani aydınlık modda görsel hiçbir değişiklik yok. */
     --bureau-line-header: 47 93 138;   /* #2F5D8A — "Space Blue" — artık ışıkta da aynı */
-    --bureau-line-dashed: 224 224 224; /* Drop isminin altındaki kesikli çizgi — ışıkta açık gri */
+    --bureau-line-dashed: 222 219 212; /* Drop isminin altındaki kesikli çizgi — ışıkta açık gri */
     --bureau-panel-edge: 0 0 0;        /* Drop panelinin kenarı/zemini — ışıkta siyah */
   }
 
@@ -223,7 +223,7 @@
    Tailwind'in `dark:bg-*` utility'si bu elemanlarda devreye girmediği için
    düz CSS + !important ile garanti altına alındı. Aydınlık modda beyaz. */
 .surface-space-blue {
-  background-color: #ffffff;
+  background-color: #F7F5F0;
 }
 .dark .surface-space-blue {
   background-color: #2F5D8A !important;

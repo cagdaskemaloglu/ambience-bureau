@@ -45,7 +45,7 @@ export function CategoryFilterBar({ count }: { count: number }) {
         className="surface-space-blue border border-bureau-black px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-bureau-black transition-colors dark:border-bureau-dark-line-blue dark:bg-bureau-dark-line-blue dark:text-white hover:border-bureau-amber focus:border-bureau-amber focus:outline-none"
       >
         {CATEGORIES.map(({ value, key }) => (
-          <option key={key} value={value ?? ''} className="bg-white text-black dark:bg-bureau-dark-line-blue dark:text-white">
+          <option key={key} value={value ?? ''} className="bg-bureau-fixed-paper text-black dark:bg-bureau-dark-line-blue dark:text-white">
             {t(`filters.${key}` as never)}
           </option>
         ))}

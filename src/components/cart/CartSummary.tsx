@@ -106,7 +106,7 @@ export function CartSummary() {
               <button
                 onClick={handleToggleCredits}
                 className={`relative h-6 w-11 flex-shrink-0 border transition-colors ${
-                  useCredits ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-white'
+                  useCredits ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-bureau-white'
                 }`}
                 aria-pressed={useCredits}
               >

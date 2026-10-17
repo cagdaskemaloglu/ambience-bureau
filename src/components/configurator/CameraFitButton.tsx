@@ -20,7 +20,7 @@ export function CameraFitButton() {
     <div className="pointer-events-none absolute right-3 top-3 z-10">
       <button
         onClick={requestCameraFit}
-        className="pointer-events-auto flex items-center gap-1.5 border border-bureau-black bg-white/90 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-widest text-bureau-muted backdrop-blur-sm transition-colors hover:border-bureau-amber hover:text-bureau-amber"
+        className="pointer-events-auto flex items-center gap-1.5 border border-bureau-black bg-bureau-fixed-paper/90 px-2.5 py-1.5 font-mono text-[9px] uppercase tracking-widest text-bureau-muted backdrop-blur-sm transition-colors hover:border-bureau-amber hover:text-bureau-amber"
         title={locale === 'tr' ? 'Kamerayı Sığdır' : 'Fit Camera'}
       >
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

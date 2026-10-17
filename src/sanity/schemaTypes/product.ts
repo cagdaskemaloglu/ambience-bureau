@@ -156,6 +156,15 @@ export const productSchema = defineType({
       to: [{ type: 'drop' }],
     }),
 
+    defineField({
+      name: 'priority',
+      title: 'Öncelik (Priority)',
+      description:
+        'Anasayfadaki Drop satırında ürünlerin SIRASINI belirler. KÜÇÜK sayı önce gelir (1 en başta). Boş bırakılanlar en sona gider; aynı önceliğe sahip ürünler Registry numarasına göre sıralanır.',
+      type: 'number',
+      validation: (R) => R.integer().min(0),
+    }),
+
     // ── Fiyat ────────────────────────────────────────────
     // İki para birimi de elle girilir (otomatik kur çevrimi kullanılmıyor).
     // Görüntülemede dil/locale'e göre ilgili alan seçilir.

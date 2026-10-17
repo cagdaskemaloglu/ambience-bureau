@@ -262,7 +262,7 @@ export async function getAllDropsWithProducts() {
       // - soldCount). SADECE "owned" sayılıyor, Drop'a elle eklenmiş
       // standart (satışa açık) ürünler stoktan düşmüyor.
       "soldCount": count(*[_type == "product" && references(^._id) && status == "owned"]),
-      "products": *[_type == "product" && active != false && references(^._id)] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
+      "products": *[_type == "product" && active != false && references(^._id)] | order(coalesce(priority, 999999) asc, registryNo asc) {${PRODUCT_CARD_FRAGMENT}}
     }`,
     {},
     { next: { tags: ['drops', 'products'] } }
