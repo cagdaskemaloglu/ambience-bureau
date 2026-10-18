@@ -10,7 +10,7 @@ export function Footer() {
   const tr = locale === 'tr'
 
   return (
-    <footer className="hidden border-t border-bureau-line-header sm:block">
+    <footer className="hidden border-t border-bureau-line-header dark:border-black sm:block">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-10 py-3">
         {/* Sol: telif + marka */}
         <span className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase">

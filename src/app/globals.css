@@ -54,7 +54,7 @@
        altındaki KESİKLİ çizgi → Space Gray. Drop panelinin kenarı/zemini
        → sayfanın kendi koyu-mod arka planıyla (--bureau-white'ın burdaki
        değeriyle) birebir aynı, panel sayfayla kaynaşsın diye. */
-    --bureau-line-header: 47 93 138;   /* #2F5D8A — "Space Blue" */
+    --bureau-line-header: 0 0 0;       /* KARANLIKTA da siyah kalır (Space Blue DEĞİL) */
     --bureau-line-dashed: 83 81 80;    /* #535150 — "Space Gray" */
     --bureau-panel-edge: 13 13 13;
   }
@@ -66,6 +66,47 @@
     -moz-osx-font-smoothing: grayscale;
     /* Mod değişince renkler ani değil, yumuşak geçsin. */
     transition: background-color 150ms ease, color 150ms ease;
+  }
+
+  /* Header'daki "THE AMBIENCE BUREAU" yazısı — Drop panelinin arka planı gibi.
+     AYDINLIK: panelin HOVER'lı hali (siyah zemin + sıcak amber glow, soldan sağa
+     kararır). KARANLIK: panelin düz hali birebir kullanılınca koyu header'da
+     okunmaz (çok koyu), bu yüzden aynı sıcak glow, açık yazı rengi üzerine
+     uygulanır. */
+  .brand-glow-text {
+    /* Gradient, kendi genişliğinin 2 katı; ilk ve son renk aynı olduğu için
+       kayarken dikişsiz döner — "hover" renk geçişi kendiliğinden akar. */
+    background-image: linear-gradient(
+      100deg,
+      rgb(77, 68, 45) 0%,
+      rgb(20, 20, 20) 30%,
+      rgb(18, 21, 28) 50%,
+      rgb(20, 20, 20) 70%,
+      rgb(77, 68, 45) 100%
+    );
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    animation: brand-glow-shift 8s linear infinite;
+  }
+  .dark .brand-glow-text {
+    background-image: linear-gradient(
+      100deg,
+      rgb(245, 215, 142) 0%,
+      rgb(242, 242, 242) 30%,
+      rgb(190, 200, 220) 50%,
+      rgb(242, 242, 242) 70%,
+      rgb(245, 215, 142) 100%
+    );
+  }
+  @keyframes brand-glow-shift {
+    from { background-position: 0% 0; }
+    to   { background-position: 200% 0; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .brand-glow-text { animation: none; }
   }
 
   /* Thin 1px borders throughout */

@@ -129,7 +129,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   return (
     <>
-      <header className="relative z-40 flex-shrink-0 border-b border-bureau-fixed-black bg-bureau-white dark:border-bureau-dark-line-blue">
+      <header className="relative z-40 flex-shrink-0 border-b border-bureau-fixed-black bg-bureau-white dark:border-black">
         <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
@@ -140,7 +140,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             onClick={() => setMenuOpen(false)}
           >
             <div
-              className="text-lg font-black tracking-[0.12em] uppercase text-bureau-black sm:text-xl"
+              className="brand-glow-text text-lg font-black tracking-[0.12em] uppercase sm:text-xl"
               style={{ paddingLeft: '0.65em' }}
             >
               THE AMBIENCE <span data-stickman-anchor="bureau-word">BUREAU</span>

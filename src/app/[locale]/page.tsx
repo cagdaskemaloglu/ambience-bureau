@@ -37,14 +37,14 @@ export default async function HomePage({ params }: Props) {
 
   if (visibleDrops.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center border-t border-bureau-line-header">
+      <div className="flex h-64 items-center justify-center border-t border-bureau-line-header dark:border-black">
         <p className="font-mono text-[12px] uppercase tracking-wide text-bureau-muted">{t('noDrops')}</p>
       </div>
     )
   }
 
   return (
-    <div className="border-t border-bureau-line-header">
+    <div className="border-t border-bureau-line-header dark:border-black">
       {visibleDrops.map((drop, i) => {
         const prevDrop = i > 0 ? visibleDrops[i - 1] : null
         const nextDrop = i < visibleDrops.length - 1 ? visibleDrops[i + 1] : null
