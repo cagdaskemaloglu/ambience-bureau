@@ -61,6 +61,7 @@ const config: Config = {
       fontFamily: {
         sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
         mono: ['var(--font-jetbrains)', 'JetBrains Mono', 'monospace'],
+        nav: ['var(--font-plex)', 'IBM Plex Sans', 'system-ui', 'sans-serif'],
       },
       letterSpacing: {
         bureau:   '0.08em',

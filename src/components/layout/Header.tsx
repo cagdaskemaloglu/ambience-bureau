@@ -154,7 +154,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <div
                 className={`
                   flex items-center border border-bureau-black
-                  font-mono text-[11px] tracking-wider uppercase
+                  font-nav text-[12px] tracking-wider uppercase
                   transition-colors duration-150
                   ${isActive('/custom-registry')
                     ? 'bg-bureau-black text-bureau-white'
@@ -199,7 +199,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               {desktopDropdownOpen && collections.length > 0 && (
                 <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[260px] border border-bureau-black bg-bureau-white shadow-lg">
                   <div className="border-b border-bureau-rule px-3.5 py-2">
-                    <span className="font-mono text-[9.5px] uppercase tracking-widest text-bureau-muted">
+                    <span className="font-nav text-[9.5px] uppercase tracking-widest text-bureau-muted">
                       {locale === 'tr' ? 'Koleksiyonlar' : 'Collections'}
                     </span>
                   </div>
@@ -211,7 +211,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                         <button
                           key={collection._id}
                           onClick={() => goToCollection(key)}
-                          className="block w-full px-3.5 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-surface hover:text-bureau-amber"
+                          className="block w-full px-3.5 py-2 text-left font-nav text-[12px] uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-surface hover:text-bureau-amber"
                         >
                           {name}
                         </button>
@@ -233,7 +233,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                     key={href}
                     aria-hidden="true"
                     data-stickman-anchor={href === '/bureau' ? 'buro' : 'arsiv'}
-                    className="pointer-events-none invisible select-none font-mono text-[11px] font-semibold uppercase tracking-wider"
+                    className="pointer-events-none invisible select-none font-nav text-[12px] font-semibold uppercase tracking-wider"
                   >
                     {t(labelKey)}
                   </span>
@@ -244,7 +244,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 key={href}
                 href={href}
                 className={`
-                  font-mono text-[11px] tracking-wider uppercase no-underline
+                  font-nav text-[12px] tracking-wider uppercase no-underline
                   transition-opacity duration-150
                   ${isActive(href) ? 'text-bureau-black font-bold' : 'text-bureau-black font-semibold opacity-70 hover:opacity-100'}
                 `}
@@ -260,7 +260,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             <ThemeToggle locale={locale} />
             <button
               onClick={switchLocale}
-              className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors"
+              className="font-nav text-[11px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors"
               aria-label={`Switch to ${otherLocale.toUpperCase()}`}
             >
               <span className={locale === 'tr' ? 'text-bureau-black font-semibold' : 'opacity-50'}>TR</span>
@@ -272,7 +272,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 <div className="flex items-center gap-1">
                   <Link
                     href="/account"
-                    className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
+                    className="font-nav text-[11px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
                   >
                     {locale === 'tr' ? 'Sicilim' : 'My Registry'}
                   </Link>
@@ -301,7 +301,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                         key={tab.href}
                         href={tab.href}
                         onClick={() => setAccountDropdownOpen(false)}
-                        className="block w-full px-3.5 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-bureau-black no-underline transition-colors hover:bg-bureau-surface hover:text-bureau-amber"
+                        className="block w-full px-3.5 py-2 text-left font-nav text-[12px] uppercase tracking-wide text-bureau-black no-underline transition-colors hover:bg-bureau-surface hover:text-bureau-amber"
                       >
                         {locale === 'tr' ? tab.labelTr : tab.labelEn}
                       </Link>
@@ -309,7 +309,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                     <button
                       onClick={handleSignOut}
                       disabled={signingOut}
-                      className="block w-full border-t border-bureau-rule px-3.5 py-2 text-left font-mono text-[11px] uppercase tracking-wide text-red-600 transition-colors hover:bg-bureau-surface disabled:opacity-50"
+                      className="block w-full border-t border-bureau-rule px-3.5 py-2 text-left font-nav text-[12px] uppercase tracking-wide text-red-600 transition-colors hover:bg-bureau-surface disabled:opacity-50"
                     >
                       {signingOut ? '...' : (locale === 'tr' ? 'Çıkış Yap' : 'Sign Out')}
                     </button>
@@ -320,13 +320,13 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <div className="flex items-center gap-4">
                 <Link
                   href="/auth/login"
-                  className="font-mono text-[10px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
+                  className="font-nav text-[11px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors no-underline"
                 >
                   {locale === 'tr' ? 'Giriş' : 'Sign In'}
                 </Link>
                 <Link
                   href="/auth/signup"
-                  className="border border-bureau-black px-2.5 py-1 font-mono text-[10px] font-semibold tracking-wider uppercase text-bureau-black transition-colors hover:bg-bureau-black hover:text-bureau-white no-underline"
+                  className="border border-bureau-black px-2.5 py-1 font-nav text-[11px] font-semibold tracking-wider uppercase text-bureau-black transition-colors hover:bg-bureau-black hover:text-bureau-white no-underline"
                 >
                   {locale === 'tr' ? 'Kayıt Ol' : 'Register'}
                 </Link>
@@ -334,7 +334,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             )}
             <Link
               href="/cart"
-              className="border-l border-bureau-black pl-6 font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline hover:text-bureau-amber transition-colors"
+              className="border-l border-bureau-black pl-6 font-nav text-[12px] tracking-wider uppercase text-bureau-black no-underline hover:text-bureau-amber transition-colors"
             >
               {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
             </Link>
@@ -345,7 +345,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             <ThemeToggle locale={locale} />
             <Link
               href="/cart"
-              className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
+              className="font-nav text-[12px] tracking-wider uppercase text-bureau-black no-underline"
               onClick={() => setMenuOpen(false)}
             >
               {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
@@ -401,7 +401,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 <Link
                   href="/custom-registry"
                   onClick={() => setMenuOpen(false)}
-                  className={`flex flex-1 items-center gap-3 px-5 py-5 font-mono text-[12px] font-semibold tracking-wider uppercase no-underline ${
+                  className={`flex flex-1 items-center gap-3 px-5 py-5 font-nav text-[12px] font-semibold tracking-wider uppercase no-underline ${
                     isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'
                   }`}
                 >
@@ -431,7 +431,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                       <button
                         key={collection._id}
                         onClick={() => goToCollection(key)}
-                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black hover:text-bureau-amber"
+                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-nav text-[11.5px] uppercase tracking-wide text-bureau-black hover:text-bureau-amber"
                       >
                         {name}
                       </button>
@@ -448,7 +448,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                   <Link
                     href="/account"
                     onClick={() => setMenuOpen(false)}
-                    className="flex flex-1 items-center px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-black"
+                    className="flex flex-1 items-center px-5 py-5 font-nav text-[12px] tracking-wider uppercase no-underline text-bureau-black"
                   >
                     {locale === 'tr' ? 'Sicilim' : 'My Registry'}
                   </Link>
@@ -471,7 +471,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                         key={tab.href}
                         href={tab.href}
                         onClick={() => { setMenuOpen(false); setAccountMobileSubOpen(false) }}
-                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-bureau-black no-underline hover:text-bureau-amber"
+                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-nav text-[11.5px] uppercase tracking-wide text-bureau-black no-underline hover:text-bureau-amber"
                       >
                         {locale === 'tr' ? tab.labelTr : tab.labelEn}
                       </Link>
@@ -479,7 +479,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                     <button
                       onClick={handleSignOut}
                       disabled={signingOut}
-                      className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-mono text-[11.5px] uppercase tracking-wide text-red-600 disabled:opacity-50"
+                      className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-nav text-[11.5px] uppercase tracking-wide text-red-600 disabled:opacity-50"
                     >
                       {signingOut ? '...' : (locale === 'tr' ? 'Çıkış Yap' : 'Sign Out')}
                     </button>
@@ -491,14 +491,14 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 <Link
                   href="/auth/login"
                   onClick={() => setMenuOpen(false)}
-                  className="block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-black"
+                  className="block px-5 py-5 font-nav text-[12px] tracking-wider uppercase no-underline text-bureau-black"
                 >
                   {locale === 'tr' ? 'Giriş Yap' : 'Sign In'}
                 </Link>
                 <Link
                   href="/auth/signup"
                   onClick={() => setMenuOpen(false)}
-                  className="block px-5 py-5 font-mono text-[12px] tracking-wider uppercase no-underline text-bureau-amber"
+                  className="block px-5 py-5 font-nav text-[12px] tracking-wider uppercase no-underline text-bureau-amber"
                 >
                   {locale === 'tr' ? 'Kayıt Ol' : 'Register'}
                 </Link>
@@ -510,7 +510,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 key={href}
                 href={href}
                 onClick={() => setMenuOpen(false)}
-                className={`block px-5 py-5 font-mono text-[12px] font-semibold tracking-wider uppercase no-underline transition-colors ${
+                className={`block px-5 py-5 font-nav text-[12px] font-semibold tracking-wider uppercase no-underline transition-colors ${
                   isActive(href) ? 'text-bureau-amber font-bold' : 'text-bureau-black'
                 }`}
               >
@@ -523,7 +523,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
           <div className="flex items-center justify-between border-t border-bureau-black px-5 py-5">
             <button
               onClick={switchLocale}
-              className="font-mono text-[11px] tracking-wider uppercase text-bureau-muted"
+              className="font-nav text-[12px] tracking-wider uppercase text-bureau-muted"
             >
               <span className={locale === 'tr' ? 'text-bureau-black font-semibold' : 'opacity-50'}>TR</span>
               <span className="mx-1 opacity-30">/</span>
@@ -532,7 +532,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             <Link
               href="/cart"
               onClick={() => setMenuOpen(false)}
-              className="font-mono text-[11px] tracking-wider uppercase text-bureau-black no-underline"
+              className="font-nav text-[12px] tracking-wider uppercase text-bureau-black no-underline"
             >
               {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
             </Link>

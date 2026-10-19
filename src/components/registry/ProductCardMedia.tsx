@@ -163,7 +163,7 @@ export function ProductCardMedia({
         <button
           onClick={handleToggle}
           aria-label={view === 'photo' ? '3D' : 'Photo'}
-          className="absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center border border-bureau-black bg-bureau-fixed-paper/90 text-bureau-muted backdrop-blur-sm transition-colors hover:border-bureau-amber hover:text-bureau-amber"
+          className="absolute left-1.5 top-1.5 z-10 flex h-6 w-6 items-center justify-center border border-bureau-black bg-bureau-fixed-paper/90 text-bureau-muted backdrop-blur-sm transition-colors hover:border-bureau-amber hover:text-bureau-amber dark:!border-bureau-fixed-amber dark:!bg-bureau-fixed-amber dark:!text-white dark:hover:!border-[#2F5D8A] dark:hover:!bg-[#2F5D8A]"
         >
           {view === 'photo' ? (
             // Küp/3D ikonu — tıklanınca 3D dönüşe geçer

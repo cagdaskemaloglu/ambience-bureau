@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Inter, JetBrains_Mono, IBM_Plex_Sans } from 'next/font/google'
 import { headers } from 'next/headers'
 import './globals.css'
 import { ThemeProvider } from '@/components/theme/ThemeProvider'
@@ -8,17 +8,13 @@ import { ThemeProvider } from '@/components/theme/ThemeProvider'
 // çalışması gereken script — aksi halde sayfa bir anlığına yanlış temayla
 // (ör. localStorage karanlık dese bile beyaz arka planla) çizilip hemen
 // ardından karanlığa döner ("flaş"). ThemeProvider.tsx'teki
-// resolveInitialTheme()/isNightTime() ile BİREBİR AYNI mantığı izler; ikisi
-// birbirinden bağımsız güncellenmemeli. Kullanıcı elle bir tema seçmediyse
-// (localStorage boşsa) saat 18:00–06:00 arasında karanlık mod varsayılan
-// olarak açılır.
+// resolveInitialTheme() ile BİREBİR AYNI mantığı izler; ikisi
+// birbirinden bağımsız güncellenmemeli.
 const THEME_INIT_SCRIPT = `
 (function () {
   try {
     var stored = localStorage.getItem('ambience-bureau-theme');
-    var hour = new Date().getHours();
-    var isNight = hour >= 18 || hour < 6;
-    var isDark = stored === 'dark' || (stored !== 'light' && isNight);
+    var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
     if (isDark) document.documentElement.classList.add('dark');
   } catch (e) {}
 })();
@@ -33,6 +29,15 @@ const inter = Inter({
 const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   variable: '--font-jetbrains',
+  display: 'swap',
+})
+
+// Header menüsü için: kurumsal/bürokratik kimliğe uygun, sade ve okunaklı
+// bir grotesk. Türkçe karakterler (ğ, ş, İ, ı) için latin-ext şart.
+const plexSans = IBM_Plex_Sans({
+  subsets: ['latin', 'latin-ext'],
+  weight: ['400', '500', '600'],
+  variable: '--font-plex',
   display: 'swap',
 })
 
@@ -70,7 +75,7 @@ export default async function RootLayout({
     <html
       lang={lang}
       suppressHydrationWarning
-      className={`${inter.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${plexSans.variable}`}
     >
       <head>
         {/* eslint-disable-next-line react/no-danger */}
