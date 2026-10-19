@@ -5,12 +5,14 @@ import { useThree } from '@react-three/fiber'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { distanceForHeight, positionCamera, DEFAULT_TARGET_Y } from './CameraFit'
 
+const SPIN_CAMERA_DISTANCE_FACTOR = 1.3
+
 declare global {
   interface Window {
     __spinCapture?: {
       setAngle: (azimuthDeg: number) => Promise<void>
       captureFrame: () => string
-      getMetrics: () => { partCount: number; totalHeight: number }
+      getMetrics: () => { partCount: number; totalHeight: number; displayHeight: number }
     }
   }
 }
@@ -32,6 +34,9 @@ export function SpinCaptureHook() {
   const { camera, controls, gl } = useThree()
   const stackTotalHeight = useConfiguratorStore((s) => s.stackTotalHeight)
   const stackPartCount = useConfiguratorStore((s) => s.stackPartCount)
+  // 3D viewer'daki BOY etiketinin gösterdiği değer (Sanity Dimensions mm) —
+  // kart rozeti de aynısını göstermeli.
+  const displayHeight = useConfiguratorStore((s) => s.displayHeight)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -48,7 +53,8 @@ export function SpinCaptureHook() {
     window.__spinCapture = {
       setAngle: (azimuthDeg: number) =>
         new Promise<void>((resolve) => {
-          const distance = distanceForHeight(stackTotalHeight)
+          // Spin kareleri için kamera normalden %30 daha uzakta.
+          const distance = distanceForHeight(stackTotalHeight) * SPIN_CAMERA_DISTANCE_FACTOR
           const targetY = stackTotalHeight > 0 ? stackTotalHeight / 2 : DEFAULT_TARGET_Y
           // @ts-expect-error - drei'nin OrbitControls tipi eksik olabilir
           positionCamera(camera, controls, distance, targetY, azimuthDeg)
@@ -57,13 +63,13 @@ export function SpinCaptureHook() {
           requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
         }),
       captureFrame: () => gl.domElement.toDataURL('image/webp', 0.98),
-      getMetrics: () => ({ partCount: stackPartCount, totalHeight: stackTotalHeight }),
+      getMetrics: () => ({ partCount: stackPartCount, totalHeight: stackTotalHeight, displayHeight }),
     }
 
     return () => {
       delete window.__spinCapture
     }
-  }, [camera, controls, gl, stackTotalHeight, stackPartCount])
+  }, [camera, controls, gl, stackTotalHeight, stackPartCount, displayHeight])
 
   return null
 }

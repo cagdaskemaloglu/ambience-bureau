@@ -14,7 +14,7 @@ const THEME_INIT_SCRIPT = `
 (function () {
   try {
     var stored = localStorage.getItem('ambience-bureau-theme');
-    var isDark = stored === 'dark' || (stored !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    var isDark = stored !== 'light'; // varsayılan: karanlık (sistem temasına bakılmaz)
     if (isDark) document.documentElement.classList.add('dark');
   } catch (e) {}
 })();

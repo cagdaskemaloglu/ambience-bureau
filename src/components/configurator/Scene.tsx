@@ -74,10 +74,10 @@ function SceneLights({ isCaptureMode = false }: { isCaptureMode?: boolean }) {
     // (aşağıdaki else dalı) hiçbir şey değişmedi.
     return (
       <>
-        <ambientLight intensity={0.65} />
+        <ambientLight intensity={0.2275} />
         <directionalLight
           position={[120, 200, 100]}
-          intensity={0.85}
+          intensity={0.2975}
           castShadow
           shadow-mapSize-width={shadowMapSize}
           shadow-mapSize-height={shadowMapSize}
@@ -90,7 +90,7 @@ function SceneLights({ isCaptureMode = false }: { isCaptureMode?: boolean }) {
           shadow-bias={-0.0005}
           shadow-normalBias={0.02}
         />
-        <directionalLight position={[-120, 160, -100]} intensity={0.7} />
+        <directionalLight position={[-120, 160, -100]} intensity={0.245} />
       </>
     )
   }
@@ -154,7 +154,7 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
         <TechnicalGrid />
 
         <Suspense fallback={null}>
-          <Environment preset="studio" environmentIntensity={0.6} resolution={isCaptureMode ? 1536 : 256} />
+          <Environment preset="studio" environmentIntensity={isCaptureMode ? 0.21 : 0.6} resolution={isCaptureMode ? 1536 : 256} />
           <ContactShadows
             position={[0, 0, 0]}
             opacity={0.3}

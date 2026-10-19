@@ -6,8 +6,9 @@ import { urlFor } from '@/lib/sanity'
 import { SPIN_FRAME_COUNT, getSpinFrameUrl, getSpinMetaUrl } from '@/lib/spinFrames'
 import type { SanityImage } from '@/types'
 
-// "Yavaş, sakin" bir dönüş hissi için: 24 kare × 190ms ≈ tur başına 4.6sn.
-const ROTATE_INTERVAL_MS = 190
+// "Yavaş, sakin" bir dönüş hissi için: 24 kare × 380ms ≈ tur başına 9.1sn
+// (önceki 190ms'ye göre %50 daha yavaş).
+const ROTATE_INTERVAL_MS = 380
 // Kart tam görünür olmadan biraz önce (kullanıcı aşağı kaydırırken) kare
 // yüklemeye başlasın diye viewport'a küçük bir pay ekliyoruz.
 const VIEWPORT_ROOT_MARGIN = '200px'

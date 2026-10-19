@@ -95,11 +95,11 @@ async function ensureBucket(): Promise<void> {
 async function waitForStableMetrics(
   page: Page,
   timeoutMs = 20000
-): Promise<{ partCount: number; totalHeight: number }> {
+): Promise<{ partCount: number; totalHeight: number; displayHeight: number }> {
   const start = Date.now()
   let lastSnapshot = ''
   let stableCount = 0
-  let lastMetrics: { partCount: number; totalHeight: number } | null = null
+  let lastMetrics: { partCount: number; totalHeight: number; displayHeight: number } | null = null
 
   while (Date.now() - start < timeoutMs) {
     const metrics = await page.evaluate(() => {
@@ -136,7 +136,10 @@ async function captureProduct(browser: Browser, baseUrl: string, slug: string): 
     await page.goto(url, { waitUntil: 'networkidle0', timeout: 30000 })
 
     await page.waitForFunction(() => !!(window as any).__spinCapture, { timeout: 15000 })
-    const { totalHeight } = await waitForStableMetrics(page)
+    const { totalHeight: geomHeight, displayHeight } = await waitForStableMetrics(page)
+    // Boy rozeti, 3D viewer'daki BOY etiketiyle aynı değeri (Sanity Dimensions
+    // toplamı) göstermeli; yoksa geometri yüksekliğine düşer.
+    const totalHeight = displayHeight > 0 ? displayHeight : geomHeight
 
     const admin = createSupabaseAdminClient() as any
     const azimuthStep = 360 / SPIN_FRAME_COUNT

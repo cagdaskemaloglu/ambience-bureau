@@ -7,17 +7,6 @@ export type Theme = 'light' | 'dark'
 const STORAGE_KEY = 'ambience-bureau-theme'
 
 /**
- * Saat 18:00–06:00 arası (dahil-hariç) "gece" kabul edilir.
- * <head>'teki blocking script (src/app/layout.tsx) ve aşağıdaki dakikalık
- * kontrol BİREBİR AYNI mantığı kullanır — biri güncellenirse diğeri de
- * güncellenmeli.
- */
-function isNightTime(date: Date = new Date()): boolean {
-  const hour = date.getHours()
-  return hour >= 18 || hour < 6
-}
-
-/**
  * <head>'e enjekte edilen ve hydration'dan ÖNCE çalışan blocking script ile
  * BİREBİR AYNI mantık (bkz. src/app/layout.tsx). Aralarında tutarsızlık
  * olursa React hydration sırasında class'ı geri değiştirip "flaş" yaratır.
@@ -26,7 +15,9 @@ function resolveInitialTheme(): Theme {
   if (typeof window === 'undefined') return 'light'
   const stored = window.localStorage.getItem(STORAGE_KEY)
   if (stored === 'light' || stored === 'dark') return stored
-  return isNightTime() ? 'dark' : 'light'
+  // Kayıtlı tercih yoksa (ilk ziyaret) sistem/saat temasına BAKILMAZ:
+  // site her zaman karanlık modda açılır.
+  return 'dark'
 }
 
 const ThemeContext = createContext<{
@@ -67,23 +58,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const resolved = resolveInitialTheme()
     setThemeState(resolved)
     document.documentElement.classList.toggle('dark', resolved === 'dark')
-  }, [])
-
-  // Kullanıcı hiç elle seçim yapmadıysa (localStorage boşsa) saati dakikada
-  // bir kontrol edip 18:00/06:00 eşiğini geçince temayı otomatik değiştir —
-  // böylece sekme açık bırakılıp saat sınırı geçilse bile (ör. akşam 18:00'e
-  // kadar sitede kalan biri) sayfa yenilenmeden karanlık moda geçilir.
-  useEffect(() => {
-    const id = setInterval(() => {
-      if (window.localStorage.getItem(STORAGE_KEY)) return
-      const t: Theme = isNightTime() ? 'dark' : 'light'
-      setThemeState((prev) => {
-        if (prev === t) return prev
-        document.documentElement.classList.toggle('dark', t === 'dark')
-        return t
-      })
-    }, 60_000)
-    return () => clearInterval(id)
   }, [])
 
   const toggleTheme = useCallback(() => {
