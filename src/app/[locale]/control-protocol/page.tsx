@@ -10,7 +10,6 @@ const content = {
     title: 'Kontrol Protokolü',
     description:
       'Kayıtlı her nesne, tek bir kontrol arayüzüne rapor eder. Aşağıdaki adımları izleyerek nesnenizi sisteme bağlayın.',
-    section: 'SECTION 02',
     download: 'Uygulamayı İndirin',
     footnote: 'Uygulama bağlantıları yakında aktif olacaktır.',
     steps: [
@@ -33,7 +32,6 @@ const content = {
     title: 'Control Protocol',
     description:
       'Every registered object reports to a single control interface. Follow the steps below to connect your object to the system.',
-    section: 'SECTION 02',
     download: 'Download the App',
     footnote: 'App store links will be active soon.',
     steps: [
@@ -70,9 +68,43 @@ export default async function ControlProtocolPage({
       <section className="px-6 py-12 sm:px-10">
         <div className="mx-auto max-w-2xl">
 
-          <div className="label-mono mb-2">
-            {t.section}
+          {/* İndirme — sayfanın en üstünde (footer'daki orijinal rozetlerle) */}
+          <div className="mb-12 border border-bureau-black p-6 text-center">
+            <p className="mb-5 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
+              {t.download}
+            </p>
+
+            <div className="flex flex-row items-center justify-center gap-3">
+              <a
+                href="https://apps.apple.com/tr/app/ambience-bureau/id6794577754"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download on the App Store"
+                className="block transition-opacity hover:opacity-80"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/badges/app-store.svg" alt="Download on the App Store" className="h-11 w-auto" />
+              </a>
+
+              {/* Play Store henüz yayınlanmadı — footer'daki gibi tıklanınca
+                  yönlendirmeyen görsel yer tutucu. */}
+              <button
+                type="button"
+                aria-label="Google Play"
+                className="block cursor-default p-0 transition-opacity hover:opacity-80"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/badges/google-play.svg" alt="Get it on Google Play" className="h-11 w-auto" />
+              </button>
+            </div>
+
+            <p className="mt-4 text-[10.5px] text-bureau-subtle">
+              {t.footnote}
+            </p>
           </div>
+
+          {/* Uygulama içi paneller — sayfanın en üstünde */}
+          <AppShowcase locale={isTR ? 'tr' : 'en'} />
 
           <h1 className="mb-4 text-[30px] font-light uppercase tracking-wide">
             {t.title}
@@ -111,43 +143,6 @@ export default async function ControlProtocolPage({
             ))}
 
           </div>
-
-          {/* Download */}
-          <div className="border border-bureau-black p-6 text-center">
-
-            <p className="mb-5 font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
-              {t.download}
-            </p>
-
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-
-              <a
-                href="https://apps.apple.com/tr/app/ambience-bureau/id6794577754"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Download from App Store"
-                className="btn-bureau-outline inline-flex items-center justify-center"
-              >
-                App Store
-              </a>
-
-              <a
-                href="#"
-                aria-label="Download from Google Play"
-                className="btn-bureau-outline inline-flex items-center justify-center"
-              >
-                Google Play
-              </a>
-
-            </div>
-
-            <p className="mt-4 text-[10.5px] text-bureau-subtle">
-              {t.footnote}
-            </p>
-
-          </div>
-
-          <AppShowcase locale={isTR ? 'tr' : 'en'} />
 
         </div>
       </section>

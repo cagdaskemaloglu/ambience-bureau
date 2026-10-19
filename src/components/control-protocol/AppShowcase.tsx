@@ -168,15 +168,20 @@ export function AppShowcase({ locale }: { locale: Locale }) {
   }
 
   function handlePhoneClick() {
-    // Telefon ekranına tıklamak da (liste öğesine tıklamak gibi) hem
-    // bilgi metnini hem fotoğrafı bir sonraki adıma ilerletir — grubun
-    // sonuna gelince başa döner.
-    setItemIdx((i) => (i + 1) % group.items.length)
+    // Telefon ekranına tıklamak hem bilgi metnini hem fotoğrafı bir sonraki
+    // adıma ilerletir. Grubun SON ekranından sonra otomatik olarak bir
+    // sonraki sekmeye (01 → 02 → 03) geçer; sonuncu sekmenin sonunda
+    // başa (01) döner.
+    if (itemIdx < group.items.length - 1) {
+      setItemIdx(itemIdx + 1)
+    } else {
+      setGroupIdx((groupIdx + 1) % GROUPS.length)
+      setItemIdx(0)
+    }
   }
 
   return (
-    <div className="mt-16 border-t border-dashed border-bureau-rule pt-12">
-      <div className="label-mono mb-2">SECTION 03</div>
+    <div className="mb-12 border-b border-dashed border-bureau-rule pb-12">
       <h2 className="mb-2 text-[22px] font-light uppercase tracking-wide">
         {tr ? 'Uygulama İçinde' : 'Inside the App'}
       </h2>
