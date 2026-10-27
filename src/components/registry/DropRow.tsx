@@ -58,7 +58,7 @@ function AnimatedAvailability({
   return (
     <p
       ref={rem.ref}
-      className="mt-1.5 font-mono text-[9.5px] uppercase tracking-wide text-white/70"
+      className="mt-1.5 font-mono text-[9.5px] uppercase tracking-wide text-bureau-fixed-black/70 dark:text-white/70"
     >
       <span className="tabular-nums">{fmt(rem.value)}</span>/
       <span className="tabular-nums">{fmt(tot.value)}</span>{' '}
@@ -152,22 +152,16 @@ export function DropRow({
       </div>
 
       <div
-        className={`group/row relative flex flex-col overflow-hidden md:bg-bureau-panel-edge ${panelOnLeft ? 'md:flex-row-reverse' : 'md:flex-row'}`}
+        className={`group/row relative flex flex-col overflow-hidden md:bg-bureau-white dark:md:bg-bureau-panel-edge ${panelOnLeft ? 'md:flex-row-reverse' : 'md:flex-row'}`}
       >
         {/* Masaüstü: Drop etiket panelinin zemini/glow'u TÜM satıra yayılır —
             ürün kartlarının ARKASINDAN, kartların üst ve alt şeritlerinde
             görünür (kartlar kendi opak zeminiyle üstte durur). Glow'un
             merkezleri panelin durduğu (sağ/sol) kenara göre konumlanır. */}
         <div className="pointer-events-none absolute inset-0 hidden md:block">
-          {/* AYDINLIK mod: panelin siyahı, panel genişliği (%20) boyunca düz
-              kalır, ardından ürün kartlarının arkasındaki şerit boyunca
-              beyaza geçer. Karanlık modda gizli (orada zemin zaten koyu). */}
-          <div
-            className="absolute inset-0 dark:hidden"
-            style={{
-              background: `linear-gradient(to ${panelOnLeft ? 'right' : 'left'}, #000000 0%, #000000 20%, #F7F5F0 71%, #F7F5F0 100%)`,
-            }}
-          />
+          {/* AYDINLIK mod: tüm satır (panel dahil) sitenin arka plan rengiyle
+              (kırık beyaz) aynı. Karanlık modda gizli (orada zemin koyu). */}
+          <div className="absolute inset-0 bg-bureau-white dark:hidden" />
           <div
             className="absolute inset-0 opacity-40 transition-all duration-700 ease-out group-hover/row:opacity-70"
             style={{
@@ -225,7 +219,7 @@ export function DropRow({
 
         {/* Siyah Drop etiket paneli — `group` + stretch sayesinde ürün
             satırıyla AYNI yükseklikte olur, içeriği ortalanır. */}
-        <div className="group relative flex w-full flex-shrink-0 flex-col items-center justify-center z-10 overflow-hidden border-t border-bureau-panel-edge bg-bureau-panel-edge p-6 text-center text-white md:w-1/5 md:border-t-0 md:bg-transparent">
+        <div className="group relative flex w-full flex-shrink-0 flex-col items-center justify-center z-10 overflow-hidden border-t border-bureau-fixed-black/10 bg-bureau-white p-6 text-center text-bureau-fixed-black dark:border-bureau-panel-edge dark:bg-bureau-panel-edge dark:text-white md:w-1/5 md:border-t-0 md:bg-transparent">
           {/* Düz siyahı kıran, hover'da hafifçe canlanan iki glow katmanı —
               biri sıcak/amber (sol-üst), biri soğuk/loş (sağ-alt), panelin
               KENDİ kutusuna göre sabit yüzdelerle konumlanıyor. Panel sayfada
@@ -254,12 +248,12 @@ export function DropRow({
             <div className="font-mono text-[20px] font-bold uppercase tracking-wider text-bureau-fixed-amber sm:text-[23px]">
               DROP-{drop.dropNo}
             </div>
-            <div className="mt-2 font-mono text-[17px] font-semibold uppercase tracking-wider text-white sm:text-[19px]">
+            <div className="mt-2 font-mono text-[17px] font-semibold uppercase tracking-wider text-bureau-fixed-black dark:text-white sm:text-[19px]">
               {name}
             </div>
             <Link
               href={`/registry?drop=${drop.dropNo}`}
-              className="mt-6 inline-block border border-white px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-white hover:text-bureau-fixed-black"
+              className="mt-6 inline-block border border-bureau-fixed-black px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-bureau-fixed-black no-underline transition-colors hover:bg-bureau-fixed-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-bureau-fixed-black"
             >
               {t('exploreAll')}
             </Link>
@@ -286,11 +280,11 @@ export function DropRow({
             </div>
 
             {(prevDrop || nextDrop) && (
-              <div className="mt-8 space-y-3 border-t border-white/20 pt-4">
+              <div className="mt-8 space-y-3 border-t border-bureau-fixed-black/20 pt-4 dark:border-white/20">
                 {prevDrop && (
                   <button
                     onClick={() => scrollToDrop(prevDrop.dropNo)}
-                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:text-bureau-fixed-amber"
+                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-bureau-fixed-black/70 transition-colors hover:text-bureau-fixed-amber dark:text-white/70"
                   >
                     ↑ {getLocalizedValue(prevDrop.name, locale, '—')}
                   </button>
@@ -298,7 +292,7 @@ export function DropRow({
                 {nextDrop && (
                   <button
                     onClick={() => scrollToDrop(nextDrop.dropNo)}
-                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-white/70 transition-colors hover:text-bureau-fixed-amber"
+                    className="block w-full font-mono text-[11px] uppercase tracking-wider text-bureau-fixed-black/70 transition-colors hover:text-bureau-fixed-amber dark:text-white/70"
                   >
                     ↓ {getLocalizedValue(nextDrop.name, locale, '—')}
                   </button>

@@ -139,7 +139,7 @@ export async function getAllProducts(filters?: {
   }
 
   const rows = await sanityClient.fetch(
-    `*[${filter}] | order(registryNo asc) {${PRODUCT_CARD_FRAGMENT}, "_dropActive": drop->active, "_dropScheduledAt": drop->scheduledAt, "_hasDrop": defined(drop)}`,
+    `*[${filter}] | order(coalesce(priority, 999999) asc, registryNo asc) {${PRODUCT_CARD_FRAGMENT}, "_dropActive": drop->active, "_dropScheduledAt": drop->scheduledAt, "_hasDrop": defined(drop)}`,
     params,
     { next: { tags: ['products'] } }
   )
