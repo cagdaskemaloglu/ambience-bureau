@@ -54,11 +54,23 @@ export function Footer() {
               anlaşması sona erdi, ödeme altyapısı PayTR'ye geçiyor. PayTR
               logosu hazır olunca buraya aynı yöntemle eklenebilir. */}
 
-          {/* Sol sütun: Teslimat ve İade / Mesafeli Satış Sözleşmesi.
-              Sağ sütun: Gizlilik Politikası / Kullanım Koşulları. */}
-          <div className="flex gap-4">
-            {/* Arşiv / Büro — artık header menüsünde değil, burada. */}
+          {/* Sol sütun: Bölge Bürosu Ol / Tasarım Departmanına Katıl (turuncu)
+              + Arşiv + Büro, alt alta. Sağ sütun: Teslimat ve İade, Mesafeli
+              Satış Sözleşmesi, Gizlilik Politikası, Kullanım Koşulları. */}
+          <div className="flex gap-8">
             <div className="flex flex-col gap-1">
+              <Link
+                href="/become-bureau-hub"
+                className="font-mono text-[8.5px] tracking-widest text-bureau-amber uppercase no-underline hover:opacity-80"
+              >
+                {tr ? 'Bölge Bürosu Ol' : 'Become Bureau Hub'}
+              </Link>
+              <Link
+                href="/become-bureau-creator"
+                className="font-mono text-[8.5px] tracking-widest text-bureau-amber uppercase no-underline hover:opacity-80"
+              >
+                {tr ? 'Tasarım Departmanına Katıl' : 'Become Bureau Creator'}
+              </Link>
               <Link
                 href="/archive"
                 className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
@@ -85,8 +97,6 @@ export function Footer() {
               >
                 {tr ? 'Mesafeli Satış Sözleşmesi' : 'Distance Sales Agreement'}
               </Link>
-            </div>
-            <div className="flex flex-col gap-1">
               <Link
                 href="/privacy-policy"
                 className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"

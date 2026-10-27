@@ -517,6 +517,22 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 {t(labelKey)}
               </Link>
             ))}
+
+            {/* Footer mobilde gizli olduğu için turuncu başvuru linkleri burada */}
+            <Link
+              href="/become-bureau-hub"
+              onClick={() => setMenuOpen(false)}
+              className="block border-t border-bureau-rule px-5 py-5 font-nav text-[12px] tracking-wider uppercase no-underline text-bureau-amber"
+            >
+              {locale === 'tr' ? 'Bölge Bürosu Ol' : 'Become Bureau Hub'}
+            </Link>
+            <Link
+              href="/become-bureau-creator"
+              onClick={() => setMenuOpen(false)}
+              className="block px-5 py-5 font-nav text-[12px] tracking-wider uppercase no-underline text-bureau-amber"
+            >
+              {locale === 'tr' ? 'Tasarım Departmanına Katıl' : 'Become Bureau Creator'}
+            </Link>
           </nav>
 
           {/* Bottom: locale + cart */}

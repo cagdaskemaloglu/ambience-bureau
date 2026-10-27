@@ -28,7 +28,10 @@ export default function LoginPage() {
     if (error) {
       setError(tr ? 'E-posta veya şifre hatalı.' : 'Invalid email or password.')
     } else {
-      router.push('/account')
+      // ?next=/yol — yalnızca site içi, locale öneksiz yollara izin verilir.
+      const next = new URLSearchParams(window.location.search).get('next')
+      const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/account'
+      router.push(safeNext as any)
     }
     setLoading(false)
   }

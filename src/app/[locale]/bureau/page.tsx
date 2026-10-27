@@ -1,4 +1,5 @@
 import { ContactForm } from '@/components/bureau/ContactForm'
+import { Link } from '@/i18n/navigation'
 
 export default async function BureauPage({
   params,
@@ -43,6 +44,24 @@ export default async function BureauPage({
                 : 'Every registered object undergoes testing for material, light performance, and digital integration prior to certification.'}
             </p>
           </div>
+        </div>
+
+        {/* Bölge Bürosu yönlendirmesi */}
+        <div className="mb-10 border border-bureau-amber bg-bureau-amber/5 p-5">
+          <p className="mb-1 font-mono text-[10px] uppercase tracking-widest text-bureau-amber">
+            {tr ? 'Büroya Katılın' : 'Join the Bureau'}
+          </p>
+          <p className="mb-3 text-[13px] leading-relaxed text-bureau-ink">
+            {tr
+              ? 'Kendi ülkenizde The Ambience Bureau\'yu temsil etmek ister misiniz? Haritada aktif büroları görün ve Bölge Bürosu olmak için başvurun.'
+              : 'Want to represent The Ambience Bureau in your own country? See the active bureaus on the map and apply to become a Regional Bureau.'}
+          </p>
+          <Link
+            href="/become-bureau-hub"
+            className="font-mono text-[11px] uppercase tracking-wider text-bureau-amber underline"
+          >
+            {tr ? 'Bölge Bürosu Ol →' : 'Become Bureau Hub →'}
+          </Link>
         </div>
 
         {/* Adres + İletişim Formu yan yana (desktop) */}
