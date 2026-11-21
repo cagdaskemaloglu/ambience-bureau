@@ -5,6 +5,7 @@ import { CategoryFilterBar } from '@/components/registry/CategoryFilterBar'
 import { ProductGrid } from '@/components/registry/ProductGrid'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
+import { getLightClass } from '@/lib/lightClasses'
 import type { ProductCategory, ProductStatus, PhotonOutput, ControlCompatibility } from '@/types'
 
 type Props = {
@@ -16,6 +17,7 @@ type Props = {
     compat?: string
     price?: string
     drop?: string
+    mode?: string
   }>
 }
 
@@ -56,7 +58,16 @@ export default async function RegistryPage({ params, searchParams }: Props) {
     minPrice,
     maxPrice,
     drop: resolvedSearch.drop,
+    mode: resolvedSearch.mode,
   })
+  const activeClass = getLightClass(resolvedSearch.category)
+  const modeTitle =
+    resolvedSearch.mode === 'standing'
+      ? tr ? 'Daimi Envanter' : 'Standing Inventory'
+      : resolvedSearch.mode === 'limited'
+        ? tr ? 'Sınırlı Tahsis' : 'Limited Allocation'
+        : tr ? 'Envanter' : 'Registry'
+  const pageTitle = activeClass ? `${modeTitle}: ${tr ? activeClass.tr : activeClass.en}` : modeTitle
 
   return (
     <>
@@ -79,6 +90,15 @@ export default async function RegistryPage({ params, searchParams }: Props) {
             {tr ? 'Başla' : 'Start'}
           </Link>
         </div>
+      </div>
+
+      <div className="px-5 pb-3 pt-6 md:px-9 md:pt-8">
+        <p className="font-mono text-[10.5px] uppercase tracking-widest text-bureau-muted">
+          {tr ? 'Form 002 · Nesne Sicili' : 'Form 002 · Object Register'}
+        </p>
+        <h1 className="mt-2 text-[30px] font-semibold leading-none tracking-[-0.02em] text-bureau-black md:text-[44px]">
+          {pageTitle}
+        </h1>
       </div>
 
       <Suspense fallback={<div className="h-[33px] md:h-[37px]" />}>

@@ -50,9 +50,20 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <NextIntlClientProvider messages={messages}>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        {/* Atlama linki — klavyede İLK odak durağı (erişilebilirlik). */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-[100] focus:bg-bureau-amber focus:px-3 focus:py-2 focus:font-mono focus:text-[11px] focus:uppercase focus:tracking-wider focus:text-white"
+        >
+          {locale === 'tr' ? 'İçeriğe geç' : 'Skip to content'}
+        </a>
         <Header collections={collections} />
-        <main className="flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</main>
-        <ConditionalFooter />
+        {/* Footer artık içerikle birlikte kayıyor (önceden ekranın altına
+            sabitti, mobilde tamamen gizliydi ve drop kartlarını kesiyordu). */}
+        <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto focus:outline-none">
+          {children}
+          <ConditionalFooter />
+        </main>
         <CartDrawer />
       </div>
     </NextIntlClientProvider>

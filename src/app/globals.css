@@ -275,3 +275,218 @@
   background-color: #2F5D8A;
   color: #ffffff;
 }
+
+/* ── Tahsis Bürosu — anasayfa/bölüm dili (bkz. claude/DESIGN.md) ─────────
+   Birincil hedefler renk değişiminden FAZLASIYLA cevap verir: dolgu
+   taşar (flood) ve iç metin kayar. Yardımcı linkler bu sınıfları almaz. */
+@layer components {
+  /* Dolgu soldan taşar, iç metin 4px kayar — "dosya çekilir" hissi. */
+  .btn-file {
+    @apply relative inline-flex items-center justify-center gap-2 overflow-hidden
+           border border-bureau-black px-5 py-3
+           font-mono text-[11px] uppercase tracking-wider text-bureau-black;
+    isolation: isolate;
+  }
+  .btn-file::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: rgb(var(--bureau-black));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 280ms cubic-bezier(0.2, 0.7, 0.1, 1);
+  }
+  .btn-file > span {
+    transition: transform 280ms cubic-bezier(0.2, 0.7, 0.1, 1), color 200ms;
+  }
+  .btn-file:hover::before,
+  .btn-file:focus-visible::before {
+    transform: scaleX(1);
+  }
+  .btn-file:hover > span,
+  .btn-file:focus-visible > span {
+    transform: translateX(4px);
+    color: rgb(var(--bureau-white));
+  }
+  .btn-file-amber {
+    @apply border-bureau-amber bg-bureau-amber text-white;
+  }
+  .btn-file-amber::before {
+    background: rgb(var(--bureau-black));
+  }
+
+  /* Klavye odağı — sistemin tek vurgu rengiyle. */
+  .focus-bureau:focus-visible {
+    outline: 1px solid rgb(var(--bureau-amber));
+    outline-offset: 2px;
+  }
+}
+
+/* Dosya kartı çekmeceden kayarak gelir. */
+@keyframes bureau-drawer-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-drawer-in {
+  animation: bureau-drawer-in 320ms cubic-bezier(0.2, 0.7, 0.1, 1) both;
+}
+
+/* Büro bülteni: "açık" ışığı — yavaş nefes. */
+@keyframes bureau-lamp-breathe {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgb(var(--bureau-amber) / 0.55); }
+  50% { opacity: 0.75; box-shadow: 0 0 10px 2px rgb(var(--bureau-amber) / 0.35); }
+}
+.bureau-lamp {
+  animation: bureau-lamp-breathe 3.2s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-drawer-in,
+  .bureau-lamp {
+    animation: none;
+  }
+  .btn-file::before,
+  .btn-file > span {
+    transition: none;
+  }
+}
+
+/* Header menü linkleri: amber çizgi soldan çizilir (sadece renk/opaklık
+   değişimi "ölü" hover sayılıyordu). Aktif sayfada çizgi sabit durur. */
+.nav-underline {
+  position: relative;
+}
+.nav-underline::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 4px;
+  height: 1px;
+  background: rgb(var(--bureau-amber));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 220ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.nav-underline:hover::after,
+.nav-underline:focus-visible::after,
+.nav-underline[aria-current='page']::after {
+  transform: scaleX(1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-underline::after { transition: none; }
+}
+
+/* ── Ürün kartı = dosya kartı (ProductCard.tsx) ─────────────────────── */
+.product-file {
+  transition: transform 280ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+/* Baskı kesim işaretleri — hover/odakta dört köşede belirir. */
+.product-file::after {
+  --mark: rgb(var(--bureau-amber));
+  content: '';
+  position: absolute;
+  inset: -5px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms;
+  background:
+    linear-gradient(var(--mark), var(--mark)) top left / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) top left / 1px 10px,
+    linear-gradient(var(--mark), var(--mark)) top right / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) top right / 1px 10px,
+    linear-gradient(var(--mark), var(--mark)) bottom left / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) bottom left / 1px 10px,
+    linear-gradient(var(--mark), var(--mark)) bottom right / 10px 1px,
+    linear-gradient(var(--mark), var(--mark)) bottom right / 1px 10px;
+  background-repeat: no-repeat;
+}
+.product-file:hover,
+.product-file:focus-within {
+  transform: translateY(-4px);
+}
+.product-file:hover::after,
+.product-file:focus-within::after {
+  opacity: 1;
+}
+.product-file-media img {
+  transition: transform 600ms cubic-bezier(0.2, 0.7, 0.1, 1);
+}
+.product-file:hover .product-file-media img {
+  transform: scale(1.03);
+}
+
+/* Damga — kart ilk çizildiğinde "iner". */
+@keyframes bureau-stamp-in {
+  0% { opacity: 0; transform: rotate(-8deg) scale(1.6); }
+  70% { opacity: 1; transform: rotate(-8deg) scale(0.96); }
+  100% { opacity: 1; transform: rotate(-8deg) scale(1); }
+}
+.bureau-stamp {
+  animation: bureau-stamp-in 360ms cubic-bezier(0.2, 0.7, 0.1, 1) 200ms both;
+}
+
+/* Eylemler: varsayılan (dokunmatik/mobil) — kartın altında satır içi. */
+.card-actions-overlay {
+  display: none;
+}
+.card-actions-inline {
+  display: flex;
+  gap: 6px;
+}
+/* Fareli büyük ekranlarda: fotoğrafın altından çekmece gibi kayar. */
+@media (hover: hover) and (min-width: 1024px) {
+  .card-actions-inline {
+    display: none;
+  }
+  .card-actions-overlay {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    gap: 6px;
+    padding: 8px;
+    background: rgb(var(--bureau-white) / 0.92);
+    border-top: 1px solid rgb(var(--bureau-black));
+    transform: translateY(100%);
+    transition: transform 280ms cubic-bezier(0.2, 0.7, 0.1, 1);
+  }
+  .product-file:hover .card-actions-overlay,
+  .product-file:focus-within .card-actions-overlay {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-file,
+  .product-file-media img,
+  .card-actions-overlay {
+    transition: none;
+  }
+  .product-file:hover,
+  .product-file:focus-within {
+    transform: none;
+  }
+  .product-file:hover .product-file-media img {
+    transform: none;
+  }
+  .bureau-stamp {
+    animation: none;
+  }
+}
+
+/* Ürün ızgarası: kart genişliği ~224px altına inmez, ekrana sığdığı kadar
+   sütun açılır (1440px'te 4, 1920px+'da 6). Telefonda her zaman 2 sütun. */
+.product-file-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (min-width: 640px) {
+  .product-file-grid {
+    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(224px, 1fr));
+  }
+}

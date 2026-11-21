@@ -42,8 +42,10 @@ Supabase session yenileme ve `<html lang>` buna bağlı.
 ### 3. Sanity'de "koleksiyonların tüm alanlarını dönen" İKİ sorgu var
 `src/lib/queries.ts` içinde `getAllCollections()` (admin panel) ve
 `getAllLampCollections()` (Custom Registry sayfası) birbirinden bağımsız
-GROQ sorguları. Collection şemasına yeni bir alan eklersen (örn. yeni bir
-ücret alanı), **ikisini de** güncelle — aksi halde biri diğerinden geride
+GROQ sorguları. Collection (veya ücretleri ezen Drop) şemasına yeni bir
+alan eklersen (örn. yeni bir ücret alanı, gövde sınırı), **ikisini de**
+güncelle — ikisinde de ücretler `coalesce(drop ücreti, koleksiyon ücreti)`
+olarak hesaplanıyor — aksi halde biri diğerinden geride
 kalır ve sessizce yanlış/varsayılan değer kullanılır (bu projede tam
 olarak bu yaşandı: donanım ücretleri admin'de çalışıp konfigüratörde
 çalışmıyordu).
@@ -89,13 +91,54 @@ Sipariş onay/durum e-postalarının dili, checkout'taki site dilinden değil
 **ödeme para birimine** göre seçilir (`currency === 'USD' ? 'en' : 'tr'`).
 Bu kasıtlı bir tasarım kararı — "tutarsızlık" sanıp "düzeltmeye" kalkma.
 
+### 10. Ödeme sağlayıcı PayTR'dir, iyzico DEĞİL
+Sipariş onayı `src/app/api/checkout/paytr-notify/route.ts`'te olur (PayTR
+sunucusu POST eder, hash doğrulanır). `api/checkout/callback` ve
+`api/iyzico-test` ölü kod — yeni mantığı oraya yazma. PayTR tuzakları:
+`merchant_oid` tiresiz (`toPaytrOid`), para birimi `"TL"`, bildirimde
+"OK" dönülmezse PayTR tekrar dener. `orders.iyzico_*` kolonları PayTR
+verisini taşıyor (isimler tarihsel).
+
+### 11. `public/parts/stl/` mobil uygulamanın kullandığı canlı bir kaynak
+Sitenin kodu bu klasörü kullanmıyor ama mobil uygulama (`/Users/cagdas/ESPTest`,
+`services/stlCache.ts`) STL'leri `https://www.ambiencebureau.com/parts/stl/`
++ `manifest.json` üzerinden indiriyor. **Silme, taşıma, yeniden
+adlandırma.** Yeni STL eklersen `scripts/generate-stl-manifest.js` ile
+manifest'i yeniden üret.
+
+### 12. Header'daki görünmez Büro/Arşiv yer tutucularını silme
+`HeaderStickman.tsx` animasyonu bu iki öğenin konumunu
+(`data-stickman-anchor`) referans alıyor. Linkler Footer'a taşındı ama
+yer tutucular kasıtlı olarak header'da duruyor.
+
+### 13. Tema renkleri CSS değişkeni
+`bureau.*` renkleri `globals.css`'teki `--bureau-*` değişkenlerinden gelir
+ve karanlık/aydınlık temayla değişir. Temadan bağımsız kalması gereken
+bir renk için `bureau-fixed-*` kullan. Tema başlangıç mantığını
+değiştirirsen `src/app/layout.tsx`'teki `THEME_INIT_SCRIPT` ile
+`ThemeProvider.tsx`'i BİRLİKTE değiştir.
+
+### 14. `CameraFit.tsx` ↔ `spinFrames.ts` açısı eşleşmeli
+`ISO_AZIMUTH_DEG` ve `SPIN_ISO_AZIMUTH_DEG` (45) aynı kalmalı; aksi halde
+kartlardaki spin karesi ile konfigüratörün açılış açısı uyuşmaz.
+`?capture=1` modunu bozan bir değişiklik spin-frame üretimini kırar.
+
+### 15. İki satış rejimi var; sınıf listesi tek kaynakta
+Ürün ya Sınırlı Tahsis (drop, `saleMode` boş/`limited`) ya Daimi Envanter
+(`standing`, stoklu). Kart/sayfa/sepet mantığı yazarken ikisini de düşün;
+satın alınabilirlik için `isProductPurchasable()` kullan, `status ===
+'decommissioned'` kontrolünü elle tekrarlama. Aydınlatma sınıfları
+(lambader, avize, aplik...) SADECE `src/lib/lightClasses.ts`'te
+tanımlanır. Görsel/kurgu kararları için önce `DESIGN.md`.
+
 ## Konvansiyonlar
 
 - **Dil:** Kod yorumları ve commit'ler bu projede genelde **Türkçe**
   yazılıyor (kod/değişken adları İngilizce kalıyor). Bu tutarlılığı koru.
-- **Stil:** Tailwind, özel `bureau.*` renk paleti (`black, ink, muted,
-  subtle, rule, surface, amber, amber-dim`). Yeni bir renk eklemeden önce
-  bu paletten birinin işe yarayıp yaramadığına bak.
+- **Stil:** Tailwind, özel `bureau.*` renk paleti (`white, black, ink,
+  muted, subtle, rule, surface, amber, amber-dim`; temaya duyarlı — bkz.
+  kural 13). Yeni bir renk eklemeden önce bu paletten birinin işe yarayıp
+  yaramadığına bak. Yeni UI'ı hem karanlık hem aydınlık temada kontrol et.
 - **Ton:** Site bürokratik/resmi belge estetiğinde (Courier/mono font,
   "FORM xxx", büyük harf başlıklar, amber tek vurgu rengi). Yeni UI metni
   yazarken bu tonu koru — gündelik dil yerine resmi/belgesel dil.
@@ -117,7 +160,8 @@ Bu kasıtlı bir tasarım kararı — "tutarsızlık" sanıp "düzeltmeye" kalkm
 Ayrıntılı kök neden analizleri için `CURRENT_STATUS.md`'deki tabloya bak.
 Kısaca: (1) Next.js 16 `params`/`proxy.ts` göç kuralları, (2) Vercel'in
 AWS Lambda zannedilmemesi (Puppeteer), (3) Three.js fiziksel ışık birimleri,
-(4) iki paralel Sanity sorgusunun senkronsuz kalması, (5) str_replace ile
+(4) iki paralel Sanity sorgusunun senkronsuz kalması, (5) PayTR format
+tuzakları (oid, "TL", tek IP, mutlak dönüş URL'i), (6) str_replace ile
 düzenlerken bir dosyanın SADECE bir kısmını (örn. `body` seçicisini) güncelleyip
 CSS'te aynı özelliğin başka bir seçicide de (`pre`, `.qr-row`) tekrarlandığını
 unutmak — CSS/stil değişikliklerinde `grep -n "aranan-özellik"` ile TÜM

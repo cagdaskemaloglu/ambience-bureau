@@ -81,7 +81,11 @@ export function useAnimatedNumber<T extends HTMLElement = HTMLElement>(
     const t0 = performance.now()
     const tick = (now: number) => {
       const p = Math.min(1, (now - t0) / duration)
-      const v = Math.round(start + (target - start) * easeOutCubic(p))
+      // Başlangıç–hedef aralığına sıkıştır ve -0'ı 0'a çevir: aksi halde
+      // geri sayımda ekranda kısa bir an "-0" / "-1" görünüyordu.
+      const lo = Math.min(start, target)
+      const hi = Math.max(start, target)
+      const v = Math.max(lo, Math.min(hi, Math.round(start + (target - start) * easeOutCubic(p)))) || 0
       currentRef.current = v
       setValue(v)
       if (p < 1) raf = requestAnimationFrame(tick)

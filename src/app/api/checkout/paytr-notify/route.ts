@@ -2,7 +2,7 @@ import { verifyNotificationHash, fromPaytrOid, type PayTRNotification } from '@/
 import { updateOrderStatus, resolveOrderRecipientEmail } from '@/lib/supabase/queries'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
 import { sendOrderConfirmationEmail, sendAdminOrderNotification } from '@/lib/email/sendOrderConfirmation'
-import { createOwnedProductFromCustomDesign } from '@/lib/sanity-fulfillment'
+import { createOwnedProductFromCustomDesign, decrementStandingStock } from '@/lib/sanity-fulfillment'
 import { censorName, generateGuestDisplayName } from '@/lib/nameCensor'
 
 /**
@@ -78,6 +78,14 @@ export async function POST(request: Request) {
       // dönersek PayTR "bildirim URL'de sorun var" der ve tekrar dener —
       // bu yüzden OK ile onaylıyoruz.
       console.warn('[PayTR notify] Bilinmeyen sipariş için geçerli bildirim, OK dönülüyor:', notification.merchant_oid)
+      return new Response('OK')
+    }
+
+    // Tekrarlanan bildirim koruması: PayTR aynı sipariş için bildirimi
+    // birden fazla kez POST edebilir (yanıt gecikirse/zaman aşımına
+    // uğrarsa). Sipariş 'pending' değilse zaten işlenmiştir — e-posta,
+    // "owned" ürün, stok ve kredi işlemleri İKİNCİ kez çalışmasın.
+    if (order.status !== 'pending') {
       return new Response('OK')
     }
 
@@ -231,6 +239,21 @@ export async function POST(request: Request) {
         }
       } catch (sanityError) {
         console.error('[PayTR notify] Sanity "owned" ürün oluşturma hatası:', sanityError)
+      }
+
+      // Daimi Envanter stoğunu düş — ödeme akışını BLOKLAMAZ (hata loglanır,
+      // stok Sanity Studio'dan elle düzeltilebilir).
+      try {
+        await decrementStandingStock(
+          (order.order_items ?? [])
+            .filter((it: { sanity_product_id?: string | null }) => it.sanity_product_id)
+            .map((it: { sanity_product_id: string; quantity?: number | null }) => ({
+              id: it.sanity_product_id,
+              quantity: Number(it.quantity ?? 1),
+            }))
+        )
+      } catch (stockError) {
+        console.error('[PayTR notify] Stok düşme hatası:', stockError)
       }
 
       // Bureau Credits işlemleri — üye siparişleri için

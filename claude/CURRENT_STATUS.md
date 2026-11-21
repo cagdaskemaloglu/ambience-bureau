@@ -5,104 +5,154 @@
 > Tarih damgası olmayan bir CURRENT_STATUS.md hızla yanıltıcı hale gelir;
 > güncellediğinizde en üstteki tarihi de güncelleyin.
 
-**Son güncelleme:** Bu dokümantasyon setinin ilk oluşturulduğu tarih
-itibarıyla (2026 Temmuz sonu civarı).
+**Son güncelleme:** 2026-11-21 (`96f72e4` — "Light Mode Drop Card and
+Sorting Priority" commit'i itibarıyla).
 
 ---
 
 ## Çalışan / Tamamlanmış Özellikler
 
-- ✅ TR/EN i18n routing (`proxy.ts` düzeltmesiyle çalışıyor)
+### Satış ve ödeme
+- ✅ TR/EN i18n routing (`proxy.ts`); ilk ziyarette dil ülkeye göre
+  seçiliyor (TR → Türkçe, diğer → İngilizce)
 - ✅ Registry (hazır ürün) ve Custom Registry (3D konfigüratör) satış akışları
-- ✅ iyzico ödeme entegrasyonu, sipariş yaşam döngüsü (`pending → received →
-  processing → shipped → delivered`)
+- ✅ **PayTR ödeme entegrasyonu** (iFrame API + `paytr-notify` bildirim
+  uç noktası) — iyzico'nun yerini aldı (Ekim 2026)
+- ✅ Sipariş yaşam döngüsü (`pending → received → processing → shipped →
+  delivered`)
+- ✅ Bureau Credits (checkout'ta harcama, siparişte %10 kazanım, admin'den
+  elle kredi verme, hesapta "Kredi Geçmişi")
+- ✅ Ürün indirimleri (`discountPriceTRY/USD` — üstü çizili eski fiyat)
+- ✅ Ürün aktif/pasif anahtarı (`product.active`)
+
+### Drop sistemi
+- ✅ Sanity `drop` şeması; anasayfa drop satırları (DROP-000 yayında,
+  DROP-001 "yakında")
+- ✅ Zamanlanmış yayın + geri sayım (`UpcomingDropRow`), otomatik yayına geçiş
+- ✅ Drop numaraları, `plannedQuantity` ile stok sınırı (checkout'ta
+  "stok tükendi")
+- ✅ Drop'a özel Donanım Tahsisi/IoT ücreti (koleksiyon ücretini ezer)
+- ✅ Drop başlığında "N Farklı Kombinasyon" sayacı; ürün sıralaması için
+  `priority` alanı
+- ✅ Custom Registry satışı → otomatik `owned` Sanity ürünü (sansürlü
+  sahip adı + şehir, otomatik registry no)
+
+### 3D / konfigüratör
+- ✅ Custom Registry: koleksiyon bazlı ücretler, min/max gövde sayısı,
+  gövde katmanı sıralama (`moveBodyLayer`)
+- ✅ Ortak `material` kütüphanesi (parçalardan referansla), şeffaf malzeme
+- ✅ Ölçü anotasyonları (genişlik/yükseklik/derinlik), kamerayı sığdır
+  butonu, kombinasyon sayısı rozeti
+- ✅ "Özelleştir" butonu (`?preset=<slug>`) — Registry ürününün tam
+  kombinasyonunu konfigüratöre yükler
+- ✅ Mobilde sekmeli konfigüratör paneli; tutorial'a bitiş adımı
+- ✅ Registry kartlarında 360° spin-frame görünümü (Supabase
+  `product-spins` + GitHub Actions ile otomatik üretim)
+- ✅ Ürün kartında 3D görüntüleyici
+- ✅ Yeni STL koleksiyonları: Orbital, Helical, Extruded
+
+### Belgeler, hesap, admin
 - ✅ Otomatik belge üretimi (Sertifika, Ürün Kartı, Garanti) — admin
   siparişi "İşleniyor"a aldığında tetikleniyor, Vercel'de çalışıyor
-  (Puppeteer + chromium-min sorunları çözüldü)
+- ✅ App Store QR'ı artık doğrudan App Store linkinden üretiliyor
 - ✅ Ürün Kimlik Sayfası (`/dossier/[certificateNo]`) — genel erişilebilir
-- ✅ Sipariş durum e-postaları (Hazırlanıyor / Kargoya Verildi), dil
-  para birimine göre (USD→EN, TRY→TR)
-- ✅ Hesap sayfası: profil düzenleme, sipariş takibi, "Teslim Aldım"
-- ✅ Admin panel: durum yönetimi, koleksiyon adı + telefon + adres +
-  dossier linki gösterimi
-- ✅ Sepet temizleme (çıkışta), şifre göster/gizle (login/signup)
-- ✅ Custom Registry: koleksiyon bazlı Donanım Tahsisi/IoT ücretleri (Sanity)
-- ✅ Custom Registry paneli: genişletilmiş panel, kompakt fiyat çubuğu,
-  küçültülmüş thumbnail'lar, daire renk swatch'ları
-- ✅ Custom Registry Tutorial (masaüstü + mobil, gerçek arayüz işaretleme)
-- ✅ 3D sahne: gradient arka plan (Bloom/screenshot uyumlu), lamba ışığı
-  glow efekti (emissive + Bloom)
-- ✅ SEO: `sitemap.ts`, `robots.ts` (önceden hiç yoktu)
-- ✅ Nav çevirileri (Özel Tahsis, Envanter, Kontrol Protokolü, Büro, Arşiv)
-- ✅ Control Protocol sayfasında mobil uygulama tanıtımı (iPhone mockup,
-  TR/EN ayrı ekran görüntüleri)
-- ✅ Privacy Policy / Terms of Use sayfaları (mobil uygulama için,
-  App Store/Play Store başvurusu amaçlı)
+- ✅ Sipariş durum e-postaları, dil para birimine göre (USD→EN, TRY→TR)
+- ✅ Hesap sayfası: profil, sipariş takibi, "Teslim Aldım", Ürün Arşivi,
+  Kredi Geçmişi
+- ✅ Admin panel: durum yönetimi, kredi verme, servis talepleri
+
+### Site genel
+- ✅ Karanlık/aydınlık tema (varsayılan karanlık), tema geçiş düğmesi
+- ✅ Header çöp adam animasyonu (`HeaderStickman`)
+- ✅ Kompakt footer, App Store / Google Play rozetleri
+- ✅ Bölge Bürosu Ol (dünya haritalı) ve Tasarım Departmanına Katıl
+  başvuru sayfaları (`applications` tablosu)
+- ✅ Arşiv (blog) sayfaları: `/archive`, `/archive/[slug]`
+- ✅ Yasal sayfalar: Privacy Policy, Terms of Use, Mesafeli Satış
+  Sözleşmesi, Kargo & İade
+- ✅ Control Protocol sayfasında uygulama tanıtımı — TR/EN ekran
+  görüntüleri yerinde
+- ✅ SEO: `sitemap.ts`, `robots.ts`
 
 ---
 
 ## ⚠️ Bilinen Eksikler / Manuel Adım Gerektirenler
 
 ### 1. Supabase şeması `schema.sql` ile senkron DEĞİL
-`order_items.certificate_no`, `order_documents` tablosu, `orders.locale`/
-`tracking_number`/`admin_note`, `order_status` enum'una `received` eklenmesi
-— bunların hepsi canlı veritabanına **elle çalıştırılan ayrı SQL
-snippet'leriyle** uygulandı, ama `supabase/schema.sql` dosyasına geri
-yazılmadı. **Yapılması gereken:** bu migration'ları `schema.sql`'e
-konsolide edin (ya da `supabase/migrations/00X_*.sql` şeklinde ayrı
-dosyalar olarak repoya ekleyin), aksi halde yeni bir ortamda (staging,
-yeni geliştirici) `schema.sql`'i çalıştıran biri eksik bir şema elde eder.
+Canlı veritabanına elle uygulanıp `supabase/schema.sql`'e geri
+yazılmayanlar:
+- `order_items.certificate_no`, `order_documents` tablosu
+- `orders.locale` / `tracking_number` / `admin_note`
+- `order_status` enum'una `received`
+- Bureau Credits: `profiles.bureau_credits_try/usd`,
+  `orders.bureau_credits_used/credits_earned`, `grant_bureau_credits` RPC'si
+- `service_requests` tablosu
+- Supabase Storage bucket'ları: `documents`, `product-spins`
 
-### 2. App Store / Google Play QR görselleri eksik
-`public/documents/app-store-qr.png` ve `google-play-qr.png` henüz
-eklenmedi (sadece açıklamalı bir `README.txt` var). Eklenene kadar Ürün
-Kartı arka yüzünde bu alanlarda `[ QR ]` placeholder'ı görünmeye devam
-ediyor — üretim akışını bozmuyor, sadece eksik görsel.
+`applications` tablosu ayrı bir dosyada (`supabase/applications.sql`)
+duruyor, ama `supabase/README.md`'deki kurulum adımlarında geçmiyor.
+**Yapılması gereken:** bunları `supabase/migrations/00X_*.sql` dosyaları
+olarak repoya ekleyin ve README'yi güncelleyin; aksi halde yeni bir
+ortamda eksik şema elde edilir.
 
-### 3. `public/parts/stl/` klasörünün amacı netleşmedi
-Projede bu klasörde STL dosyaları var ama **kodun hiçbir yerinde
-referans edilmiyor**. Konfigüratör tüm parça URL'lerini Sanity CDN'den
-çekiyor. Bu dosyalar muhtemelen ya Sanity'ye yükleme öncesi bir hazırlık
-klasörü, ya da mobil uygulamanın doğrudan kullanması planlanan ama henüz
-bağlanmamış bir kaynak. **Netleştirilmesi gerekiyor** (bkz. `TASKS.md`).
+### 2. Google Play QR görseli eksik
+App Store QR'ı artık linkten üretiliyor. Google Play QR'ı hâlâ
+`public/documents/google-play-qr.png` dosyasını bekliyor (klasörde sadece
+`README.txt` var). Eklenene kadar Ürün Kartı arka yüzünde `[ QR ]`
+placeholder'ı görünür.
 
-### 4. Mobil uygulama <-> web sitesi arasında programatik bağlantı yok
-Mobil uygulama (ESP32 kontrolü) bu repodan tamamen ayrı. Web sitesinde:
-- Her `lampPart`'ın STL/GLB dosyası **genel, kimlik doğrulamasız** bir
-  Sanity CDN URL'inde duruyor.
-- Ama "bu müşterinin satın aldığı TAM tasarım hangi parça+malzeme
-  kombinasyonundan oluşuyor, uygulama bunu nasıl öğrenip doğru STL'leri
-  çekecek" sorusuna cevap veren **hiçbir API endpoint'i yok**.
-- `custom_designs.design_data` (parts array) doğru veri kaynağı olurdu,
-  ama şu an sadece web'in kendi checkout akışında yazılıyor, dışarıya
-  (GET ile) hiç sunulmuyor.
-- Bu konu kullanıcıyla konuşuldu ama **karara bağlanmadı** — bkz. `TASKS.md`.
+### 3. Checkout fiyatları istemciden geliyor
+`/api/checkout`, kalem fiyatlarını (`priceTRY`/`priceUSD`) sepetten
+(tarayıcıdan) olduğu gibi alıyor; sunucuda Sanity fiyatıyla
+karşılaştırılmıyor. Kötü niyetli biri isteği değiştirip düşük fiyatla
+ödeme başlatabilir. Sunucuda ürün fiyatını Sanity'den yeniden okuyup
+hesaplamak gerekiyor (custom tasarımlar için de parça fiyatlarından).
 
-### 5. Admin panel yetkilendirmesi basit
-`/api/admin/*` route'ları Supabase Auth rolüne değil, basit bir
-header-token kontrolüne dayanıyor gibi görünüyor. Üretim ortamı için
-gözden geçirilip güçlendirilmesi (örn. `profiles.role = 'admin'` kontrolü
-+ RLS) önerilir.
+### 3b. Daimi Envanter ürünleri henüz girilmedi
+Kod hazır (`saleMode: standing`, sınıflar, stok); Sanity'de henüz hiç
+Daimi Envanter ürünü yok, anasayfadaki sınıflar "Kayıt açılıyor"
+damgasıyla görünüyor.
 
-### 6. Footer, mobilde gizli
-`Footer.tsx` → `hidden sm:block` — küçük ekranlarda Privacy Policy/Terms
-of Use linkleri de dahil footer hiç görünmüyor (önceden alınmış bir
-tasarım kararı). App Store/Play Store başvurusu için sorun değil
-(URL'ler doğrudan veriliyor), ama normal mobil ziyaretçiler bu sayfalara
-site içi navigasyondan ulaşamıyor.
+### 4. iyzico kalıntıları temizlenmedi
+- `src/app/api/checkout/callback/route.ts` → 410 dönüyor, "güvenle
+  silinebilir" notu var.
+- `src/app/api/iyzico-test/route.ts` → 404 dönen ölü uç nokta.
+- `src/components/checkout/IyzicoPaymentForm.tsx` ve `iyzipay-ts` paketi
+  kullanılmıyor.
+- `orders.iyzico_payment_id` / `iyzico_token` kolonları PayTR verisini
+  taşıyor (isimler yanıltıcı).
+- `product.ts` şemasında hâlâ "iyzico checkout'ta…" diyen eski bir yorum var.
 
-### 7. Blog / Archive sayfası yarım
-Sanity'de `post.ts` şeması ve `getAllPostSlugs()` sorgusu var ama
-`/blog/[slug]` gibi bir route hiç yazılmadı. `/[locale]/archive` sayfası
-farklı bir amaca hizmet ediyor (satın alınan ürünler, hesap sayfasındaki
-"Ürün Arşivi" ile karıştırılmamalı — bunlar aynı isimde ama farklı 2 şey
-olabilir, kontrol edin).
+### 5. `.env.local.example` eksik
+Kodun kullandığı ama örnek dosyada olmayan değişkenler: `ADMIN_API_SECRET`,
+`GITHUB_REPO`, `GITHUB_ACTIONS_TOKEN` (spin-frame otomasyonu),
+`CONTACT_EMAIL` (başvuru/iletişim e-postası). Vercel'de tanımlı olup
+olmadıklarını da kontrol edin — `GITHUB_*` yoksa spin-frame'ler sessizce
+üretilmez.
+
+### 6. Mobil uygulama <-> web sitesi arasında programatik bağlantı (kısmi)
+- **Var olan:** uygulama STL dosyalarını sitenin `public/parts/stl/`
+  klasöründen (`manifest.json` ile) indiriyor. Bu klasör silinmemeli.
+- **Olmayan:** "bu müşterinin satın aldığı tam tasarım hangi parça+malzeme
+  kombinasyonu" sorusuna cevap veren bir API. `custom_designs.design_data`
+  ve artık Sanity'deki `owned` ürünlerin `configuratorParts` alanı doğru
+  veri kaynakları olurdu ama dışarıya sunulmuyor.
+- STL'ler iki yerde tutuluyor (Sanity CDN = konfigüratör, `public/parts/stl`
+  = uygulama); yeni parça eklerken ikisinin de güncellenmesi gerekiyor.
+
+### 7. Admin panel yetkilendirmesi basit
+`/api/admin/*` route'ları `x-admin-secret` header'ını `ADMIN_API_SECRET`
+ile karşılaştırıyor. Supabase Auth rolü + RLS ile güçlendirilmesi önerilir.
 
 ### 8. Bloom/ışık ayarları "başlangıç noktası" olarak bırakıldı
 `LightSimulator.tsx`'teki `MAX_INTENSITY`, `ModelMesh.tsx`'teki
 `MAX_HEAD_GLOW`, `Scene.tsx`'teki Bloom parametreleri (`luminanceThreshold`,
 `intensity`, `radius`) test edilip görsel olarak beğenilene kadar ince
-ayar gerektirebilir; kod yorumlarında bu açıkça belirtiliyor.
+ayar gerektirebilir.
+
+### 9. Repoda büyük ikili dosya
+`backup.tar.gz` (~24 MB) git'e commit edilmiş. Repo boyutunu şişiriyor;
+gerekmiyorsa repodan çıkarılıp `.gitignore`'a eklenmeli.
 
 ---
 
@@ -117,16 +167,19 @@ ayar gerektirebilir; kod yorumlarında bu açıkça belirtiliyor.
 | PDF'lerde Bloom/ışık efekti kayboluyor | `useScreenshot.ts` manuel `gl.render()` ile post-processing'i atlıyordu | Manuel render kaldırıldı |
 | Custom Registry ışığı hiç görünmüyor | Three.js fiziksel candela birimleri, point light'ı gerçekçi mesafede etkisiz kılıyor | Başlık parçasına emissive glow + Bloom eklendi |
 | `getAllLampCollections()` donanım ücretlerini dönmüyor | İki paralel Sanity sorgusundan sadece biri güncellenmişti | İkisi de senkron edildi |
+| PayTR token hatası / bildirim eşleşmiyor | `merchant_oid` tire kabul etmiyor; para birimi "TL" olmalı; `user_ip` tek IP olmalı; dönüş URL'leri locale'siz `undefined/tr/...` üretiyordu | `toPaytrOid`/`fromPaytrOid`, `TL` eşlemesi, ilk IP, URL fallback'i |
+| PayTR panelinin test bildirimi hata veriyor | Sahte `merchant_oid` için 500 dönülüyordu, PayTR sürekli tekrar deniyordu | Bulunamayan siparişte de `OK` dönülüyor; sadece geçici DB hatasında 500 |
+| Tema açılışta bir anlığına yanlış görünüyor | Hydration öncesi script ile `ThemeProvider` mantığı farklıydı | İkisi birebir aynı tutuluyor (`layout.tsx` ↔ `ThemeProvider.tsx`) |
 
 ---
 
 ## Bu Dosyayı Nasıl Güncel Tutarsınız
 
 Her önemli PR/değişiklik sonrası kendinize sorun:
-1. Yeni bir migration mı çalıştırdınız? → §"Bilinen Eksikler #1"i güncelleyin
-   veya migration'ı schema.sql'e işleyip maddeyi kaldırın.
-   yenisi eklendiyse.
+1. Yeni bir migration mı çalıştırdınız? → "Bilinen Eksikler #1"i güncelleyin
+   veya migration'ı repoya işleyip maddeyi kaldırın.
 2. Yeni bir "elle yapılması gereken" adım mı ortaya çıktı (örn. yeni bir
    env değişkeni, yeni bir Sanity alanı doldurulmalı)? → yeni madde ekleyin.
 3. Bir eksik kapandıysa → o maddeyi silin, "Çalışan Özellikler" listesine
    taşıyın.
+4. En üstteki tarihi ve commit'i güncelleyin.

@@ -39,7 +39,10 @@ export interface SanityImage {
 
 export type ProductStatus = 'certified' | 'limited' | 'decommissioned' | 'owned'
 
-export type ProductCategory = 'pendant' | 'wall' | 'desk' | 'floor' | 'strip'
+export type ProductCategory = 'floor' | 'chandelier' | 'wall' | 'desk' | 'pendant' | 'strip'
+
+/** limited = Sınırlı Tahsis (drop), standing = Daimi Envanter (sürekli satış). Boşsa limited kabul edilir. */
+export type ProductSaleMode = 'limited' | 'standing'
 
 export type PhotonOutput = '2700K' | '2700K-6500K' | '6500K'
 
@@ -62,6 +65,13 @@ export interface ProductCard {
   /** OPSİYONEL, SADECE gerçek üye hesabı varsa dolu — profil sayfası linki için. Misafirlerde boş. */
   ownerUserId?: string
   category: ProductCategory
+  /** Boşsa (eski kayıtlar) 'limited' kabul edilir — bkz. resolveSaleMode(). */
+  saleMode?: ProductSaleMode
+  /** SADECE Daimi Envanter: boş = siparişe üretim, 0 = tükendi. */
+  stockQuantity?: number | null
+  /** Bağlı olduğu drop'un numarası (kart başlık şeridi için). */
+  dropNo?: string | null
+  compatibility?: ControlCompatibility[]
   priceTRY: number
   priceUSD: number
   /** OPSİYONEL — doluysa kartta priceTRY/priceUSD üstü çizili gösterilir. */
@@ -257,4 +267,30 @@ export interface ConfiguratorState {
   lightBrightness: number      // 0–1
   lightEnabled: boolean
   totalPrice: number
+}
+// ── Büro Bülteni ──────────────────────────────────────────
+
+export type BulletinKind = 'drop' | 'inventory' | 'bureau' | 'notice'
+
+export interface Bulletin {
+  _id: string
+  bulletinNo: number
+  kind: BulletinKind
+  publishedAt: string
+  pinned?: boolean
+  title: LocalizedString[]
+  text?: LocalizedString[]
+  /** Dil ön eki OLMADAN site içi yol (sorguda drop/ürün/yazı linkinden türetilir). Yoksa link yok. */
+  href?: string | null
+  /** Elle girilen etiket → değer satırları. */
+  rows?: Array<{ label: LocalizedString[]; value: LocalizedString[] }> | null
+  /** Link bir drop ise o drop'un canlı verisi — otomatik satırlar için. */
+  drop?: {
+    dropNo: string
+    name: LocalizedString[]
+    plannedQuantity?: number | null
+    active?: boolean | null
+    scheduledAt?: string | null
+    soldCount: number
+  } | null
 }

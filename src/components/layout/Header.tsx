@@ -243,8 +243,9 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               <Link
                 key={href}
                 href={href}
+                aria-current={isActive(href) ? 'page' : undefined}
                 className={`
-                  font-nav text-[12px] tracking-wider uppercase no-underline
+                  nav-underline focus-bureau py-2 font-nav text-[12px] tracking-wider uppercase no-underline
                   transition-opacity duration-150
                   ${isActive(href) ? 'text-bureau-black font-bold' : 'text-bureau-black font-semibold opacity-70 hover:opacity-100'}
                 `}
@@ -261,7 +262,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             <button
               onClick={switchLocale}
               className="font-nav text-[11px] tracking-wider uppercase text-bureau-muted hover:text-bureau-black transition-colors"
-              aria-label={`Switch to ${otherLocale.toUpperCase()}`}
+              aria-label={`TR / EN: ${locale === 'tr' ? 'dili değiştir' : 'switch language'}`}
             >
               <span className={locale === 'tr' ? 'text-bureau-black font-semibold' : 'opacity-50'}>TR</span>
               <span className="mx-1 opacity-30">/</span>
@@ -345,7 +346,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             <ThemeToggle locale={locale} />
             <Link
               href="/cart"
-              className="font-nav text-[12px] tracking-wider uppercase text-bureau-black no-underline"
+              className="whitespace-nowrap font-nav text-[12px] tracking-wider uppercase text-bureau-black no-underline"
               onClick={() => setMenuOpen(false)}
             >
               {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})

@@ -2,7 +2,11 @@
 
 Teknik derinlemesine referans. Sıralama: stack → routing/i18n → veri
 modeli (Supabase + Sanity) → sipariş yaşam döngüsü → belge üretimi →
-3D konfigüratör → auth/sepet → deployment notları.
+3D konfigüratör → auth/sepet → admin → SEO → statik sayfalar → drop
+sistemi → spin-frame'ler → tema/header → başvurular → mobil uygulama ile
+ilişki.
+
+**Son gözden geçirme:** 2026-11-21 (`96f72e4` commit'i itibarıyla).
 
 ---
 
@@ -15,10 +19,11 @@ modeli (Supabase + Sanity) → sipariş yaşam döngüsü → belge üretimi →
 | Stil | Tailwind CSS (özel `bureau.*` renk paleti — bkz. `tailwind.config.ts`) |
 | i18n | `next-intl` (locale: `tr` \| `en`, `localePrefix: 'always'`) |
 | Veritabanı / Auth | Supabase (Postgres + Supabase Auth + Storage) |
-| CMS | Sanity (`sanity` + `next-sanity`) — ürünler, koleksiyonlar, lamba parçaları, blog |
+| CMS | Sanity (`sanity` + `next-sanity`) — ürünler, drop'lar, koleksiyonlar, lamba parçaları, malzemeler, blog (Arşiv) |
 | 3D | `three` + `@react-three/fiber` + `@react-three/drei` + `@react-three/postprocessing` |
+| Harita | `d3-geo` + `topojson-client` + `world-atlas` + `i18n-iso-countries` (Bölge Bürosu dünya haritası) |
 | State (client) | Zustand (`cart` store, `configurator` store) |
-| Ödeme | iyzico (`iyzipay-ts`, Checkout Form akışı) |
+| Ödeme | **PayTR** (iFrame API, `src/lib/paytr/client.ts`) — Ekim 2026'dan beri. iyzico anlaşması sona erdi; `iyzipay-ts` paketi ve `IyzicoPaymentForm.tsx` artık kullanılmayan kalıntılar |
 | E-posta | Resend (`resend` + `react-email` şablonları) |
 | PDF üretimi | Puppeteer (`puppeteer-core` + `@sparticuz/chromium-min`) + `pdf-lib` (birleştirme) |
 | Deployment | Vercel (serverless functions, Next.js 16 `proxy.ts` konvansiyonu) |
@@ -57,10 +62,18 @@ and proxy file are detected" hatası).
 `matcher`: `/api`, `/auth`, `/studio`, `/_next`, `/_vercel` ve uzantılı
 (statik) dosyalar hariç her yolu kapsar.
 
+### İlk ziyarette dil seçimi: ülkeye göre (geo)
+`proxy.ts`, `NEXT_LOCALE` cookie'si **yoksa** (gerçekten ilk ziyaret)
+Vercel'in `x-vercel-ip-country` header'ına bakar: `TR` → `tr`, diğer her
+ülke → `en`. Karar 1 yıllık `NEXT_LOCALE` cookie'sine yazılır; sonraki
+ziyaretlerde ve kullanıcı dili elle değiştirdiğinde geo-tespiti devreye
+girmez. Bu header yerelde (`next dev`) yoktur — orada next-intl'in
+varsayılan Accept-Language davranışı çalışır.
+
 ### Locale-bağımlı diğer davranışlar
 - `currency = locale === 'tr' ? 'TRY' : 'USD'` (checkout formunda türetilir).
 - Sipariş/durum e-postalarının dili **currency**'ye göre (locale'e göre
-  DEĞİL) seçilir — bkz. `src/app/api/checkout/callback/route.ts` ve
+  DEĞİL) seçilir — bkz. `src/app/api/checkout/paytr-notify/route.ts` ve
   `src/app/api/admin/orders/route.ts` içindeki `emailLocale`.
 - Next.js 16 kalıbı: **her sayfa/route'ta `params` bir `Promise`'dır** —
   `const { locale } = await params`. Eski senkron kalıp (`params.locale`)
@@ -94,6 +107,33 @@ iyzico_token, paid_at, notes, created_at, updated_at`
   hangi dilde yapılacağını buradan okur.
 - `tracking_number TEXT` — admin panelinden girilen kargo takip no.
 - `admin_note TEXT`
+- `bureau_credits_used`, `credits_earned` — Bureau Credits (aşağıda).
+
+**PayTR notu:** Ayrı `paytr_*` kolonları AÇILMADI. `iyzico_payment_id` /
+`iyzico_token` kolonları geçici olarak genel amaçlı yeniden kullanılıyor
+(PayTR'nin `merchant_oid` ve `payment_type` değerlerini taşıyor — bkz.
+`paytr-notify/route.ts`). Kolon adları yanıltıcı; yeni kod yazarken bunu
+bilin.
+
+### Bureau Credits (migration ile eklendi, schema.sql'de YOK)
+`profiles.bureau_credits_try` / `bureau_credits_usd` bakiyeleri +
+`grant_bureau_credits(p_user_id, p_amount, ...)` RPC'si. Üye siparişinde
+checkout'ta kredi harcanabilir; ödeme onayında harcanan düşülür ve
+ödenen tutarın **%10'u** kredi olarak kazanılır. Admin elle kredi
+verebilir (`POST /api/admin/grant-credits`). Hesap sayfasında "Kredi
+Geçmişi" sekmesi.
+
+### `applications` (`supabase/applications.sql` — ayrı dosya)
+"Bölge Bürosu Ol" (`type='hub'`) ve "Tasarım Departmanına Katıl"
+(`type='creator'`) başvuruları. `user_id` zorunlu (başvuru için üyelik
+şart), `country` ISO alpha-2, `details` JSONB, `status`
+(`new|reviewing|approved|rejected`). RLS: üye yalnızca kendi
+başvurusunu ekler/görür. Bu dosya `schema.sql`'e dahil değil, elle
+çalıştırılmalı.
+
+### `service_requests`
+`/api/service-request` ve `/api/admin/service-requests` tarafından
+kullanılıyor; tablosu da `schema.sql`'de yok (elle oluşturulmuş).
 
 **`order_status` enum'u** (migration ile genişletildi):
 ```
@@ -144,49 +184,94 @@ Storage bucket: `documents` (public).
 
 `src/sanity/schemaTypes/`:
 
+Kayıtlı tipler (`index.ts`): `product`, `post`, `lampPart`, `collection`,
+`material`, `drop`.
+
 ### `product.ts` — Registry ürünleri
-Alanlar: `registryNo` (benzersiz seri no, örn. "007/050" — tek fiziksel
-parçayı temsil eder), `slug`, `status` (`decommissioned` dahil — satılan
-ürün bu duruma alınır), lokalize `name`/`shortDescription`/`description`,
-`images[]`, `category`, `collection` (ref), `priceTRY`/`priceUSD`,
-`specs[]` (key-value), `photonOutput`, `netWeightKg`, `firmwareVersion`,
-`assetSubtype` (belge üretimi için — Ürün Kartı/Sertifika şablonlarında
-kullanılır), `compatibility`, `isConfigurable` + `configuratorCollection`
-(bu ürün Custom Registry'de de mi tasarlanabilir), `seo`.
+Alanlar: `active` (kapalıysa ürün sitede HİÇBİR yerde görünmez, sitemap
+dahil — dossier sayfaları etkilenmez), `registryNo` (benzersiz seri no,
+örn. "007/050" — tek fiziksel parçayı temsil eder; Studio'da
+`RegistryNoHint.tsx` sıradaki numarayı öneriyor), `slug`, `status`:
+- `certified` (satışta), `limited`, `decommissioned` (satıldı/üretimden kalktı),
+- `owned` — Custom Registry'den tasarlanıp **satın alınmış**, bir
+  müşteriye ait adet. Ödeme onayında kod tarafından otomatik oluşturulur
+  (§5, §12). Yanında `ownerDisplayName` (sansürlü ad, örn. "Ça*** KE***" —
+  `src/lib/nameCensor.ts`; misafirde rastgele üretilmiş ad), `ownerCity`,
+  `ownerUserId` (opsiyonel, sadece üye siparişinde) alanları.
+
+Ayrıca: lokalize `name`/`shortDescription`/`description`, `images[]`,
+`category`, `collection` (ref), `drop` (ref, opsiyonel — boşsa anasayfa
+drop satırlarında görünmez), `priority` (drop satırındaki sıra, küçük
+önce; eşitse `registryNo`), `priceTRY`/`priceUSD`, `vatIncluded`,
+`discountPriceTRY`/`discountPriceUSD` (opsiyonel indirim — kartta ve
+detayda üstü çizili eski fiyat; mantık `src/lib/sanity.ts` →
+`getPricingForLocale` / `getCartPricing`), `specs[]`, `photonOutput`,
+`netWeightKg`, `firmwareVersion`, `assetSubtype` (belge şablonları için),
+`compatibility`, `isConfigurable` + `configuratorCollection` +
+`configuratorParts[]` (ürünün Custom Registry'deki TAM parça/malzeme
+kombinasyonu — "Özelleştir" butonu ve spin-frame üretimi bunu kullanır),
+`seo`, `publishedAt`.
+
+### `drop.ts` — Sınırlı satış dalgaları (DROP-000, DROP-001…)
+`active`, `scheduledAt` (zamanlanmış yayın), `dropNo`, lokalize `name`,
+`collection` (ref — Custom Registry koleksiyonu), `sortOrder`,
+`plannedQuantity` (toplam satılacak adet — registry no'nun paydası ve
+checkout'taki stok sınırı), opsiyonel `hardwareBaseFeeTRY/USD` +
+`iotFeeTRY/USD` (koleksiyon ücretini SADECE bu drop için ezer; `0` =
+ücretsiz, boş = koleksiyonunki geçerli). Görünürlük mantığı için bkz. §12.
 
 ### `collection.ts` — Koleksiyonlar (hem Registry hem Custom Registry'yi gruplar)
-`key` (slug, `custom_designs.collection_key` ile eşleşir),
+`active`, `key` (slug, `custom_designs.collection_key` ile eşleşir),
 lokalize `name`/`description`, `coverImage`, `sortOrder`,
+`minBodyLayers` / `maxBodyLayers` (gövde katmanı sınırları; boşsa
+0/5 — `DEFAULT_BODY_LIMITS`; `max = 0` Gövde sekmesini gizler),
 `hardwareBaseFeeTRY`, `hardwareBaseFeeUSD`, `iotFeeTRY`, `iotFeeUSD`
 — Custom Registry'deki "Donanım Tahsisi" ücretleri kod içinde sabit
-DEĞİL, koleksiyon bazında buradan yönetilir (bkz. §7).
+DEĞİL, koleksiyon (ve gerekirse drop) bazında buradan yönetilir (bkz. §7).
+
+### `material.ts` — Ortak malzeme kütüphanesi (yeni)
+`materialId`, lokalize `label`, `color`, `isTranslucent` + `opacity`
+(şeffaf malzeme), `roughness`, `metalness`, `priceModifierTRY/USD`,
+`thumbnail`, `sortOrder`. Malzemeler artık bir kere tanımlanıp
+parçalardan **referansla** seçiliyor (eskiden her parçanın içine gömülü
+bir dizi idi). Göç script'i: `scripts/migrate-materials-to-references.ts`.
 
 ### `lampPart.ts` — Custom Registry parça kütüphanesi
 `partId`, lokalize `name`/`description`, `slotType` (`base`|`body`|`head`),
 `collections[]` (hangi koleksiyonlarda kullanılabilir), `modelFile`
 (Sanity file asset — STL/GLB, genel/herkese açık CDN URL'i verir),
-`thumbnail`, `dimensions`, `materials[]` (her biri `materialId`, lokalize
-`label`, `color`, `roughness`, `metalness`, `priceModifierTRY/USD`,
-`thumbnail`), `basePriceTRY/USD`, `sortOrder`.
+`thumbnail`, `dimensions` (mm), `materials[]` (**`material` belgelerine
+referans**, en az 1), `basePriceTRY/USD`, `sortOrder`.
 
 DİKKAT: `modelFile.asset->url`, kimlik doğrulamasız, genel bir Sanity CDN
-linkidir. URL'i bilen herkes STL/GLB dosyasını indirebilir. Şu an bunun
-"sorun" olup olmadığı (mobil uygulamanın bu dosyalara nasıl eriştiği)
-netleşmedi — bkz. `CURRENT_STATUS.md`.
+linkidir. Mobil uygulama bu URL'leri KULLANMIYOR — kendi STL kaynağı
+`public/parts/stl/` (bkz. §16).
 
-### `post.ts` — Blog (Archive sayfası için şema var, ama sayfa henüz yok)
-`getAllPostSlugs()` sorgusu `src/lib/queries.ts`'te tanımlı ama hiçbir
-`/blog/[slug]` route'u kodda mevcut değil — ölü kod / yarım kalmış özellik.
+### `post.ts` — Arşiv (blog) yazıları
+`/[locale]/archive` (liste, `getAllPosts()`) ve `/[locale]/archive/[slug]`
+(detay, `getPostBySlug()`) sayfaları bu şemayı kullanıyor. "Arşiv" =
+herkese açık bülten/blog; hesap sayfasındaki "Ürün Arşivi" sekmesi
+(satın alınan ürünler) ondan farklı bir şey.
 
 ### Sanity sorgu dosyası: `src/lib/queries.ts`
+Önemli fonksiyonlar: `getAllProducts(filters)` (registry listesi; drop
+filtresi + `priority`/`registryNo` sıralaması), `getAllDropsWithProducts()`
+(anasayfa), `getProductBySlug`, `getRelatedProducts`, `getAllPosts`,
+`getPostBySlug`, `getLampPartsByCollection`, `getAllProductSlugs` (sitemap).
+
 İki paralel "tüm koleksiyonları getir" fonksiyonu var, ikisi de
-donanım/IoT ücret alanlarını dönmeli:
+donanım/IoT ücret alanlarını ve gövde sınırlarını dönmeli:
 - `getAllCollections()` — admin panelinde kullanılır.
 - `getAllLampCollections()` — Custom Registry sayfasında kullanılır
   (sadece en az 1 `lampPart`'ı olan koleksiyonları filtreler).
 
-Yeni bir alan eklerken ikisini de güncellemeyi unutmayın; bu projede bir
-kez bu ikisi birbirinden geride kalmıştı (bkz. `CURRENT_STATUS.md`).
+İkisinde de ücretler `coalesce(<koleksiyona bağlı drop'un ücreti>,
+<koleksiyonun ücreti>)` şeklinde hesaplanıyor (drop override'ı). Yeni bir
+alan eklerken ikisini de güncellemeyi unutmayın; bu projede bir kez bu
+ikisi birbirinden geride kalmıştı.
+
+Sunucu tarafı yazma işlemleri için `src/lib/sanity.ts` → `sanityAdminClient`
+(yazma yetkili token) — sadece API route'larında import edin.
 
 ---
 
@@ -195,15 +280,39 @@ kez bu ikisi birbirinden geride kalmıştı (bkz. `CURRENT_STATUS.md`).
 ```
 1. Müşteri sepete ürün/custom tasarım ekler (Zustand cart store, localStorage)
 2. /checkout -> CheckoutForm.tsx -> POST /api/checkout
-   - createOrder() ile 'pending' durumunda sipariş açılır (orders.locale kaydedilir)
-   - iyzico Checkout Form init edilir, kullanıcı iyzico'ya yönlenir
-3. Ödeme sonrası iyzico -> POST /api/checkout/callback
+   - Custom kalemler için checkCustomDesignCapacity(): koleksiyonun bağlı
+     olduğu drop'un plannedQuantity'si dolduysa sipariş "stok tükendi"
+     hatasıyla REDDEDİLİR (konfigüratör açık kalır, sadece ödeme engellenir)
+   - Bureau Credits harcaması hesaplanır (üye ise)
+   - 'pending' durumunda sipariş açılır (orders.locale kaydedilir)
+   - PayTR token'ı alınır (createPaymentToken). Dikkat:
+       * para birimi kodu "TL" (ISO "TRY" değil)
+       * merchant_oid'de tire yasak: TAB-2026-AB12C -> TAB2026AB12C
+         (toPaytrOid / fromPaytrOid)
+       * basket formatı [isim, birim_fiyat, adet]
+       * user_ip tek bir IP olmalı (x-forwarded-for'un ilki)
+   - Token hatasında sipariş iptal edilir
+   - PayTRPaymentForm.tsx, PayTR iFrame'ini sayfada gösterir
+3. PayTR, sunucudan sunucuya POST /api/checkout/paytr-notify (PUSH modeli)
+   - Hash doğrulanır (uyumsuzsa 400)
+   - Sipariş bulunamazsa yine "OK" döner (PayTR panelinin test
+     bildirimleri sahte oid gönderir); geçici DB hatasında 500 döner ki
+     PayTR tekrar denesin
    - Ödeme başarılıysa status: 'pending' -> 'received'
-   - Sipariş onay e-postası gönderilir (dil: currency'ye göre)
-   - Bureau Credits düşümü/kazanımı işlenir (üye siparişlerinde)
+   - Sipariş onay e-postası + admin bildirimi gönderilir (dil: currency'ye göre)
+   - Custom kalemler -> createOwnedProductFromCustomDesign(): Sanity'de
+     status:'owned' bir product belgesi açılır (registryNo drop'tan
+     otomatik, sansürlü sahip adı/şehri; bkz. §12) ve spin-frame üretimi
+     tetiklenir (§13). Hata sadece loglanır, ödeme akışını bloklamaz.
+   - Bureau Credits: harcanan düşülür, ödenenin %10'u kazanılır (üye)
+   - Ödeme başarısızsa sipariş 'cancelled'
+   - Tarayıcının gördüğü merchant_ok_url / merchant_fail_url sayfaları
+     SADECE görseldir; sipariş durumu orada değişmez.
    - Belge üretimi BURADA TETİKLENMEZ (bilinçli tasarım -- müşterinin
      ödeme sonrası bekleme süresini kısaltmak için admin'in 'processing'e
      almasına ertelendi)
+   - Eski iyzico callback'i (/api/checkout/callback) artık 410 dönüyor,
+     silinebilir. /api/iyzico-test de 404 dönen ölü bir uç nokta.
 4. Admin panelinden (/admin, PATCH /api/admin/orders) durum 'processing'e
    alınır:
    - generateOrderDocuments() TETİKLENİR (Sertifika+Ürün Kartı+Garanti PDF)
@@ -272,36 +381,66 @@ karesini doğrudan `toDataURL()` ile yakalıyor.
 Kartı ve Garanti kraft/saman rengi (`#f4ebd9`) zeminde, Sertifika de aynı;
 Ürün Kartı beyaz zeminde (kullanıcı tercihiyle değiştirildi).
 
-App Store/Google Play QR görselleri statik dosyalar olarak
-`public/documents/{app-store-qr,google-play-qr}.png`'de bekleniyor; henüz
-eklenmedi (bkz. `CURRENT_STATUS.md`).
+QR kodları (`src/lib/documents/qr.ts`): dossier QR'ı ve **App Store QR'ı**
+artık doğrudan linkten üretiliyor (`APP_STORE_URL` —
+`https://apps.apple.com/tr/app/ambience-bureau/id6794577754`, aynı sabit
+Footer'daki rozette de kullanılıyor). Google Play QR'ı hâlâ statik
+`public/documents/google-play-qr.png` dosyasından okunuyor; dosya henüz
+yok (bkz. `CURRENT_STATUS.md`).
 
 ---
 
 ## 7. 3D Konfigüratör (Custom Registry)
 
 ```
-CustomRegistryClient.tsx          <- ana orkestratör (masaüstü/mobil layout ayrımı)
+CustomRegistryClient.tsx          <- ana orkestratör (masaüstü/mobil layout ayrımı; mobilde sekme sistemi)
   |- CollectionPicker.tsx          <- koleksiyon seçimi
   |- ConfiguratorCanvas.tsx        <- <Scene> + <LampModel> + <LightSimulator> + <CameraFit>
   |    |- Scene.tsx                <- Canvas, gradient arka plan, Bloom, ışıklandırma, gölgeler
   |    |- LampModel.tsx            <- seçili parçaları dikey istifler, glow (emissive) mantığı
-  |    |- ModelMesh.tsx            <- STL/GLTF yükleme + malzeme + glow damping
+  |    |- ModelMesh.tsx            <- STL/GLTF yükleme + malzeme (şeffaf dahil) + glow damping
   |    |- LightSimulator.tsx       <- lambanın "kendi ışığı" (pointLight, yumuşak geçişli)
+  |    |- CameraFit.tsx            <- kamerayı istife sığdırır; varsayılan izometrik açı (ISO_AZIMUTH_DEG=45)
+  |    |- DimensionAnnotations.tsx <- 3D üzerinde genişlik/yükseklik/derinlik ölçü çizgileri
+  |    |- SpinCaptureHook.tsx      <- capture modunda spin-frame yakalama köprüsü (§13)
+  |- CameraFitButton.tsx           <- "kamerayı sığdır" butonu (requestCameraFit)
+  |- CombinationCountBadge.tsx     <- "N farklı kombinasyon" rozeti (src/lib/combinatorics.ts)
   |- ControlPanel.tsx (masaüstü) / MobileControlPanel.tsx (mobil)
   |    |- SlotPicker.tsx / MobileSlotPicker.tsx  <- parça seçimi (thumbnail grid)
   |    |- MaterialPicker.tsx       <- renk/malzeme seçimi (daire swatch'lar)
   |- ConfigSummary.tsx             <- fiyat özeti + "Tasarımı Kaydet" (compact/normal mod)
   |- CustomRegistryTutorial.tsx    <- ilk kez gelen/hiç sipariş vermemiş kullanıcı için
                                       gerçek arayüz elemanlarını işaret eden interaktif rehber
+                                      (bir "bitiş" adımıyla sonlanıyor)
 ```
 
+### URL parametreleri (`custom-registry/page.tsx`)
+- `?collection=<key>` — koleksiyonu doğrudan seçer.
+- `?preset=<productSlug>` — bir Registry ürününün `configuratorParts`
+  kombinasyonunu yükler ("Özelleştir" butonu: `CustomizeButton.tsx` /
+  `CustomizeButtonMini.tsx`). Preset varsa tutorial atlanır. Ürün
+  bulunamazsa sessizce boş ekrana düşmek yerine `presetStatus` ile hata
+  gösterilir.
+- `?capture=1` — SADECE tam ekran 3D canvas (panel/header/tutorial yok);
+  spin-frame script'i için (§13).
+
+Footer bu sayfada gizli (`ConditionalFooter.tsx` → `HIDE_FOOTER_PATHS`).
+
 ### State: `src/lib/store/configurator.ts` (Zustand)
-`collectionKey, availableParts, hardwareFees (Sanity'den), base, body[],
-head, lightColor, lightBrightness, lightEnabled, iotEnabled` +
-action'lar (`setCollection`, `toggleSinglePart`, `addBodyPart`,
-`removeBodyLayer`, `selectMaterial`, `toggleLight`, `toggleIot`, `reset`,
-`getTotalPrice(locale)`, `isComplete()`).
+`collectionKey, availableParts, hardwareFees, bodyLimits (min/max, Sanity'den),
+base, body[], head, lightColor, lightBrightness, lightEnabled, iotEnabled`,
+istif ölçüleri (`stackTotalHeight/Width/Depth`, `display*` — ölçü
+anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
+`clearCollection`, `loadPreset`, `toggleSinglePart`, `addBodyPart`,
+`removeBodyLayer`, `moveBodyLayer`, `selectMaterial`, `toggleLight`,
+`toggleIot`, `requestCameraFit`, `reset`, `getTotalPrice(locale)`,
+`isComplete()` — `minBodyLayers` sağlanmadan tasarım tamamlanmış sayılmaz).
+
+### Kombinasyon sayısı (`src/lib/combinatorics.ts`)
+Gövde katmanları SIRALI ve TEKRARLI kabul edilir:
+`TOPLAM = taban_varyant × başlık_varyant × Σ(k=min..max) gövde_varyant^k`.
+Drop kartlarındaki "XXX Different Combinations" sayısı bundan KASITLI
+olarak farklı, basitleştirilmiş bir formül kullanıyor.
 
 ### Fiyatlandırma mantığı (`getTotalPrice`)
 ```
@@ -310,8 +449,9 @@ toplam = SUM(parça taban fiyatı + malzeme fiyat farkı)
        + (iotEnabled ? hardwareFees.iot{TRY|USD} : 0)   // IoT açıksa ÜSTÜNE eklenir
 ```
 `hardwareFees`, `setCollection()` çağrısında seçilen koleksiyonun Sanity
-alanlarından gelir (`DEFAULT_HARDWARE_FEES` sadece alan boşsa devreye
-giren bir varsayılan). Kod değişikliği olmadan fiyat güncellemek için
+alanlarından gelir — koleksiyona bağlı drop'ta ücret tanımlıysa o
+öncelikli (§4). `DEFAULT_HARDWARE_FEES` (1600 TRY / 40 USD taban,
+1200 TRY / 30 USD IoT) sadece alan boşsa devreye giren bir varsayılan. Kod değişikliği olmadan fiyat güncellemek için
 Sanity Studio'da ilgili koleksiyonun bu 4 alanını düzenlemek yeterli.
 
 ### Işıklandırma — neden karmaşık, ne öğrenildi
@@ -369,9 +509,10 @@ scope'ları var (aynı anda ikisi de DOM'da olduğu için hedef çakışmasını
 ## 9. Admin Panel (`/[locale]/admin`)
 
 Tek sayfa, API route'ları: `GET/PATCH /api/admin/orders`,
-`POST /api/admin/grant-credits`, `/api/admin/service-requests`. Basit bir
-header-token tabanlı yetkilendirme var (Supabase Auth rolü değil — kontrol
-edin/güçlendirin gerekirse). Sipariş listesi artık: koleksiyon adı (custom
+`POST /api/admin/grant-credits`, `/api/admin/service-requests`.
+Yetkilendirme: `x-admin-secret` header'ı `ADMIN_API_SECRET` env
+değişkeniyle karşılaştırılıyor (Supabase Auth rolü değil — güçlendirme
+`TASKS.md`'de). Sipariş listesi artık: koleksiyon adı (custom
 siparişlerde, Sanity'den), sipariş+hesap telefonu, tam adres (adres2+posta
 kodu dahil), ve "processing/shipped/delivered" durumundaki siparişlerde
 Ürün Kimlik Sayfası linkini gösteriyor.
@@ -390,10 +531,191 @@ alternates ile listeler. `robots.ts`, `/admin`, `/account`, `/checkout`,
 
 ## 11. Statik/Yasal Sayfalar
 
-`/[locale]/privacy-policy` ve `/[locale]/terms-of-use` — App Store/Play
-Store başvurusu için eklendi. Ortak render bileşeni:
-`src/components/legal/LegalDocument.tsx`. Bu sayfaların içeriği, ayrı bir
-mobil uygulama projesindeki gizlilik/kullanım metinleridir (bu web sitesi
-değil) — App Store Connect / Play Console'a her zaman `/en/...` URL'i
-verilmeli (dil kodu URL'de açık olduğu için otomatik yönlendirme/algılama
-devreye girmez).
+Dört yasal sayfa, hepsi ortak `src/components/legal/LegalDocument.tsx`
+ile render ediliyor:
+- `/[locale]/privacy-policy`, `/[locale]/terms-of-use` — App Store/Play
+  Store başvurusu için eklendi. Metin, mobil uygulamadaki
+  (`ESPTest/screens/LegalScreen.tsx`) metinle ortak: uygulamayı VE siteyi
+  birlikte kapsıyor. Birinde değişiklik yaparsanız diğerini de güncelleyin.
+  App Store Connect / Play Console'a her zaman `/en/...` URL'i verilmeli.
+- `/[locale]/distance-sales-agreement` (Mesafeli Satış Sözleşmesi) ve
+  `/[locale]/shipping-returns` (Kargo & İade) — e-ticaret yasal
+  gereklilikleri için eklendi.
+
+Diğer statik sayfalar: `/bureau` (hakkımızda + `ContactForm` →
+`/api/contact`), `/control-protocol` (mobil uygulama tanıtımı,
+`AppShowcase.tsx` — `public/app-showcase/{tr,en}/` altındaki 9'ar ekran
+görüntüsü yerinde), `/archive` (blog).
+
+---
+
+## 12. Anasayfa, İki Satış Rejimi ve Drop Sistemi
+
+Tasarım kurgusu için bkz. `DESIGN.md` ("Işık Tahsis Bürosu").
+
+### Anasayfa düzeni (`[locale]/page.tsx`)
+`HomeMasthead` (sitenin tek `<h1>`'i + Büro Bülteni) → `§1 Sınırlı Tahsis`
+(drop satırları) → `§2 Daimi Envanter` (`StandingInventory.tsx`, sınıf
+indeksi/dosya dolabı) → `§3 Özel Tahsis` → `§4 Kontrol Protokolü`.
+Bileşenler `src/components/home/`. Bölüm başlıkları `SectionHeading`.
+
+### Satış rejimi (`product.saleMode`) ve sınıflar
+- `limited` (veya boş — eski kayıtlar): Sınırlı Tahsis, drop'a bağlı,
+  numaralı adet. Kartta `REG. NO.` + sertifika durumu.
+- `standing`: Daimi Envanter, sürekli satış. `registryNo` envanter kodu
+  olarak kullanılır (`ENV-F-012`); kartta `ENV. KODU` + stok durumu.
+  `stockQuantity`: boş = siparişe üretim, 0 = tükendi, >0 = adet.
+- Sınıflar (`product.category`) TEK kaynaktan: `src/lib/lightClasses.ts`
+  → `LIGHT_CLASSES` (F Lambader, C Avize, W Aplik, D Masa Lambası,
+  P Sarkıt, S Şerit). Sanity şeması, Registry filtresi, anasayfa ve
+  ürün sayfası buradan okur.
+- Yardımcılar: `resolveSaleMode`, `resolveStockState`,
+  `isProductPurchasable` (decommissioned / owned / stoğu tükenmiş
+  standing ürün sepete eklenemez).
+- Sorgular: `getAllProducts({ mode })` (`?mode=limited|standing`),
+  `getStandingInventory()`.
+- Stok: checkout'ta `checkProductAvailability()` (ödemeye gitmeden 409),
+  ödeme onayında `decrementStandingStock()` (paytr-notify, bloklamaz).
+  İkisi de `src/lib/sanity-fulfillment.ts`.
+- `paytr-notify` artık sipariş `pending` değilse hiçbir şey yapmadan
+  "OK" döner (tekrarlanan bildirimlerde e-posta/owned ürün/stok/kredi
+  iki kez işlenmesin).
+
+### Büro Bülteni
+- Sanity tipi `bulletin` (`src/sanity/schemaTypes/bulletin.ts`): `bulletinNo`,
+  `kind` (drop/inventory/bureau/notice), `publishedAt` (ileri tarihli
+  olabilir — tarihi gelmeden görünmez), lokalize `title`/`text`, link
+  (`linkType`: drop/product/post/path), `showInPanel`, `pinned`.
+- **Satırlar:** bülten, canlı durum sayfasıyla aynı "etiket → değer"
+  düzeninde gösterilir. Elle girilen `rows[]` + link bir drop ise o
+  drop'un CANLI satırları (Tahsis, Kalan adet, Durum) otomatik eklenir
+  (`src/lib/bulletinRows.ts`). Böylece eski bir drop'un güncel durumu
+  bültende her zaman doğru görünür.
+- Sorgular: `getPanelBulletins()` (anasayfa paneli, sabitlenenler önce,
+  en fazla 8) ve `getAllBulletins()` (`/bulletin` arşivi). Link GROQ'da
+  site içi yola çevrilir (`href`). Önbellek: 5 dk (`revalidate: 300`).
+- Bileşenler: `src/components/home/BulletinPanel.tsx` (istemci, kaydırmalı),
+  sayfa `src/app/[locale]/bulletin/page.tsx`.
+- **Local önizleme:** `BULLETIN_DEMO=1` ile sunucu başlatılırsa, Sanity'de
+  hiç bülten yoksa `src/lib/bulletinDemo.ts`'teki "(örnek)" etiketli
+  bültenler gösterilir ve `/[locale]/preview/cards` kart önizleme sayfası
+  açılır. Değişken yoksa (üretim) ikisi de devre dışı / 404. Gerçek
+  bültenler girilince bu dosya ve önizleme sayfası silinebilir.
+
+### Ürün kartı
+`src/components/registry/ProductCard.tsx` — dosya kartı (bkz. `DESIGN.md`).
+Kart verisi (`PRODUCT_CARD_FRAGMENT`) artık `dropNo` ve `compatibility`
+de içerir. Drop'un tüm adetleri tahsis edildiyse (`plannedQuantity -
+soldCount <= 0`) `DropRow` panelde "TAHSİS TAMAMLANDI" damgası basar,
+"Oluştur"u pasifleştirir ve kartlara `dropSoldOut` geçer (TÜKENDİ damgası,
+eylem yok). NOT: bu şimdilik sadece görsel; checkout drop dolu olsa da
+vitrin ürünlerini engellemiyor (sadece custom tasarımları engelliyor). Stiller `globals.css` → `.product-file`, `.bureau-stamp`,
+`.card-actions-overlay` / `.card-actions-inline`.
+
+### Drop'lar
+Her drop için `DropRow.tsx` (yatay
+kaydırılabilir ürün kartları, "N Farklı Kombinasyon" sayacı —
+`useAnimatedNumber`) veya `UpcomingDropRow.tsx` (geri sayım, ürünler
+gizli). Ürünü olmayan CANLI drop'lar gösterilmez.
+
+Görünürlük (`src/lib/dropSchedule.ts` → `resolveDropState`, saf fonksiyon,
+her istekte `now` ile yeniden hesaplanır):
+- `active !== false` → `live`
+- `active === false` + `scheduledAt` gelecekte → `upcoming` (geri sayım)
+- `active === false` + `scheduledAt` geçmişte → `live` (otomatik yayın)
+- `active === false` + `scheduledAt` yok → `hidden`
+
+Stok: drop'a bağlı (`product.drop`) ürün sayısı `plannedQuantity`'ye
+ulaşınca o koleksiyon için checkout engellenir. Custom Registry'den
+satın alınan her tasarım bir `owned` ürün olarak drop'a eklenir;
+`registryNo` = `<sıra>/<plannedQuantity>` (drop yoksa `C-<zaman>`).
+
+Registry sayfası (`/registry`): `CategoryFilterBar`, `ProductGrid`,
+`ProductCard` (+ `AddToCartMini`, `CustomizeButtonMini`). `owned`
+kartlarda sansürlü sahip adı ve şehri görünür.
+
+---
+
+## 13. Spin-Frame'ler (kartlarda 360° dönüş)
+
+"Özelleştirilebilir" ve `owned` ürünlerin kartında fotoğraf ↔ 3D dönüş
+geçişi var (`ProductCardMedia.tsx`; varsayılan HER ZAMAN fotoğraf, 3D'ye
+ziyaretçi elle geçer).
+- Kareler: Supabase Storage `product-spins` public bucket'ı,
+  `product-spins/<slug>/00.webp … 23.webp` (24 kare, 15°'de bir,
+  `src/lib/spinFrames.ts`). Sanity'de ayrı bir alan YOK — ilk kare 404
+  verirse kart sadece fotoğraf gösterir.
+- Üretim: `scripts/generate-spin-frames.ts` (`npm run spin-frames
+  [-- --slug=x] [-- --base-url=...]`) siteyi headless Chrome'da
+  `?preset=<slug>&capture=1` ile açıp kareleri yakalar. Çalışan bir site
+  gerekir (varsayılan `http://localhost:3000`).
+- Otomasyon: `owned` ürün oluşunca `triggerSpinFrameGeneration()` GitHub
+  Actions'taki `.github/workflows/generate-spin-frames.yml`'ı
+  `workflow_dispatch` ile tetikler. Gerekli env: `GITHUB_REPO`,
+  `GITHUB_ACTIONS_TOKEN` (repo + workflow yetkili PAT). Yoksa sessizce
+  atlanır ve log'a elle çalıştırma komutu yazılır.
+- `SPIN_ISO_AZIMUTH_DEG` (45) ile `CameraFit.tsx`'teki `ISO_AZIMUTH_DEG`
+  birebir aynı kalmalı.
+
+---
+
+## 14. Tema, Header, Footer
+
+- **Karanlık/aydınlık tema:** Tailwind `darkMode: 'class'`. `bureau.*`
+  renkleri artık CSS değişkenleri (`rgb(var(--bureau-*) / <alpha-value>)`,
+  `globals.css`) — temayla birlikte değişir. Temadan bağımsız kalması
+  gereken yerler için `bureau-fixed-*` ve `bureau-dark-line-*` paletleri
+  var. Tercih `localStorage['ambience-bureau-theme']`'da; kayıtlı tercih
+  yoksa site HER ZAMAN karanlık açılır. `src/app/layout.tsx`'teki
+  `THEME_INIT_SCRIPT` (hydration öncesi) ile `ThemeProvider.tsx` aynı
+  mantığı taşımalı, yoksa tema "flaşı" olur. Geçiş: `ThemeToggle.tsx`.
+- **Header:** Menüde Özel Tahsis (koleksiyon açılır menüsü), Envanter,
+  Kontrol Protokolü. Büro ve Arşiv linkleri menüden kaldırılıp Footer'a
+  taşındı, ama `HeaderStickman.tsx` animasyonu (merdivene tırmanıp lambayı
+  yakan çöp adam) bu iki yazının konumunu referans aldığı için header'da
+  GÖRÜNMEZ yer tutucu olarak duruyorlar (`data-stickman-anchor`). Bunları
+  silmeyin. Mobil menüde "Bölge Bürosu Ol" / "Tasarım Departmanına Katıl"
+  linkleri var.
+- **Footer:** App Store / Google Play rozetleri, başvuru linkleri, Arşiv,
+  Büro ve 4 yasal sayfa. Artık `<main>` scroll alanının İÇİNDE, içerikle
+  birlikte kayıyor ve mobilde de görünür. `/custom-registry`'de gizli.
+- **Atlama linki:** `[locale]/layout.tsx`'te ilk odak durağı "İçeriğe
+  geç" → `#main-content`.
+- **404:** `[locale]/not-found.tsx` (markalı "Kayıt bulunamadı" belgesi)
+  + `[locale]/[...rest]/page.tsx` catch-all (tanımsız yollar buraya düşer).
+
+---
+
+## 15. Başvurular (Bölge Bürosu / Tasarım Departmanı)
+
+- `/become-bureau-hub`: `BureauHubExperience.tsx` → `WorldMap.tsx`
+  (d3-geo dünya haritası, ülke seçimi) + `ApplicationForm type="hub"`.
+  Aktif büro sayıları `src/lib/bureauHubs.ts` → `ACTIVE_BUREAUS` (şu an
+  `TR: 1`); yeni büro açılınca buraya satır eklemek yeterli.
+- `/become-bureau-creator`: `ApplicationForm type="creator"` (disiplin
+  seçimi: lighting/industrial/product3d/interior/other).
+- `POST /api/apply`: **üyelik şart**. `applications` tablosuna yazar
+  (hata olursa e-posta yine gönderilir) + Resend ile `CONTACT_EMAIL`'e
+  (varsayılan `ambiencebureau@gmail.com`) bildirim.
+
+---
+
+## 16. Mobil Uygulama ile İlişki
+
+Mobil uygulama + ESP32 firmware ayrı bir repoda:
+`/Users/cagdas/ESPTest` (Expo/React Native; firmware `arduino/` altında).
+Lambalarla sadece yerel Wi-Fi üzerinden, sunucusuz konuşur. Bu siteyle
+tek programatik bağı **STL dosyaları**:
+
+- Uygulama (`services/stlCache.ts`) parça modellerini şu sırayla arar:
+  uygulama paketi → cihaz diski cache'i → **`https://www.ambiencebureau.com/parts/stl`**.
+- Sitedeki `public/parts/stl/manifest.json` (`{ folders, files: {key →
+  klasör/dosya} }`) anahtar → dosya eşlemesini verir; `scripts/generate-stl-manifest.js`
+  ile üretilir. Klasörler: `extrudedCollection/`, `helicalCollection/` +
+  kökte birkaç eski dosya.
+- Bu yüzden **`public/parts/stl/` silinmemeli / yeniden adlandırılmamalı**;
+  yeni bir parça eklendiğinde STL'i buraya koyup manifest'i yeniden
+  üretmek gerekir. Konfigüratör ise bu klasörü kullanmıyor, Sanity
+  CDN'den okuyor — aynı parçanın iki kopyası var.
+- Uygulamanın "müşterinin satın aldığı tasarımı otomatik öğrenmesi"
+  için bir API hâlâ yok (bkz. `TASKS.md`).

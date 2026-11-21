@@ -10,8 +10,8 @@ export function Footer() {
   const tr = locale === 'tr'
 
   return (
-    <footer className="hidden border-t border-bureau-line-header dark:border-black sm:block">
-      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 px-10 py-3">
+    <footer className="mt-auto border-t border-bureau-line-header dark:border-black">
+      <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-5 px-5 py-6 sm:px-10 sm:py-4">
         {/* Sol: telif + marka */}
         <span className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase">
           <span>© 2026</span>
@@ -33,7 +33,7 @@ export function Footer() {
             className="block transition-opacity hover:opacity-80"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/badges/app-store.svg" alt="Download on the App Store" className="h-9 w-auto" />
+            <img src="/badges/app-store.svg" alt="Download on the App Store" width={108} height={36} className="h-9 w-auto" />
           </a>
 
           {/* Play Store — henüz yayınlanmadı, bu yüzden tıklanınca hiçbir
@@ -44,12 +44,12 @@ export function Footer() {
             className="block cursor-default p-0 transition-opacity hover:opacity-80"
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/badges/google-play.svg" alt="Get it on Google Play" className="h-9 w-auto" />
+            <img src="/badges/google-play.svg" alt="Get it on Google Play" width={121} height={36} className="h-9 w-auto" />
           </button>
         </div>
 
         {/* Sağ: linkler (2x2 — dikey yüksekliği yarıya indirir) */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-6 max-sm:w-full">
           {/* iyzico/Mastercard/Visa/Amex/Troy rozeti KALDIRILDI — iyzico
               anlaşması sona erdi, ödeme altyapısı PayTR'ye geçiyor. PayTR
               logosu hazır olunca buraya aynı yöntemle eklenebilir. */}
@@ -58,54 +58,54 @@ export function Footer() {
               + Arşiv + Büro, alt alta. Sağ sütun: Teslimat ve İade, Mesafeli
               Satış Sözleşmesi, Gizlilik Politikası, Kullanım Koşulları. */}
           <div className="flex gap-8">
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <Link
                 href="/become-bureau-hub"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-amber uppercase no-underline hover:opacity-80"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-amber uppercase no-underline hover:opacity-80"
               >
                 {tr ? 'Bölge Bürosu Ol' : 'Become Bureau Hub'}
               </Link>
               <Link
                 href="/become-bureau-creator"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-amber uppercase no-underline hover:opacity-80"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-amber uppercase no-underline hover:opacity-80"
               >
                 {tr ? 'Tasarım Departmanına Katıl' : 'Become Bureau Creator'}
               </Link>
               <Link
                 href="/archive"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
               >
                 {tr ? 'Arşiv' : 'Archive'}
               </Link>
               <Link
                 href="/bureau"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
               >
                 {tr ? 'Büro' : 'Bureau'}
               </Link>
             </div>
-            <div className="flex flex-col gap-1">
+            <div className="flex flex-col gap-1.5">
               <Link
                 href="/shipping-returns"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
               >
                 {tr ? 'Teslimat ve İade' : 'Shipping & Returns'}
               </Link>
               <Link
                 href="/distance-sales-agreement"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
               >
                 {tr ? 'Mesafeli Satış Sözleşmesi' : 'Distance Sales Agreement'}
               </Link>
               <Link
                 href="/privacy-policy"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
               >
                 {tr ? 'Gizlilik Politikası' : 'Privacy Policy'}
               </Link>
               <Link
                 href="/terms-of-use"
-                className="font-mono text-[8.5px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
+                className="focus-bureau py-0.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase no-underline hover:text-bureau-black"
               >
                 {tr ? 'Kullanım Koşulları' : 'Terms of Use'}
               </Link>

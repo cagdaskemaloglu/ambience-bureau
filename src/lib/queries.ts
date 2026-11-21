@@ -23,6 +23,10 @@ const PRODUCT_CARD_FRAGMENT = `
   slug,
   status,
   category,
+  saleMode,
+  stockQuantity,
+  "dropNo": drop->dropNo,
+  compatibility,
   priceTRY,
   priceUSD,
   discountPriceTRY,
@@ -103,6 +107,8 @@ export async function getAllProducts(filters?: {
   minPrice?: number
   maxPrice?: number
   drop?: string
+  /** 'limited' = Sınırlı Tahsis (alan boş olanlar dahil), 'standing' = Daimi Envanter */
+  mode?: string
 }) {
   // active != false → alan boşsa (eski kayıtlar) da GÖRÜNÜR kabul edilir.
   let filter = `_type == "product" && active != false`
@@ -136,6 +142,11 @@ export async function getAllProducts(filters?: {
   if (filters?.drop) {
     filter += ` && drop->dropNo == $drop`
     params.drop = filters.drop
+  }
+  if (filters?.mode === 'standing') {
+    filter += ` && saleMode == "standing"`
+  } else if (filters?.mode === 'limited') {
+    filter += ` && saleMode != "standing"`
   }
 
   const rows = await sanityClient.fetch(
@@ -325,6 +336,65 @@ export async function getAllDropsWithProducts() {
     )
   )
   return withState.filter((d) => d.dropState !== 'hidden')
+}
+
+// ── Daimi Envanter (sürekli satış) ────────────────────────
+// Anasayfadaki dosya dolabı (sınıf indeksi) + seçili ürünler grid'i için
+// TÜM aktif Daimi Envanter ürünlerini tek sorguda getirir; sınıflara
+// gruplama/sayım sayfa tarafında yapılır (ürün sayısı küçük).
+export async function getStandingInventory() {
+  return sanityClient.fetch(
+    `*[_type == "product" && active != false && saleMode == "standing"] | order(coalesce(priority, 999999) asc, registryNo asc) {${PRODUCT_CARD_FRAGMENT}}`,
+    {},
+    { next: { tags: ['products'] } }
+  )
+}
+
+// ── Büro Bülteni ──────────────────────────────────────────
+// Link, türüne göre site içi bir yola çevrilir (dil ön eki yok — next-intl
+// Link'i ekler). Drop linki anasayfadaki drop satırına (#drop-NNN) gider.
+const BULLETIN_FRAGMENT = `
+  _id,
+  bulletinNo,
+  kind,
+  publishedAt,
+  pinned,
+  ${LOCALIZED_FIELD('title')},
+  ${LOCALIZED_FIELD('text')},
+  rows[]{ ${LOCALIZED_FIELD('label')}, ${LOCALIZED_FIELD('value')} },
+  "drop": select(linkType == "drop" && defined(linkDrop) => linkDrop->{
+    dropNo,
+    ${LOCALIZED_FIELD('name')},
+    plannedQuantity,
+    active,
+    scheduledAt,
+    "soldCount": count(*[_type == "product" && references(^._id) && status == "owned"])
+  }),
+  "href": select(
+    linkType == "drop" && defined(linkDrop) => "/#drop-" + linkDrop->dropNo,
+    linkType == "product" && defined(linkProduct) => "/registry/" + linkProduct->slug.current,
+    linkType == "post" && defined(linkPost) => "/archive/" + linkPost->slug.current,
+    linkType == "path" && defined(linkPath) => linkPath,
+    null
+  )
+`
+
+/** Anasayfa paneli: yayın tarihi gelmiş, panelde gösterilecek bültenler — sabitlenenler önce, sonra yeniden eskiye. */
+export async function getPanelBulletins(limit = 8) {
+  return sanityClient.fetch(
+    `*[_type == "bulletin" && showInPanel != false && publishedAt <= now()] | order(coalesce(pinned, false) desc, publishedAt desc)[0...$limit]{${BULLETIN_FRAGMENT}}`,
+    { limit },
+    { next: { tags: ['bulletins'], revalidate: 300 } }
+  )
+}
+
+/** /bulletin arşivi: yayın tarihi gelmiş TÜM bültenler, yeniden eskiye. */
+export async function getAllBulletins() {
+  return sanityClient.fetch(
+    `*[_type == "bulletin" && publishedAt <= now()] | order(publishedAt desc){${BULLETIN_FRAGMENT}}`,
+    {},
+    { next: { tags: ['bulletins'], revalidate: 300 } }
+  )
 }
 
 // ── Koleksiyon Sorguları ──────────────────────────────────

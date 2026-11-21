@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createPaymentToken, toPaytrOid } from '@/lib/paytr/client'
 import type { CartItem } from '@/types'
 import { createSupabaseAdminClient } from '@/lib/supabase/server'
-import { checkCustomDesignCapacity } from '@/lib/sanity-fulfillment'
+import { checkCustomDesignCapacity, checkProductAvailability } from '@/lib/sanity-fulfillment'
 
 interface CheckoutRequestBody {
   items: CartItem[]
@@ -57,6 +57,15 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: capacity.reason }, { status: 409 })
         }
       }
+    }
+
+    // Hazır ürünler: hâlâ satın alınabilir mi (hizmet dışı / sahipli değil)
+    // ve Daimi Envanter adetleri stoğu aşıyor mu? Bkz. sanity-fulfillment.ts.
+    const availability = await checkProductAvailability(
+      items.filter((i) => i.type === 'product').map((i) => ({ id: i.id, quantity: i.quantity }))
+    )
+    if (!availability.ok) {
+      return NextResponse.json({ error: availability.reason }, { status: 409 })
     }
 
     // Üye kullanıcı kontrolü

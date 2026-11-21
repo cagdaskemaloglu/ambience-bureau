@@ -24,6 +24,13 @@ export default defineConfig({
               .child(S.documentTypeList('product').title('Products')),
             S.divider(),
             S.listItem()
+              .title('Büro Bülteni (Duyurular)')
+              .child(
+                S.documentTypeList('bulletin')
+                  .title('Bültenler')
+                  .defaultOrdering([{ field: 'bulletinNo', direction: 'desc' }])
+              ),
+            S.listItem()
               .title('Archive (Blog Posts)')
               .child(S.documentTypeList('post').title('Posts')),
             S.divider(),

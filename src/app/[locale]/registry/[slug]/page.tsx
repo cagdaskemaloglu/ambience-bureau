@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { isProductPurchasable, lightClassName, resolveSaleMode, resolveStockState, type StockState } from '@/lib/lightClasses'
 import { notFound } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 import { PortableText } from '@portabletext/react'
@@ -23,12 +24,21 @@ const STATUS_LABEL: Record<string, { tr: string; en: string }> = {
   certified: { tr: 'Sertifikalı', en: 'Certified' },
   limited: { tr: 'Sınırlı Seri', en: 'Limited Series' },
   decommissioned: { tr: 'Hizmet Dışı', en: 'Decommissioned' },
+  owned: { tr: 'Tahsis Edildi', en: 'Allocated' },
 }
 
 const STATUS_CLASS: Record<string, string> = {
   certified: 'status-certified',
   limited: 'status-limited',
   decommissioned: 'status-decommissioned',
+  owned: 'status-limited',
+}
+
+// Daimi Envanter ürünlerinde durum = stok durumu (bkz. ProductCard.tsx).
+const STOCK_LABEL: Record<StockState, { tr: string; en: string; className: string }> = {
+  'in-stock': { tr: 'Stokta', en: 'In Stock', className: 'status-certified' },
+  'made-to-order': { tr: 'Siparişe Üretim', en: 'Made to Order', className: 'status-limited' },
+  'out-of-stock': { tr: 'Tükendi', en: 'Out of Stock', className: 'status-decommissioned' },
 }
 
 export async function generateStaticParams() {
@@ -76,8 +86,14 @@ export default async function ProductDetailPage({ params }: Props) {
 
   const name = getLocalizedValue(product.name, locale, '—') ?? '—'
   const description = getLocalizedValue(product.description, locale)
-  const statusLabel = STATUS_LABEL[product.status]?.[locale as 'tr' | 'en'] ?? product.status
-  const statusClass = STATUS_CLASS[product.status] ?? 'status-certified'
+  const isStanding = resolveSaleMode(product.saleMode) === 'standing'
+  const stock = STOCK_LABEL[resolveStockState(product.stockQuantity)]
+  const statusLabel = isStanding
+    ? stock[locale as 'tr' | 'en']
+    : (STATUS_LABEL[product.status]?.[locale as 'tr' | 'en'] ?? product.status)
+  const statusClass = isStanding ? stock.className : (STATUS_CLASS[product.status] ?? 'status-certified')
+  const idLabel = isStanding ? (locale === 'tr' ? 'ENV. KODU' : 'INV. CODE') : 'REG. NO.'
+  const classLabel = lightClassName(product.category, locale)
 
   const relatedProducts = await getRelatedProducts(product.category, slug)
 
@@ -100,9 +116,10 @@ export default async function ProductDetailPage({ params }: Props) {
       '@type': 'Offer',
       price: jsonLdPrice,
       priceCurrency: jsonLdCurrency,
-      availability:
-        product.status === 'decommissioned'
-          ? 'https://schema.org/OutOfStock'
+      availability: !isProductPurchasable(product)
+        ? 'https://schema.org/OutOfStock'
+        : isStanding && resolveStockState(product.stockQuantity) === 'made-to-order'
+          ? 'https://schema.org/MadeToOrder'
           : 'https://schema.org/InStock',
     },
   }
@@ -119,7 +136,7 @@ export default async function ProductDetailPage({ params }: Props) {
         <Link href="/registry" className="no-underline hover:text-bureau-black">
           ← {tCommon('backToRegistry')}
         </Link>
-        <div>REGISTRY NO. {product.registryNo}</div>
+        <div>{classLabel} · {idLabel} {product.registryNo}</div>
       </div>
 
       <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
@@ -131,7 +148,7 @@ export default async function ProductDetailPage({ params }: Props) {
         {/* Right: Info + Form */}
         <div className="p-9">
           <div className="mb-4 flex items-center justify-between">
-            <span className="serial">REG. NO. {product.registryNo}</span>
+            <span className="serial">{idLabel} {product.registryNo}</span>
             <span className={statusClass}>● {statusLabel}</span>
           </div>
 

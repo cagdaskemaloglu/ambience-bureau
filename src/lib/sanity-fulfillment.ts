@@ -333,3 +333,74 @@ export async function triggerSpinFrameGeneration(slug: string): Promise<void> {
     throw new Error(`GitHub Actions dispatch başarısız (${res.status}): ${text}`)
   }
 }
+
+// ── Daimi Envanter stok yönetimi ─────────────────────────────
+// Sınırlı Tahsis ürünleri tek adet/drop mantığıyla çalışır; Daimi Envanter
+// ürünlerinde `stockQuantity` (boş = siparişe üretim) tutulur. Bkz.
+// claude/DESIGN.md → "İki tahsis rejimi".
+
+type StockRow = {
+  _id: string
+  status?: string | null
+  saleMode?: string | null
+  stockQuantity?: number | null
+  registryNo?: string | null
+}
+
+/**
+ * Checkout'ta (ödemeye GİTMEDEN) sepetteki hazır ürünlerin hâlâ satın
+ * alınabilir olduğunu ve Daimi Envanter adetlerinin stoğu aşmadığını
+ * doğrular. Sepet istemcide eski kalmış olabilir (ör. ürün bu arada
+ * satıldı/tükendi) — son söz sunucuda.
+ */
+export async function checkProductAvailability(
+  items: Array<{ id: string; quantity: number }>
+): Promise<{ ok: true } | { ok: false; reason: string }> {
+  if (items.length === 0) return { ok: true }
+  const ids = items.map((i) => i.id)
+  const rows = await sanityClient.fetch<StockRow[]>(
+    `*[_type == "product" && _id in $ids]{ _id, status, saleMode, stockQuantity, registryNo }`,
+    { ids },
+    { cache: 'no-store' }
+  )
+  for (const item of items) {
+    const row = rows.find((r) => r._id === item.id)
+    if (!row) return { ok: false, reason: 'Sepetteki bir ürün artık sicilde bulunmuyor.' }
+    if (row.status === 'decommissioned' || row.status === 'owned') {
+      return { ok: false, reason: `${row.registryNo ?? 'Ürün'} artık tahsis edilemiyor (stok tükendi).` }
+    }
+    if (row.saleMode === 'standing' && typeof row.stockQuantity === 'number' && item.quantity > row.stockQuantity) {
+      return {
+        ok: false,
+        reason:
+          row.stockQuantity <= 0
+            ? `${row.registryNo ?? 'Ürün'} stokta kalmadı.`
+            : `${row.registryNo ?? 'Ürün'} için stokta yalnızca ${row.stockQuantity} adet var.`,
+      }
+    }
+  }
+  return { ok: true }
+}
+
+/**
+ * Ödeme onaylandığında (paytr-notify) Daimi Envanter ürünlerinin stoğunu
+ * satılan adet kadar düşürür. `stockQuantity` boşsa (siparişe üretim)
+ * dokunulmaz; Sınırlı Tahsis ürünleri bu fonksiyondan etkilenmez.
+ * Çağıran taraf hatayı LOGLAMALI ama ödeme akışını kesmemeli.
+ */
+export async function decrementStandingStock(items: Array<{ id: string; quantity: number }>): Promise<void> {
+  if (items.length === 0) return
+  const rows = await sanityClient.fetch<StockRow[]>(
+    `*[_type == "product" && _id in $ids && saleMode == "standing" && defined(stockQuantity)]{ _id, stockQuantity }`,
+    { ids: items.map((i) => i.id) },
+    { cache: 'no-store' }
+  )
+  for (const row of rows) {
+    const qty = items.filter((i) => i.id === row._id).reduce((s, i) => s + i.quantity, 0)
+    if (qty <= 0) continue
+    await sanityAdminClient
+      .patch(row._id)
+      .dec({ stockQuantity: qty })
+      .commit({ autoGenerateArrayKeys: false })
+  }
+}

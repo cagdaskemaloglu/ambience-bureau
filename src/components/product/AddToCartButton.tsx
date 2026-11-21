@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { useCartStore } from '@/lib/store/cart'
 import { getLocalizedValue, getCartPricing } from '@/lib/sanity'
+import { isProductPurchasable } from '@/lib/lightClasses'
 import type { Product } from '@/types'
 
 // Mobil breakpoint — 1024px (Tailwind lg)
@@ -21,7 +22,8 @@ export function AddToCartButton({ product }: { product: Product }) {
   const openDrawer = useCartStore((s) => s.openDrawer)
   const [justAdded, setJustAdded] = useState(false)
 
-  const isDecommissioned = product.status === 'decommissioned'
+  // Hizmet dışı, sahipli (owned) veya stoğu tükenmiş ürünler satın alınamaz.
+  const isDecommissioned = !isProductPurchasable(product)
 
   function handleAddToCart() {
     if (isDecommissioned) return

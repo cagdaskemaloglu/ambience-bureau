@@ -47,6 +47,8 @@ export function ProductGallery({
             <button
               key={img.asset._id}
               onClick={() => setActiveIndex(idx)}
+              aria-label={`${fallbackAlt} ${idx + 1}/${images.length}`}
+              aria-pressed={idx === activeIndex}
               className={`aspect-square border bg-bureau-surface transition-colors ${
                 idx === activeIndex ? 'border-bureau-amber' : 'border-bureau-rule hover:border-bureau-black'
               }`}

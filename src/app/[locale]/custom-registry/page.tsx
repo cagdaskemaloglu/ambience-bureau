@@ -110,6 +110,12 @@ export default async function CustomRegistryPage({
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <div className="flex-shrink-0 border-b border-bureau-black px-6 py-3.5 font-mono text-[11px] text-bureau-muted sm:px-10">
+        {/* Sayfanın tek <h1>'i — araç arayüzü olduğu için görsel olarak
+            alt başlık satırının içinde, aynı boyutta duruyor. */}
+        <h1 className="inline font-semibold text-bureau-black">
+          {locale === 'tr' ? 'Özel Tahsis' : 'Custom Allocation'}
+        </h1>
+        <span aria-hidden="true"> · </span>
         {t('subtitle')}
       </div>
       <div className="flex min-h-0 flex-1 overflow-hidden">

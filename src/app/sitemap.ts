@@ -26,6 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: '/custom-registry', priority: 0.9 },
     { path: '/bureau', priority: 0.5 },
     { path: '/archive', priority: 0.5 },
+    { path: '/bulletin', priority: 0.5 },
     { path: '/control-protocol', priority: 0.3 },
     { path: '/privacy-policy', priority: 0.3 },
     { path: '/terms-of-use', priority: 0.3 },

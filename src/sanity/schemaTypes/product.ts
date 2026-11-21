@@ -1,5 +1,6 @@
 import { defineField, defineType, defineArrayMember } from 'sanity'
 import { localizedStringField, localizedBlockField } from './localeHelper'
+import { LIGHT_CLASSES } from '../../lib/lightClasses'
 import { RegistryNoHint } from '../components/RegistryNoHint'
 
 export const productSchema = defineType({
@@ -16,12 +17,41 @@ export const productSchema = defineType({
       type: 'boolean',
       initialValue: true,
     }),
+    // ── Satış Rejimi ─────────────────────────────────────
+    // Sınırlı Tahsis: drop'a bağlı, numaralı adet (eski davranış — alan
+    // boşsa da bu kabul edilir). Daimi Envanter: sürekli satış, stoklu
+    // (lambader, avize, aplik, masa lambası...). Bkz. claude/DESIGN.md.
+    defineField({
+      name: 'saleMode',
+      title: 'Satış Rejimi',
+      description:
+        'Sınırlı Tahsis: drop\'a bağlı, numaralı adet (REG. NO. 006/050). Daimi Envanter: sürekli satışta, stoklu ürün (Registry Number alanına envanter kodu yazın, örn. ENV-F-012).',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Sınırlı Tahsis (Drop / numaralı adet)', value: 'limited' },
+          { title: 'Daimi Envanter (sürekli satış)', value: 'standing' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'limited',
+    }),
+    defineField({
+      name: 'stockQuantity',
+      title: 'Stok Adedi',
+      description:
+        'SADECE Daimi Envanter. Boş = siparişe üretim (sınırsız). 0 = stok tükendi. Ödeme onaylandığında satılan adet kadar OTOMATİK düşer.',
+      type: 'number',
+      hidden: ({ document }) => document?.saleMode !== 'standing',
+      validation: (R) => R.integer().min(0),
+    }),
+
     // ── Kimlik / Registry ────────────────────────────────
     defineField({
       name: 'registryNo',
-      title: 'Registry Number',
+      title: 'Registry Number / Envanter Kodu',
       description:
-        'Örn: 001/050 — seri numara / toplam adet. Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
+        'Sınırlı Tahsis: 001/050 gibi seri no / toplam adet. Daimi Envanter: ENV-F-012 gibi envanter kodu (F=Lambader, C=Avize, W=Aplik, D=Masa Lambası, P=Sarkıt, S=Şerit). Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
       type: 'string',
       validation: (R) => R.required(),
       components: { field: RegistryNoHint },
@@ -128,14 +158,10 @@ export const productSchema = defineType({
       name: 'category',
       title: 'Category',
       type: 'string',
+      description: 'Aydınlatma sınıfı — Daimi Envanter\'de anasayfa dosya dolabı ve Registry filtresi buna göre gruplanır.',
       options: {
-        list: [
-          { title: 'Pendant', value: 'pendant' },
-          { title: 'Wall-Mounted', value: 'wall' },
-          { title: 'Desk Unit', value: 'desk' },
-          { title: 'Floor System', value: 'floor' },
-          { title: 'Strip Element', value: 'strip' },
-        ],
+        // Liste src/lib/lightClasses.ts'ten gelir (tek kaynak).
+        list: LIGHT_CLASSES.map((c) => ({ title: `${c.code} — ${c.tr} / ${c.en}`, value: c.value })),
       },
       validation: (R) => R.required(),
     }),
@@ -439,15 +465,16 @@ export const productSchema = defineType({
       registryNo: 'registryNo',
       name: 'name',
       status: 'status',
+      saleMode: 'saleMode',
       media: 'images.0',
     },
-    prepare({ registryNo, name, status, media }) {
+    prepare({ registryNo, name, status, saleMode, media }) {
       const nameStr = Array.isArray(name)
         ? (name.find((n: { locale: string }) => n.locale === 'en')?.value ?? name[0]?.value ?? '—')
         : '—'
       return {
         title: `[${registryNo ?? '???'}] ${nameStr}`,
-        subtitle: status ?? 'draft',
+        subtitle: `${saleMode === 'standing' ? 'Daimi Envanter' : 'Sınırlı Tahsis'} · ${status ?? 'draft'}`,
         media,
       }
     },

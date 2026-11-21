@@ -13,9 +13,9 @@ import type { DropWithProducts, LocalizedString } from '@/types'
 // sadece dış sarmalayıcının genişliğini sabitlememiz yeterli.
 // Fotoğrafların gerçek oranı 3:4 (dikey) — registry ile birebir aynı,
 // kanıtlanmış doğru oran (bkz. ProductCard'a geçilen `compact` prop'u).
-const CARD_WIDTH = 263
+const CARD_WIDTH = 224
 const CARD_GAP = 12 // gap-3
-const CARD_MEDIA_ASPECT = 'aspect-[3/4]'
+const CARD_MEDIA_ASPECT = 'aspect-[4/5]'
 
 /** Drop başlığındaki "N Farklı Kombinasyon" — görününce 0'dan N'e sayar. */
 export function AnimatedCombinations({ total, locale }: { total: number; locale: string }) {
@@ -132,6 +132,9 @@ export function DropRow({
     ? `/custom-registry?collection=${encodeURIComponent(drop.configuratorCollectionKey)}`
     : '/custom-registry'
 
+  // Tüm adetler tahsis edildi mi? (plannedQuantity yoksa sınırsız kabul edilir)
+  const soldOut = typeof drop.plannedQuantity === 'number' && drop.plannedQuantity - drop.soldCount <= 0
+
   return (
     <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-panel-edge dark:border-black">
       {/* Eski sistemdeki başlık satırı */}
@@ -187,11 +190,11 @@ export function DropRow({
         <div className="relative z-10 md:w-4/5">
           <div
             ref={scrollRef}
-            className="flex items-start gap-3 overflow-x-auto px-5 py-6 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden md:px-9"
+            className="flex items-start gap-3 overflow-x-auto px-5 py-4 [-ms-overflow-style:none] [scrollbar-width:none] snap-x snap-proximity [&::-webkit-scrollbar]:hidden md:px-9"
           >
             {drop.products.map((product) => (
               <div key={product._id} style={{ width: CARD_WIDTH, flexShrink: 0 }} className="snap-start bg-bureau-white">
-                <ProductCard product={product} mediaAspectClassName={CARD_MEDIA_ASPECT} compact />
+                <ProductCard product={product} mediaAspectClassName={CARD_MEDIA_ASPECT} compact dropSoldOut={soldOut} />
               </div>
             ))}
           </div>
@@ -251,9 +254,14 @@ export function DropRow({
             <div className="mt-2 font-mono text-[17px] font-semibold uppercase tracking-wider text-bureau-fixed-black dark:text-white sm:text-[19px]">
               {name}
             </div>
+            {soldOut && (
+              <span className="bureau-stamp mx-auto mt-4 block w-fit border-2 border-[#b03224] px-3 py-1.5 font-mono text-[12px] font-semibold uppercase tracking-widest text-[#b03224]">
+                {locale === 'tr' ? 'Tahsis tamamlandı' : 'Fully allocated'}
+              </span>
+            )}
             <Link
               href={`/registry?drop=${drop.dropNo}`}
-              className="mt-6 inline-block border border-bureau-fixed-black px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-bureau-fixed-black no-underline transition-colors hover:bg-bureau-fixed-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-bureau-fixed-black"
+              className="mt-6 block w-fit mx-auto border border-bureau-fixed-black px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-bureau-fixed-black no-underline transition-colors hover:bg-bureau-fixed-black hover:text-white dark:border-white dark:text-white dark:hover:bg-white dark:hover:text-bureau-fixed-black"
             >
               {t('exploreAll')}
             </Link>
@@ -262,12 +270,22 @@ export function DropRow({
                 müşteri kendi lambasını tasarlar. Koleksiyon bulunamazsa
                 düz /custom-registry (koleksiyon seçim ekranı). */}
             <div className="mt-2.5">
-              <Link
+              {soldOut ? (
+                // Drop'un tüm adetleri tahsis edildi — yeni tasarım kabul edilmiyor.
+                <span
+                  aria-disabled="true"
+                  className="inline-block cursor-not-allowed border border-bureau-fixed-black/30 px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-bureau-fixed-black/40 dark:border-white/30 dark:text-white/40"
+                >
+                  {t('create')}
+                </span>
+              ) : (
+                <Link
                 href={createHref}
                 className="inline-block border border-bureau-fixed-amber bg-bureau-fixed-amber px-4 py-2 font-mono text-[11px] uppercase tracking-wider text-white no-underline transition-colors hover:bg-transparent hover:text-bureau-fixed-amber"
               >
                 {t('create')}
               </Link>
+              )}
               {/* Kaç adet satışta kaldığı — plannedQuantity girilmemişse
                   (sınırsız kabul edilir) hiç gösterilmez. */}
               {typeof drop.plannedQuantity === 'number' && (

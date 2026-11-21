@@ -5,6 +5,7 @@ import { useTranslations, useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { useCartStore } from '@/lib/store/cart'
 import { getLocalizedValue, getCartPricing } from '@/lib/sanity'
+import { isProductPurchasable } from '@/lib/lightClasses'
 import type { ProductCard as ProductCardType } from '@/types'
 
 // Mobil breakpoint — 1024px (Tailwind lg). AddToCartButton.tsx'teki ile
@@ -16,7 +17,16 @@ function isMobile() {
   return window.innerWidth < 1024
 }
 
-export function AddToCartMini({ product, compact }: { product: ProductCardType; compact?: boolean }) {
+export function AddToCartMini({
+  product,
+  compact,
+  className,
+}: {
+  product: ProductCardType
+  compact?: boolean
+  /** Verilirse varsayılan dış boşluk (mt/py) yerine bu kullanılır — dosya kartı eylem şeridi için. */
+  className?: string
+}) {
   const t = useTranslations('product')
   const locale = useLocale()
   const router = useRouter()
@@ -24,7 +34,8 @@ export function AddToCartMini({ product, compact }: { product: ProductCardType; 
   const openDrawer = useCartStore((s) => s.openDrawer)
   const [justAdded, setJustAdded] = useState(false)
 
-  const isDecommissioned = product.status === 'decommissioned'
+  // Hizmet dışı, sahipli (owned) veya stoğu tükenmiş ürünler satın alınamaz.
+  const isDecommissioned = !isProductPurchasable(product)
 
   function handleAddToCart(e: React.MouseEvent) {
     // Kart tamamen bir <Link> — bu butona tıklamanın ürün detay
@@ -62,7 +73,7 @@ export function AddToCartMini({ product, compact }: { product: ProductCardType; 
   return (
     <button
       onClick={handleAddToCart}
-      className={`w-full border border-bureau-black font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-black hover:text-white ${compact ? 'mt-1 py-1' : 'mt-1.5 py-1.5'}`}
+      className={`w-full border border-bureau-black font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-black hover:text-bureau-white focus-bureau ${className ?? (compact ? 'mt-1 py-1' : 'mt-1.5 py-1.5')}`}
     >
       {justAdded ? '✓ ' + (locale === 'tr' ? 'Eklendi' : 'Added') : t('addToCart')}
     </button>
