@@ -9,7 +9,7 @@ import { MaterialPicker } from './MaterialPicker'
 /**
  * "Montajlı model" koleksiyonlarının seçim paneli (sarkıt, aplik, masa
  * lambası). Taban/Gövde/Başlık sekmeleri yerine:
- *   1) Model seçimi: koleksiyonda birden fazla model varsa.
+ *   1) Model seçimi (her zaman görünür; tek model varsa otomatik seçili gelir).
  *   2) Seçili modelin renk seçilebilen HER parçası için ayrı satır:
  *      parça adı ve renkleri. Parça sayısı modelden modele değişebilir.
  * Sabit parçalar (kablo vb.) listelenmez; 3D'de otomatik görünür.
@@ -42,7 +42,8 @@ export function ModelPanel({ mobile = false }: { mobile?: boolean }) {
 
   return (
     <div className="space-y-4">
-      {models.length > 1 && (
+      {/* Tek model olsa da gösterilir: ziyaretçi hangi ürünü düzenlediğini görsün. */}
+      {models.length > 0 && (
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className={label}>{tr ? 'Model' : 'Model'}</span>
@@ -92,7 +93,13 @@ export function ModelPanel({ mobile = false }: { mobile?: boolean }) {
       ) : (
         <div>
           <div className="mb-2 flex items-center justify-between">
-            <span className={label}>{tr ? 'Parça renkleri' : 'Part colors'}</span>
+            <span className={label}>
+              {(() => {
+                const m = models.find((x) => x.modelId === modelId)
+                const n = m ? getLocalizedValue(m.name, locale, m.modelId) : null
+                return n ? `${n} — ${tr ? 'parça renkleri' : 'part colors'}` : tr ? 'Parça renkleri' : 'Part colors'
+              })()}
+            </span>
             <span className="font-mono text-[9.5px] text-bureau-subtle">
               {body.length} {tr ? 'parça' : body.length === 1 ? 'part' : 'parts'}
             </span>
