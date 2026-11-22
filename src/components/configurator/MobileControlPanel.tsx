@@ -7,6 +7,7 @@ import { useConfiguratorStore } from '@/lib/store/configurator'
 import { MobileSlotPicker } from './MobileSlotPicker'
 import { MaterialPicker } from './MaterialPicker'
 import { ConfigSummary } from './ConfigSummary'
+import { ModelPanel } from './ModelPanel'
 import { getLocalizedValue } from '@/lib/sanity'
 
 type Tab = 'base' | 'body' | 'head'
@@ -58,6 +59,7 @@ export function MobileControlPanel({
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
   const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
+  const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
   const hasBodySlot = bodyLimits.max > 0 && availableParts.some((p) => p.slotType === 'body') // max 0 ya da gövde parçası yok → sekme gizlenir
   const bodyAtMax = body.length >= bodyLimits.max
   const bodyBelowMin = body.length < bodyLimits.min
@@ -93,6 +95,13 @@ export function MobileControlPanel({
       </div>
 
 
+      {modelMode ? (
+        // Montajlı model (sarkıt/aplik/masa): sekmeler yerine model + parça renkleri.
+        <div className="border-b border-bureau-rule px-3 py-2.5">
+          <ModelPanel mobile />
+        </div>
+      ) : (
+        <>
       {/* Sekme başlıkları — masaüstüyle aynı mantık, mobil boyutlarda */}
       <div className="flex items-center gap-4 overflow-x-auto border-b border-bureau-black px-3">
         {TABS.map((tabItem) => (
@@ -271,6 +280,8 @@ export function MobileControlPanel({
             onSelectMaterial={(m) => selectMaterial('head', m)}
           />
         </Section>
+      )}
+        </>
       )}
 
       {/* Summary + kaydet — sekmelerden BAĞIMSIZ, her zaman görünür

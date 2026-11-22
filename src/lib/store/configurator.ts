@@ -1,10 +1,65 @@
 import { create } from 'zustand'
-import type { SlotType, LampPart, CollectionLayoutMode } from '@/types'
+import type { SlotType, LampPart, CollectionLayoutMode, LampModelDef } from '@/types'
 
 /** Koleksiyonun 3D yerleşim ayarları (Sanity collection.layoutMode / hangFromCeiling). */
 export interface CollectionLayout {
   mode?: CollectionLayoutMode | null
   hangFromCeiling?: boolean | null
+  /** Sadece 'model' yerleşiminde: koleksiyonun Montajlı Modelleri. */
+  models?: LampModelDef[] | null
+}
+
+function resolveLayoutMode(layout?: CollectionLayout): CollectionLayoutMode {
+  return layout?.mode === 'assembled' || layout?.mode === 'model' ? layout.mode : 'stack'
+}
+
+/**
+ * Montajlı model parçalarını store'un mevcut akışına uydurur: renk seçilen
+ * her parça bir "body" seçimi gibi davranır (fiyat, özet, sepet, sipariş
+ * ve ürün preset'i partId/slotType üzerinden AYNEN çalışır); sıra =
+ * modeldeki parça sırası. Sabit parçalar fixedParts'a gider.
+ */
+function normalizeModels(models: LampModelDef[] | null | undefined): LampModelDef[] {
+  return (models ?? [])
+    .map((m) => ({
+      ...m,
+      parts: (m.parts ?? [])
+        .filter((p): p is LampPart => !!p && !!p.partId && !!p.modelUrl)
+        .map((p) => ({ ...p, slotType: 'body' as const, materials: p.materials ?? [] })),
+    }))
+    .filter((m) => m.parts.length > 0)
+}
+
+function modelSelectableParts(models: LampModelDef[]): LampPart[] {
+  const seen = new Set<string>()
+  const out: LampPart[] = []
+  for (const m of models) {
+    for (const p of m.parts) {
+      if (p.isFixed || seen.has(p.partId)) continue
+      seen.add(p.partId)
+      out.push(p)
+    }
+  }
+  return out
+}
+
+/** Bir modeli seçince: sabit parçalar + her renkli parça için varsayılan malzemeli seçim. */
+function modelSelection(
+  model: LampModelDef,
+  materialFor?: (partId: string) => string | null | undefined
+) {
+  const selectable = model.parts.filter((p) => !p.isFixed)
+  return {
+    modelId: model.modelId,
+    fixedParts: model.parts.filter((p) => p.isFixed),
+    body: selectable.map((p) => {
+      const wanted = materialFor?.(p.partId)
+      const materialId =
+        wanted && p.materials.some((m) => m.materialId === wanted) ? wanted : (p.materials[0]?.materialId ?? null)
+      return { partId: p.partId, materialId }
+    }),
+    bodyLimits: { min: selectable.length, max: selectable.length },
+  }
 }
 
 /**
@@ -72,6 +127,9 @@ interface ConfiguratorStore {
   /** Sadece 'assembled': model tavandan asılı gösterilir. */
   hangFromCeiling: boolean
   hardwareFees: HardwareFees // Aktif koleksiyonun Donanım Tahsisi/IoT ücretleri (Sanity'den)
+  /** Sadece 'model' yerleşiminde: koleksiyonun modelleri ve seçili model. */
+  models: LampModelDef[]
+  modelId: string | null
   bodyLimits: BodyLimits // Aktif koleksiyonun min/max gövde sayısı (Sanity'den)
 
   base: SlotSelection
@@ -136,6 +194,9 @@ interface ConfiguratorStore {
     layout?: CollectionLayout
   ) => void
 
+  /** 'model' yerleşiminde bir model seçer (renkler varsayılana döner). */
+  selectModel: (modelId: string) => void
+
   /** Base/Head için: aynı parçaya tekrar tıklanırsa seçim kalkar (toggle). */
   toggleSinglePart: (slot: 'base' | 'head', partId: string) => void
 
@@ -182,6 +243,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   hangFromCeiling: false,
   hardwareFees: DEFAULT_HARDWARE_FEES,
   bodyLimits: DEFAULT_BODY_LIMITS,
+  models: [],
+  modelId: null,
 
   base: { ...initialSlotState },
   body: [], // boş başlar — kullanıcı tıkladıkça katman eklenir
@@ -224,7 +287,11 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   requestCameraFit: () => set((state) => ({ cameraFitRequestId: state.cameraFitRequestId + 1 })),
 
   setCollection: (key, parts, hardwareFees, bodyLimits, layout) => {
-    const { selectable, fixed } = splitParts(parts)
+    const mode = resolveLayoutMode(layout)
+    const models = mode === 'model' ? normalizeModels(layout?.models) : []
+    const { selectable, fixed } = mode === 'model' ? { selectable: modelSelectableParts(models), fixed: [] as LampPart[] } : splitParts(parts)
+    // Tek model varsa doğrudan seçili gelir (model seçim adımı atlanır).
+    const auto = models.length === 1 ? modelSelection(models[0]) : null
     // Object.assign yerine tek tek kontrol: Sanity'den bir alan boş/undefined
     // gelirse (henüz doldurulmadıysa) varsayılanın üzerine yazılmasın.
     const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
@@ -236,14 +303,16 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     set({
       collectionKey: key,
       availableParts: selectable,
-      fixedParts: fixed,
-      layoutMode: layout?.mode === 'assembled' ? 'assembled' : 'stack',
-      hangFromCeiling: layout?.mode === 'assembled' && !!layout?.hangFromCeiling,
+      fixedParts: auto?.fixedParts ?? fixed,
+      layoutMode: mode,
+      hangFromCeiling: mode !== 'stack' && !!layout?.hangFromCeiling,
       hardwareFees: merged,
-      bodyLimits: resolveBodyLimits(bodyLimits),
+      bodyLimits: auto?.bodyLimits ?? (mode === 'model' ? { min: 0, max: 0 } : resolveBodyLimits(bodyLimits)),
+      models,
+      modelId: auto?.modelId ?? null,
       // Koleksiyon değişince seçimleri sıfırla
       base: { ...initialSlotState },
-      body: [],
+      body: auto?.body ?? [],
       head: { ...initialSlotState },
       stackTotalHeight: 0,
       stackPartCount: 0,
@@ -264,6 +333,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       hangFromCeiling: false,
       hardwareFees: DEFAULT_HARDWARE_FEES,
       bodyLimits: DEFAULT_BODY_LIMITS,
+      models: [],
+      modelId: null,
       base: { ...initialSlotState },
       body: [],
       head: { ...initialSlotState },
@@ -277,6 +348,20 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     }),
 
   loadPreset: (key, parts, hardwareFees, preset, bodyLimits, layout) => {
+    const mode = resolveLayoutMode(layout)
+    if (mode === 'model') {
+      // Preset'teki parça kimliklerini en çok kapsayan modeli bul; renkleri
+      // preset'ten al (bulunamazsa parçanın ilk malzemesi).
+      get().setCollection(key, parts, hardwareFees, bodyLimits, layout)
+      const models = get().models
+      const ids = new Set(preset.map((p) => p.partId))
+      const score = (m: LampModelDef) => m.parts.filter((p) => ids.has(p.partId)).length
+      const best = [...models].sort((a, b) => score(b) - score(a))[0]
+      if (best && score(best) > 0) {
+        set(modelSelection(best, (partId) => preset.find((p) => p.partId === partId)?.materialId))
+      }
+      return
+    }
     const { selectable, fixed } = splitParts(parts)
     const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
     if (hardwareFees) {
@@ -294,13 +379,30 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       collectionKey: key,
       availableParts: selectable,
       fixedParts: fixed,
-      layoutMode: layout?.mode === 'assembled' ? 'assembled' : 'stack',
-      hangFromCeiling: layout?.mode === 'assembled' && !!layout?.hangFromCeiling,
+      layoutMode: mode,
+      hangFromCeiling: mode === 'assembled' && !!layout?.hangFromCeiling,
       hardwareFees: merged,
       bodyLimits: limits,
+      models: [],
+      modelId: null,
       base: baseEntry ? { partId: baseEntry.partId, materialId: baseEntry.materialId } : { ...initialSlotState },
       body: bodyEntries.map((b) => ({ partId: b.partId, materialId: b.materialId })),
       head: headEntry ? { partId: headEntry.partId, materialId: headEntry.materialId } : { ...initialSlotState },
+      stackTotalHeight: 0,
+      stackPartCount: 0,
+      stackWidth: 0,
+      stackDepth: 0,
+      displayWidth: 0,
+      displayHeight: 0,
+      displayDepth: 0,
+    })
+  },
+
+  selectModel: (modelId) => {
+    const model = get().models.find((m) => m.modelId === modelId)
+    if (!model) return
+    set({
+      ...modelSelection(model),
       stackTotalHeight: 0,
       stackPartCount: 0,
       stackWidth: 0,
@@ -375,14 +477,18 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   toggleIot: () => set((state) => ({ iotEnabled: !state.iotEnabled })),
 
   reset: () =>
-    set({
+    set((state) => {
+      const model = state.layoutMode === 'model' ? state.models.find((m) => m.modelId === state.modelId) : undefined
+      return {
+      ...(model ? modelSelection(model) : {}),
       base: { ...initialSlotState },
-      body: [],
+      body: model ? modelSelection(model).body : [],
       head: { ...initialSlotState },
       lightColor: '#F5D78E',
       lightBrightness: 0.7,
       lightEnabled: true,
       iotEnabled: true,
+      }
     }),
 
   getTotalPrice: (locale) => {
@@ -452,10 +558,14 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     return get().body.filter((b) => b.partId === partId).length
   },
 
-  hasSlot: (slot) => get().availableParts.some((p) => p.slotType === slot),
+  hasSlot: (slot) => get().layoutMode !== 'model' && get().availableParts.some((p) => p.slotType === slot),
 
   isComplete: () => {
     const state = get()
+    if (state.layoutMode === 'model') {
+      // Model seçili ve her renkli parçanın rengi seçili olmalı.
+      return !!state.modelId && state.body.length > 0 && state.body.every((b) => !!b.partId && !!b.materialId)
+    }
     // Koleksiyonda seçilebilir taban/başlık parçası YOKSA o slot zorunlu değildir
     // (ör. sarkıt: sadece başlık + sabit kablo; masa lambası: taban + başlık).
     const hasBase = !state.hasSlot('base') || (!!state.base.partId && !!state.base.materialId)

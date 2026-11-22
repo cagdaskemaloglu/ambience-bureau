@@ -24,6 +24,11 @@ export function ConfigSummary({
   const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
   const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
+  const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
+  const modelName = useConfiguratorStore((s) => {
+    const m = s.models.find((x) => x.modelId === s.modelId)
+    return m ? getLocalizedValue(m.name, locale, m.modelId) : null
+  })
 
   const total = getTotalPrice(locale as 'tr' | 'en')
   const complete = isComplete()
@@ -96,6 +101,31 @@ export function ConfigSummary({
       </div>
 
       <div className="divide-y divide-dashed divide-bureau-rule">
+        {modelMode ? (
+          <>
+            <div className="flex items-center justify-between px-4 py-2.5 text-[12px]">
+              <span className="text-bureau-muted">{locale === 'tr' ? 'Model' : 'Model'}</span>
+              <span>{modelName ?? (locale === 'tr' ? 'Seçilmedi' : 'Not selected')}</span>
+            </div>
+            {body.map((slot, idx) => {
+              const resolved = resolveSlot(slot)
+              return (
+                <div key={idx} className="flex items-center justify-between px-4 py-2.5 text-[12px]">
+                  <span className="text-bureau-muted">{String(idx + 1).padStart(2, '0')}</span>
+                  <div className="flex items-center gap-3 text-right">
+                    <span>{resolved.label}</span>
+                    {resolved.price !== null && (
+                      <span className="font-mono text-[11px] text-bureau-subtle">
+                        {formatPrice(resolved.price, currency, intlLocale)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </>
+        ) : (
+          <>
         <div className="flex items-center justify-between px-4 py-2.5 text-[12px]">
           <span className="text-bureau-muted">{locale === 'tr' ? 'Taban' : 'Base'}</span>
           <div className="flex items-center gap-3 text-right">
@@ -153,6 +183,8 @@ export function ConfigSummary({
             )}
           </div>
         </div>
+          </>
+        )}
 
         <div className="flex items-center justify-between px-4 py-2.5 text-[12px]">
           <div className="flex items-center gap-2">

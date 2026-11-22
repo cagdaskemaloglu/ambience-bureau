@@ -18,6 +18,8 @@ export function CombinationCountBadge() {
   const collectionKey = useConfiguratorStore((s) => s.collectionKey)
   const body = useConfiguratorStore((s) => s.body)
   const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
+  // Montajlı modelde gövde istifi yok — rozet anlamsız.
+  const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
 
   const total = useMemo(
     () => computeCurrentModelCombinationCount(body, bodyLimits),
@@ -31,7 +33,7 @@ export function CombinationCountBadge() {
     startWhenVisible: false,
   })
 
-  if (!collectionKey || body.length === 0 || total <= 0) return null
+  if (!collectionKey || modelMode || body.length === 0 || total <= 0) return null
 
   return (
     <div className="pointer-events-none absolute left-3 top-3 z-10">

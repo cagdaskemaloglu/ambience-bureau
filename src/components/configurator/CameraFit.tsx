@@ -77,6 +77,8 @@ export function CameraFit() {
   const stackTotalHeight = useConfiguratorStore((s) => s.stackTotalHeight)
   const stackPartCount = useConfiguratorStore((s) => s.stackPartCount)
   const cameraFitRequestId = useConfiguratorStore((s) => s.cameraFitRequestId)
+  const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
+  const modelId = useConfiguratorStore((s) => s.modelId)
   const { camera, controls } = useThree()
 
   const lastCollectionKey = useRef<string | null>(null)
@@ -118,6 +120,15 @@ export function CameraFit() {
     // @ts-expect-error - drei'nin OrbitControls tipi eksik olabilir
     positionCamera(camera, controls, distance, targetY)
   }, [cameraFitRequestId, stackTotalHeight, camera, controls])
+
+  // 4) Montajlı model: model seçilince/değişince ve geometri ölçülünce
+  // modeli bütün olarak sığdır (parça eklenmediği için 2. kural tetiklenmez;
+  // asılı modeller de varsayılan kadraja sığmaz).
+  useEffect(() => {
+    if (!modelMode || !modelId || stackTotalHeight <= 0) return
+    // @ts-expect-error - drei'nin OrbitControls tipi eksik olabilir
+    positionCamera(camera, controls, distanceForHeight(stackTotalHeight), stackTotalHeight / 2)
+  }, [modelMode, modelId, stackTotalHeight, camera, controls])
 
   return null
 }

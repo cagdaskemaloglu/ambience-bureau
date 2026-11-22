@@ -457,6 +457,26 @@ anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
 - Zorunlu slotlar parçalardan türetilir: koleksiyonda seçilebilir taban
   yoksa Taban sekmesi gizlenir ve zorunlu değildir (başlık ve gövde için
   de aynı; `hasSlot`). Tutorial adımları da buna göre süzülür.
+- `model` ("Montajlı model"): sarkıt/aplik/masa lambası gibi KENDİ PARÇA
+  SETİYLE gelen ürünler. Studio > Montajlı Modeller (`lampModel`): key,
+  ad, koleksiyon, `parts[]` (lampPart referansları, 1..n), görsel.
+  Müşteri önce modeli seçer (tek model varsa otomatik), sonra modelin
+  sabit olmayan HER parçasının rengini ayrı seçer (`ModelPanel.tsx`).
+  - Store: `models`, `modelId`, `selectModel`. Renkli parçalar `body`
+    dizisine (modeldeki sırayla, `slotType` 'body'ye zorlanır), sabitler
+    `fixedParts`'a yazılır; `bodyLimits` = parça sayısı. Böylece fiyat,
+    özet, sepet (`customDesign.parts`), sipariş → Sanity ürün
+    (`configuratorParts`) ve "Customize" preset'i değişmeden çalışır.
+    `loadPreset` modeli, preset'teki partId'leri en çok kapsayan model
+    olarak bulur.
+  - Parlayan parça: `lampPart.emitsLight` ("Işık yayar").
+  - Model parçalarında `slotType` ve `collections` zorunlu değil (Studio
+    doğrulaması parçanın bir lampModel'de kullanılıp kullanılmadığına bakar).
+  - Sorgular: `getLampModelsByCollection`; `getAllLampCollections`
+    lampModel'i olan koleksiyonları da listeler; drop kombinasyon sayısı
+    model başına parça renk sayılarının çarpımının toplamıdır.
+  - Kamera: model değişince ve ölçüler gelince yeniden sığdırılır
+    (`CameraFit` kural 4). Tutorial model modunda gösterilmez.
 - Mobil uygulama (`ESPTest`) bu modları henüz bilmiyor — bkz. `TASKS.md`.
 - Local test: Sanity CDN model dosyaları CORS nedeniyle sadece
   `localhost:3000`'e veriliyor; konfigüratörü başka portta açarsanız

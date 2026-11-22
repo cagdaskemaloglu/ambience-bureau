@@ -38,6 +38,9 @@ export default defineConfig({
               .title('Lamp Parts (Configurator)')
               .child(S.documentTypeList('lampPart').title('Lamp Parts')),
             S.listItem()
+              .title('Montajlı Modeller (Sarkıt / Aplik / Masa)')
+              .child(S.documentTypeList('lampModel').title('Montajlı Modeller')),
+            S.listItem()
               .title('Materials (Filament Colors)')
               .child(S.documentTypeList('material').title('Materials')),
             S.listItem()

@@ -115,14 +115,18 @@ export function CustomRegistryTutorial({
   // masa lambası: gövde yok). Sabit parçalar zaten seçim listesinde değil.
   const availableParts = useConfiguratorStore((st) => st.availableParts)
   const bodyMax = useConfiguratorStore((st) => st.bodyLimits.max)
+  const modelMode = useConfiguratorStore((st) => st.layoutMode === 'model')
   const steps = useMemo(
     () =>
       STEPS.filter((st) => {
+        // Montajlı modelde tur yok: taban/gövde/başlık adımları uymuyor,
+        // panel zaten tek ekran (model + parça renkleri).
+        if (modelMode) return false
         if (!st.requires) return true
         if (st.requires === 'body' && bodyMax <= 0) return false
         return availableParts.some((p) => p.slotType === st.requires)
       }),
-    [availableParts, bodyMax]
+    [availableParts, bodyMax, modelMode]
   )
   const [dismissed, setDismissed] = useState(false)
   const [isDesktop, setIsDesktop] = useState(true)
@@ -174,7 +178,7 @@ export function CustomRegistryTutorial({
 
   // Aktif adımın hedefini bul, boyutunu takip et, tıklayınca ilerlet.
   useEffect(() => {
-    if (!active || dismissed || !collectionKey) return
+    if (!active || dismissed || !collectionKey || steps.length === 0) return
 
     const step = steps[stepIndex]
     let cancelled = false
@@ -221,7 +225,7 @@ export function CustomRegistryTutorial({
     }
   }, [active, dismissed, collectionKey, stepIndex, steps, findTarget, advance, handleDismiss])
 
-  if (!active || dismissed || !collectionKey) return null
+  if (!active || dismissed || !collectionKey || steps.length === 0) return null
 
   const step = steps[stepIndex]
   const isFinalStep = step.selector === null

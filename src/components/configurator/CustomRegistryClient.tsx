@@ -7,13 +7,13 @@ import { useRouter } from '@/i18n/navigation'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { useCartStore } from '@/lib/store/cart'
 import { getOrCreateGuestSessionId } from '@/lib/supabase/auth'
-import { getLampPartsByCollection } from '@/lib/queries'
+import { getLampModelsByCollection, getLampPartsByCollection } from '@/lib/queries'
 import { CollectionPicker } from './CollectionPicker'
 import { ControlPanel } from './ControlPanel'
 import { MobileControlPanel } from './MobileControlPanel'
 import { ConfigSummary } from './ConfigSummary'
 import { CustomRegistryTutorial } from './CustomRegistryTutorial'
-import type { Collection, LampPart, ProductConfiguratorPart } from '@/types'
+import type { Collection, LampModelDef, LampPart, ProductConfiguratorPart } from '@/types'
 
 const ConfiguratorCanvas = dynamic(
   () => import('./ConfiguratorCanvas').then((m) => m.ConfiguratorCanvas),
@@ -101,13 +101,26 @@ export function CustomRegistryClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [presetDesign, initialCollectionKey])
 
+  /**
+   * Koleksiyonun parçaları ve (Montajlı model yerleşiminde) modelleri.
+   * demoParts/demoModels: sadece local demo koleksiyonlarında dolu (lib/bulletinDemo.ts).
+   */
+  async function fetchCollectionData(key: string) {
+    const selected = collections.find((c) => c.key?.current === key) as
+      | (Collection & { demoParts?: LampPart[]; demoModels?: LampModelDef[] })
+      | undefined
+    if (selected?.layoutMode === 'model') {
+      const models = selected.demoModels ?? (await getLampModelsByCollection(key))
+      return { selected, parts: [] as LampPart[], models }
+    }
+    const parts: LampPart[] = selected?.demoParts ?? (await getLampPartsByCollection(key))
+    return { selected, parts, models: null }
+  }
+
   async function handleSelectCollection(key: string) {
     setIsLoadingParts(true)
     try {
-      const selectedCollection = collections.find((c) => c.key?.current === key)
-      // demoParts: sadece local demo koleksiyonlarında dolu (lib/bulletinDemo.ts)
-      const demoParts = (selectedCollection as { demoParts?: LampPart[] } | undefined)?.demoParts
-      const parts: LampPart[] = demoParts ?? (await getLampPartsByCollection(key))
+      const { selected: selectedCollection, parts, models } = await fetchCollectionData(key)
       setCollection(key, parts, {
         baseTRY: selectedCollection?.hardwareBaseFeeTRY,
         baseUSD: selectedCollection?.hardwareBaseFeeUSD,
@@ -119,6 +132,7 @@ export function CustomRegistryClient({
       }, {
         mode: selectedCollection?.layoutMode,
         hangFromCeiling: selectedCollection?.hangFromCeiling,
+        models,
       })
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
@@ -130,8 +144,7 @@ export function CustomRegistryClient({
   async function handleLoadPresetDesign(design: { collectionKey: string; parts: ProductConfiguratorPart[] }) {
     setIsLoadingParts(true)
     try {
-      const parts: LampPart[] = await getLampPartsByCollection(design.collectionKey)
-      const selectedCollection = collections.find((c) => c.key?.current === design.collectionKey)
+      const { selected: selectedCollection, parts, models } = await fetchCollectionData(design.collectionKey)
       loadPreset(
         design.collectionKey,
         parts,
@@ -143,7 +156,7 @@ export function CustomRegistryClient({
         },
         design.parts,
         { min: selectedCollection?.minBodyLayers, max: selectedCollection?.maxBodyLayers },
-        { mode: selectedCollection?.layoutMode, hangFromCeiling: selectedCollection?.hangFromCeiling }
+        { mode: selectedCollection?.layoutMode, hangFromCeiling: selectedCollection?.hangFromCeiling, models }
       )
     } catch (err) {
       console.error('Ürün kombinasyonu yüklenemedi:', err)

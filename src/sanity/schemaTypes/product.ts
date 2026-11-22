@@ -358,14 +358,23 @@ export const productSchema = defineType({
       name: 'configuratorParts',
       title: 'Customize — Preset Parça/Malzeme Kombinasyonu',
       description:
-        '"Customize" butonuna basıldığında Custom Registry\'de otomatik yüklenecek tam kombinasyon. Bir "Base", bir "Head" ve istenen sayıda "Body" katmanı ekleyin — Body katmanları buradaki SIRAYLA (yukarıdan aşağıya) istiflenir.',
+        '"Customize" butonuna basıldığında Custom Registry\'de otomatik yüklenecek tam kombinasyon. Lambader: bir "Base", bir "Head" ve istenen sayıda "Body" katmanı ekleyin — Body katmanları buradaki SIRAYLA (yukarıdan aşağıya) istiflenir. Montajlı model koleksiyonu (sarkıt/aplik/masa): modelin renk seçilen HER parçası için bir satır ekleyin (Slot: Body), parçayı ve rengini seçin — model, parçalardan otomatik bulunur; sabit parçaları (kablo) eklemeyin.',
       type: 'array',
       hidden: ({ document }) => !document?.isConfigurable,
       validation: (R) =>
-        R.custom((value, context) => {
+        R.custom(async (value, context) => {
           const doc = context.document as { isConfigurable?: boolean } | undefined
           if (!doc?.isConfigurable) return true
           const entries = (value ?? []) as Array<{ slotType?: string }>
+          if (entries.length === 0) return 'En az bir parça satırı eklenmeli'
+          // Montajlı model koleksiyonunda Base/Head zorunlu değil.
+          const collectionId = (doc as { configuratorCollection?: { _ref?: string } } | undefined)?.configuratorCollection?._ref
+          if (collectionId) {
+            const mode = await context
+              .getClient({ apiVersion: '2024-01-01' })
+              .fetch('*[_id == $id || _id == "drafts." + $id][0].layoutMode', { id: collectionId })
+            if (mode === 'model') return true
+          }
           if (!entries.some((e) => e.slotType === 'base')) return 'Bir "Base" satırı eklenmeli'
           if (!entries.some((e) => e.slotType === 'head')) return 'Bir "Head" satırı eklenmeli'
           return true
@@ -399,7 +408,12 @@ export const productSchema = defineType({
                   const collectionId = (document as { configuratorCollection?: { _ref?: string } })
                     ?.configuratorCollection?._ref
                   if (!collectionId) return { filter: '' }
-                  return { filter: '$collectionId in collections[]._ref', params: { collectionId } }
+                  // Koleksiyonun slot parçaları + koleksiyondaki Montajlı Modellerin parçaları
+                  return {
+                    filter:
+                      '$collectionId in collections[]._ref || _id in *[_type == "lampModel" && collection._ref == $collectionId].parts[]._ref',
+                    params: { collectionId },
+                  }
                 },
               },
               validation: (R) => R.required(),

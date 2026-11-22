@@ -211,10 +211,25 @@ export interface LampPart {
   /** Sadece "Blender konumu" yerleşiminde: ortak orijinle aktarılmamış parçalar için düzeltme. */
   offsetMm?: { x?: number; y?: number; z?: number } | null
   rotationDeg?: { x?: number; y?: number; z?: number } | null
+  /** Montajlı modelde: ışık açıkken bu parça parlar. */
+  emitsLight?: boolean | null
+}
+
+/**
+ * Montajlı Model (Sanity lampModel): kendi parça setiyle gelen ürün
+ * (sarkıt, aplik, masa lambası). Müşteri modeli seçer, her sabit olmayan
+ * parçanın rengini ayrı seçer.
+ */
+export interface LampModelDef {
+  _id: string
+  modelId: string
+  name: LocalizedString[]
+  thumbnail?: string | null
+  parts: LampPart[]
 }
 
 /** Koleksiyonun 3D yerleşimi: üst üste istif ya da Blender'daki konum (ortak orijin). */
-export type CollectionLayoutMode = 'stack' | 'assembled'
+export type CollectionLayoutMode = 'stack' | 'assembled' | 'model'
 
 // ── SEO ───────────────────────────────────────────────────
 

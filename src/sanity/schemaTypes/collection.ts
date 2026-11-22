@@ -49,12 +49,13 @@ export const collectionSchema = defineType({
       name: 'layoutMode',
       title: '3D Yerleşim',
       description:
-        'Üst üste: parçalar dikey olarak istiflenir (bugünkü davranış). Blender konumu: her parça STL dosyasındaki kendi konumunda durur; tüm parçaları Blender\'da ORTAK ORİJİNLE ve Y ekseni yukarı olacak şekilde dışa aktarın.',
+        'Üst üste: parçalar dikey olarak istiflenir (lambader). Blender konumu: her parça STL dosyasındaki kendi konumunda durur, müşteri taban/gövde/başlık seçer. Montajlı model: sarkıt/aplik/masa lambası — müşteri bir MODEL seçer (Studio > Montajlı Modeller), modelin her parçasını ayrı renklendirir; parça sayısı modelden modele değişebilir. Blender konumu ve Montajlı modelde tüm parçaları ORTAK ORİJİNLE ve Y yukarı dışa aktarın.',
       type: 'string',
       options: {
         list: [
           { title: 'Üst üste (taban → gövde → başlık)', value: 'stack' },
           { title: 'Blender konumu (ortak orijin)', value: 'assembled' },
+          { title: 'Montajlı model (her model kendi parça seti, her parça ayrı renk)', value: 'model' },
         ],
         layout: 'radio',
       },
@@ -64,10 +65,10 @@ export const collectionSchema = defineType({
       name: 'hangFromCeiling',
       title: 'Asılı (tavandan)',
       description:
-        'Sarkıt gibi ürünler için: model zemine oturmaz, en üst noktasından asılı gibi havada gösterilir. Sadece "Blender konumu" yerleşiminde geçerli.',
+        'Sarkıt gibi ürünler için: model zemine oturmaz, en üst noktasından asılı gibi havada gösterilir. Sadece "Blender konumu" ve "Montajlı model" yerleşiminde geçerli.',
       type: 'boolean',
       initialValue: false,
-      hidden: ({ document }) => document?.layoutMode !== 'assembled',
+      hidden: ({ document }) => document?.layoutMode !== 'assembled' && document?.layoutMode !== 'model',
     }),
 
     // ── Gövde (Body) Sayısı Sınırları ─────────────────────────
@@ -80,6 +81,7 @@ export const collectionSchema = defineType({
       description: 'Tasarımı kaydedebilmek için eklenmesi gereken en az gövde sayısı. 0 = gövde opsiyonel. Boşsa: 0',
       type: 'number',
       initialValue: 0,
+      hidden: ({ document }) => document?.layoutMode === 'model',
       validation: (R) => R.integer().min(0),
     }),
     defineField({
@@ -88,6 +90,7 @@ export const collectionSchema = defineType({
       description: 'Eklenebilecek en fazla gövde sayısı. 0 = bu koleksiyonda gövde yok (Gövde sekmesi gizlenir). Boşsa: 5',
       type: 'number',
       initialValue: 5,
+      hidden: ({ document }) => document?.layoutMode === 'model',
       validation: (R) =>
         R.integer()
           .min(0)

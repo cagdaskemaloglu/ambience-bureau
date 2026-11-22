@@ -85,11 +85,19 @@ export default async function CustomRegistryPage({
   const realCollections = await getAllLampCollections()
   // SADECE local demo modunda: "Blender konumu" yerleşimini denemek için
   // örnek sarkıt / masa lambası koleksiyonları (bkz. lib/bulletinDemo.ts).
-  const firstKey = realCollections[0]?.key?.current
-  const collections =
-    DEMO_ENABLED && firstKey
-      ? [...realCollections, ...buildDemoCollections(await getLampPartsByCollection(firstKey))]
-      : realCollections
+  // Parçaları ödünç alınacak ilk "üst üste" koleksiyon (taban/gövde/başlığı olan).
+  let demoSource: Awaited<ReturnType<typeof getLampPartsByCollection>> = []
+  if (DEMO_ENABLED) {
+    for (const c of realCollections as Array<{ key?: { current?: string }; layoutMode?: string | null }>) {
+      if (!c.key?.current || (c.layoutMode && c.layoutMode !== 'stack')) continue
+      const parts = await getLampPartsByCollection(c.key.current)
+      if (parts.some((p: { slotType?: string }) => p.slotType === 'head') && parts.some((p: { slotType?: string }) => p.slotType === 'body')) {
+        demoSource = parts
+        break
+      }
+    }
+  }
+  const collections = DEMO_ENABLED ? [...realCollections, ...buildDemoCollections(demoSource)] : realCollections
   const presetResult = await getPresetDesign(preset)
   const presetDesign = presetResult.status === 'ok' ? presetResult.design : null
 

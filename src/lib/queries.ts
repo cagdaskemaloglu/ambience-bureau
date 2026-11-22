@@ -1,5 +1,6 @@
 import { resolveDropState } from '@/lib/dropSchedule'
 import { sanityClient } from './sanity'
+import type { LampModelDef } from '@/types'
 
 // ── Fragment'lar (tekrar kullanılan GROQ parçaları) ───────
 
@@ -306,7 +307,21 @@ export async function getAllDropsWithProducts() {
     const head = bySlot.head ?? 0
     // Herhangi bir slot boşsa (ör. henüz başlık parçası girilmemiş)
     // anlamlı bir rakam olmaz — 0 döndürüp arayüzde gizletiyoruz.
-    const total = base > 0 && body > 0 && head > 0 ? base * body * head : 0
+    let total = base > 0 && body > 0 && head > 0 ? base * body * head : 0
+    if (total === 0) {
+      // Montajlı model koleksiyonu: her modelde, sabit olmayan parçaların
+      // malzeme sayılarının ÇARPIMI; modeller arasında TOPLAM.
+      const models = await sanityClient.fetch<Array<{ counts: Array<{ c: number | null }> | null }>>(
+        `*[_type == "lampModel" && active != false && collection->key.current == $collectionKey]{
+          "counts": parts[]->[isFixed != true]{ "c": count(materials) }
+        }`,
+        { collectionKey }
+      )
+      total = models.reduce((sum, m) => {
+        const counts = (m.counts ?? []).map((x) => x?.c).filter((c): c is number => typeof c === 'number' && c > 0)
+        return counts.length > 0 ? sum + counts.reduce((a, b) => a * b, 1) : sum
+      }, 0)
+    }
     comboCache.set(collectionKey, total)
     return total
   }
@@ -423,36 +438,57 @@ export async function getAllCollections() {
 
 // ── Konfigüratör Sorguları ────────────────────────────────
 
+// Konfigüratör parçasının ortak projeksiyonu (slot parçaları ve
+// Montajlı Model parçaları aynı alanları kullanır).
+const LAMP_PART_PROJECTION = `
+  _id,
+  "partId": partId.current,
+  slotType,
+  basePriceTRY,
+  basePriceUSD,
+  dimensions,
+  ${LOCALIZED_FIELD('name')},
+  ${LOCALIZED_FIELD('description')},
+  "modelUrl": modelFile.asset->url,
+  "thumbnail": thumbnail.asset->url,
+  isFixed,
+  fixedColor,
+  offsetMm,
+  rotationDeg,
+  emitsLight,
+  materials[]->{
+    "materialId": materialId.current,
+    color,
+    roughness,
+    metalness,
+    priceModifierTRY,
+    priceModifierUSD,
+    isTranslucent,
+    opacity,
+    ${LOCALIZED_FIELD('label')},
+    "thumbnail": thumbnail.asset->url
+  }
+`
+
 export async function getLampPartsByCollection(collectionKey: string) {
   return sanityClient.fetch(
     `*[_type == "lampPart" && $collectionKey in collections[]->key.current]
-      | order(slotType asc, sortOrder asc) {
+      | order(slotType asc, sortOrder asc) {${LAMP_PART_PROJECTION}}`,
+    { collectionKey },
+    { next: { tags: [`configurator-${collectionKey}`] } }
+  )
+}
+
+/** "Montajlı model" koleksiyonlarının modelleri (her biri kendi parça setiyle). */
+export async function getLampModelsByCollection(collectionKey: string): Promise<LampModelDef[]> {
+  return sanityClient.fetch(
+    `*[_type == "lampModel" && active != false && collection->key.current == $collectionKey]
+      | order(sortOrder asc) {
         _id,
-        "partId": partId.current,
-        slotType,
-        basePriceTRY,
-        basePriceUSD,
-        dimensions,
+        "modelId": key.current,
         ${LOCALIZED_FIELD('name')},
-        ${LOCALIZED_FIELD('description')},
-        "modelUrl": modelFile.asset->url,
         "thumbnail": thumbnail.asset->url,
-        isFixed,
-        fixedColor,
-        offsetMm,
-        rotationDeg,
-        materials[]->{
-          "materialId": materialId.current,
-          color,
-          roughness,
-          metalness,
-          priceModifierTRY,
-          priceModifierUSD,
-          isTranslucent,
-          opacity,
-          ${LOCALIZED_FIELD('label')},
-          "thumbnail": thumbnail.asset->url
-        }
+        "parts": parts[]->{${LAMP_PART_PROJECTION}}
       }`,
     { collectionKey },
     { next: { tags: [`configurator-${collectionKey}`] } }
@@ -461,7 +497,7 @@ export async function getLampPartsByCollection(collectionKey: string) {
 
 export async function getAllLampCollections() {
   return sanityClient.fetch(
-    `*[_type == "collection" && active != false && count(*[_type == "lampPart" && references(^._id)]) > 0]
+    `*[_type == "collection" && active != false && count(*[(_type == "lampPart" || (_type == "lampModel" && active != false)) && references(^._id)]) > 0]
       | order(sortOrder asc) {
         _id,
         key,

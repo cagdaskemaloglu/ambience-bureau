@@ -6,6 +6,7 @@ import { useLocale } from 'next-intl'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 import { SlotPicker } from './SlotPicker'
 import { MaterialPicker } from './MaterialPicker'
+import { ModelPanel } from './ModelPanel'
 import { getLocalizedValue } from '@/lib/sanity'
 
 type Tab = 'base' | 'body' | 'head'
@@ -41,6 +42,7 @@ export function ControlPanel() {
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
+  const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
 
   // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
   const hasBodySlot = bodyLimits.max > 0 && availableParts.some((p) => p.slotType === 'body') // max 0 ya da gövde parçası yok → sekme gizlenir
@@ -70,7 +72,7 @@ export function ControlPanel() {
         ? `Hardware Allocation: $${hardwareFees.baseUSD + hardwareFees.iotUSD} ($${hardwareFees.baseUSD} + $${hardwareFees.iotUSD} IoT)`
         : `Hardware Allocation: $${hardwareFees.baseUSD}`
 
-  if (availableParts.length === 0) {
+  if (availableParts.length === 0 && !modelMode) {
     return (
       <div className="flex h-40 items-center justify-center">
         <span className="font-mono text-[11px] uppercase text-bureau-muted">
@@ -80,24 +82,8 @@ export function ControlPanel() {
     )
   }
 
-  const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
-    ...(hasBaseSlot ? [{ key: 'base' as Tab, label: tr ? 'Taban' : 'Base', done: baseComplete }] : []),
-    ...(hasBodySlot
-      ? [
-          {
-            key: 'body' as Tab,
-            label: (tr ? 'Gövde' : 'Body') + (body.length > 0 ? ` (${body.length})` : ''),
-            done: body.length >= Math.max(1, bodyLimits.min),
-          },
-        ]
-      : []),
-    ...(hasHeadSlot ? [{ key: 'head' as Tab, label: tr ? 'Başlık' : 'Head', done: headComplete }] : []),
-  ]
-  // Seçili sekme bu koleksiyonda yoksa (ör. sarkıtta "Taban") ilk mevcut sekmeye düş.
-  const currentTab: Tab = TABS.some((t) => t.key === activeTab) ? activeTab : (TABS[0]?.key ?? 'head')
-
-  return (
-    <div className="space-y-4">
+  const iotToggle = (
+    <>
       {/* IoT Toggle */}
       <div className="flex items-center justify-between border border-bureau-rule p-3">
         <div>
@@ -121,6 +107,38 @@ export function ControlPanel() {
           />
         </button>
       </div>
+    </>
+  )
+
+  // Montajlı model (sarkıt/aplik/masa): sekmeler yerine model + parça renkleri.
+  if (modelMode) {
+    return (
+      <div className="space-y-4">
+        {iotToggle}
+        <ModelPanel />
+      </div>
+    )
+  }
+
+  const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
+    ...(hasBaseSlot ? [{ key: 'base' as Tab, label: tr ? 'Taban' : 'Base', done: baseComplete }] : []),
+    ...(hasBodySlot
+      ? [
+          {
+            key: 'body' as Tab,
+            label: (tr ? 'Gövde' : 'Body') + (body.length > 0 ? ` (${body.length})` : ''),
+            done: body.length >= Math.max(1, bodyLimits.min),
+          },
+        ]
+      : []),
+    ...(hasHeadSlot ? [{ key: 'head' as Tab, label: tr ? 'Başlık' : 'Head', done: headComplete }] : []),
+  ]
+  // Seçili sekme bu koleksiyonda yoksa (ör. sarkıtta "Taban") ilk mevcut sekmeye düş.
+  const currentTab: Tab = TABS.some((t) => t.key === activeTab) ? activeTab : (TABS[0]?.key ?? 'head')
+
+  return (
+    <div className="space-y-4">
+      {iotToggle}
 
       {/* Sekme başlıkları */}
       <div className="flex items-center gap-6 border-b border-bureau-black">

@@ -1,6 +1,18 @@
 import { defineField, defineType, defineArrayMember } from 'sanity'
 import { localizedStringField } from './localeHelper'
 
+// Montajlı Model (lampModel) içinde kullanılan parçalarda Slot Type ve
+// Collections zorunlu değildir — parça modele, model koleksiyona bağlıdır.
+async function isUsedInModel(context: { document?: { _id?: string } | null; getClient: (o: { apiVersion: string }) => { fetch: (q: string, p: Record<string, unknown>) => Promise<unknown> } }) {
+  const id = context.document?._id?.replace(/^drafts\./, '')
+  if (!id) return false
+  const n = await context.getClient({ apiVersion: '2024-01-01' }).fetch(
+    'count(*[_type == "lampModel" && references($id)])',
+    { id }
+  )
+  return typeof n === 'number' && n > 0
+}
+
 export const lampPartSchema = defineType({
   name: 'lampPart',
   title: 'Lamp Part (Configurator)',
@@ -23,7 +35,7 @@ export const lampPartSchema = defineType({
     defineField({
       name: 'slotType',
       title: 'Slot Type',
-      description: 'Bu parça lambanın neresine gider?',
+      description: 'Bu parça lambanın neresine gider? (Montajlı Model parçalarında gerekmez — boş bırakabilirsiniz.)',
       type: 'string',
       options: {
         list: [
@@ -33,7 +45,11 @@ export const lampPartSchema = defineType({
         ],
         layout: 'radio',
       },
-      validation: (R) => R.required(),
+      validation: (R) =>
+        R.custom(async (value, context) => {
+          if (value) return true
+          return (await isUsedInModel(context as never)) ? true : 'Slot Type seçin (Montajlı Model parçası değilse zorunlu).'
+        }),
     }),
 
     // ── Sabit parça ─────────────────────────────────────────
@@ -59,12 +75,26 @@ export const lampPartSchema = defineType({
     }),
 
     defineField({
+      name: 'emitsLight',
+      title: 'Işık yayar',
+      description:
+        'Montajlı Model parçalarında: ışık açıkken bu parça parlar (örn. sarkıtın abajuru). Lambader slotlarında yok sayılır (orada başlık parlar).',
+      type: 'boolean',
+      initialValue: false,
+      hidden: ({ document }) => Boolean(document?.isFixed),
+    }),
+
+    defineField({
       name: 'collections',
       title: 'Collections',
-      description: 'Bu parça hangi koleksiyon(lar)a ait? Birden fazla koleksiyonda kullanılabilir.',
+      description: 'Bu parça hangi koleksiyon(lar)a ait? Birden fazla koleksiyonda kullanılabilir. Montajlı Model parçalarında BOŞ bırakın (parça modele bağlıdır).',
       type: 'array',
       of: [defineArrayMember({ type: 'reference', to: [{ type: 'collection' }] })],
-      validation: (R) => R.required().min(1),
+      validation: (R) =>
+        R.custom(async (value, context) => {
+          if (Array.isArray(value) && value.length > 0) return true
+          return (await isUsedInModel(context as never)) ? true : 'En az bir koleksiyon seçin (Montajlı Model parçası değilse zorunlu).'
+        }),
     }),
 
     // ── 3D Model ─────────────────────────────────────────
@@ -182,7 +212,7 @@ export const lampPartSchema = defineType({
         : '—'
       return {
         title: nameStr,
-        subtitle: `[${slotType?.toUpperCase() ?? '?'}${isFixed ? ' · SABİT' : ''}] ${partId ?? ''}`,
+        subtitle: `[${slotType?.toUpperCase() ?? 'MODEL'}${isFixed ? ' · SABİT' : ''}] ${partId ?? ''}`,
       }
     },
   },

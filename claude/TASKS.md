@@ -29,13 +29,15 @@
 
 ## 🟠 Teknik Borç / Sağlamlaştırma
 
-- [ ] **Mobil uygulama:** "Blender konumu" (`layoutMode: assembled`)
-      koleksiyonlarını ve sabit parçaları (`isFixed`) uygulamadaki 3D
-      çizimde destekleyin (`ESPTest`). Şu an uygulama parçaları üst üste
-      diziyor olabilir.
-- [ ] İlk gerçek masa lambası / sarkıt koleksiyonunu Studio'da kurup
-      (Yerleşim: Blender konumu, kablo için Sabit parça) konfigüratörde
+- [ ] **Mobil uygulama:** "Blender konumu" (`layoutMode: assembled`) ve
+      "Montajlı model" (`layoutMode: model`, `lampModel`) koleksiyonlarını
+      ve sabit parçaları (`isFixed`) uygulamada destekleyin (`ESPTest`).
+- [ ] İlk gerçek sarkıt modellerini Studio'da (Koleksiyon: Montajlı model,
+      Montajlı Modeller altında 1/2/3 parçalı modeller) kurup konfigüratörde
       doğrulayın; ardından `lib/bulletinDemo.ts`'teki örnek koleksiyonları silin.
+- [ ] Sipariş e-postası/admin ekranında Montajlı Model siparişlerinin parça
+      adlarıyla ("Gövde — Kırmızı") okunduğunu kontrol edin (şu an satırlar
+      slotType 'body' olarak kaydediliyor).
 
 - [ ] **Güvenlik:** `/api/checkout` fiyatları istemciden alıyor; sunucuda
       Sanity fiyatından yeniden hesaplayın (bkz. `CURRENT_STATUS.md` #3).

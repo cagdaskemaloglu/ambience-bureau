@@ -25,6 +25,9 @@ function useResolvedSlots(): ResolvedSlot[] {
   const base = useConfiguratorStore((s) => s.base)
   const body = useConfiguratorStore((s) => s.body)
   const head = useConfiguratorStore((s) => s.head)
+  // Montajlı modelde anahtar parçaya özgü: model değişince önceki modelin
+  // ölçüleri yeni parçaya karışmasın.
+  const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
 
   return useMemo(() => {
     const slots: ResolvedSlot[] = []
@@ -54,12 +57,12 @@ function useResolvedSlots(): ResolvedSlot[] {
     addFixed('base')
     resolve('base', base)
     addFixed('body')
-    body.forEach((slot, idx) => resolve(`body-${idx}`, slot))
+    body.forEach((slot, idx) => resolve(modelMode ? `body-${idx}-${slot.partId}` : `body-${idx}`, slot))
     addFixed('head')
     resolve('head', head)
 
     return slots
-  }, [availableParts, fixedParts, base, body, head])
+  }, [availableParts, fixedParts, base, body, head, modelMode])
 }
 
 /**
@@ -146,7 +149,9 @@ export function LampModel() {
 
   const layoutMode = useConfiguratorStore((s) => s.layoutMode)
   const hangFromCeiling = useConfiguratorStore((s) => s.hangFromCeiling)
-  const assembled = layoutMode === 'assembled'
+  // 'model' (Montajlı model) de parçaları Blender konumunda yerleştirir.
+  const assembled = layoutMode !== 'stack'
+  const modelMode = layoutMode === 'model'
 
   const handleDimensionsCalculated = useCallback((key: string, dimensions: PartDimensions) => {
     setDims((prev) => {
@@ -269,7 +274,8 @@ export function LampModel() {
     <group position={layout.groupPos}>
       {layout.items.map((item) => {
         // Işık mekanizması başlıkta: seçilen başlık parlar; sabit parçalar parlamaz.
-        const isHead = item.key === 'head'
+        // Montajlı modelde ise Studio'da "Işık yayar" işaretli parça parlar.
+        const isHead = modelMode ? !!item.part.emitsLight && !item.fixed : item.key === 'head'
         return (
           <SlotMesh
             key={item.key}

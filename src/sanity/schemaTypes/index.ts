@@ -5,6 +5,7 @@ import { collectionSchema } from './collection'
 import { materialSchema } from './material'
 import { dropSchema } from './drop'
 import { bulletinSchema } from './bulletin'
+import { lampModelSchema } from './lampModel'
 
 export const schemaTypes = [
   productSchema,
@@ -14,4 +15,5 @@ export const schemaTypes = [
   materialSchema,
   dropSchema,
   bulletinSchema,
+  lampModelSchema,
 ]

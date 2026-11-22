@@ -131,10 +131,13 @@ satın alınabilirlik için `isProductPurchasable()` kullan, `status ===
 (lambader, avize, aplik...) SADECE `src/lib/lightClasses.ts`'te
 tanımlanır. Görsel/kurgu kararları için önce `DESIGN.md`.
 
-### 16. Konfigüratörde iki yerleşim modu var
-`collection.layoutMode`: `stack` (üst üste, geometri merkezlenir) ve
-`assembled` (Blender konumu, geometri MERKEZLENMEZ). Model yükleme ya da
-konumlama koduna dokunurken ikisini de düşün. Sabit parçalar
+### 16. Konfigüratörde üç yerleşim modu var
+`collection.layoutMode`: `stack` (üst üste, geometri merkezlenir),
+`assembled` (Blender konumu, geometri MERKEZLENMEZ) ve `model` (Montajlı
+Model: `lampModel` belgeleri; Blender konumunda çizilir, her renkli parça
+store'da bir `body` seçimi olarak tutulur — sepet/sipariş/preset akışı
+bu sayede değişmeden çalışır). Model yükleme ya da konumlama koduna
+dokunurken hepsini düşün. Sabit parçalar
 (`lampPart.isFixed`) store'da `fixedParts`'tadır, `availableParts`'ta
 DEĞİL — seçim/kombinasyon/fiyat kodu bunu varsayar. Konfigüratörü local'de
 sadece `localhost:3000`'de test edin (Sanity CORS).

@@ -8,7 +8,7 @@
  *
  * Sanity'ye gerçek bültenler girildikten sonra bu dosya silinebilir.
  */
-import type { Bulletin, Collection, LampPart, ProductCard } from '@/types'
+import type { Bulletin, Collection, LampModelDef, LampPart, ProductCard } from '@/types'
 
 export const DEMO_ENABLED = process.env.BULLETIN_DEMO === '1'
 
@@ -177,7 +177,7 @@ export function withDemoStanding(real: ProductCard[], source: ProductCard[]): Pr
 // denemek için: mevcut bir koleksiyonun parça modelleri ödünç alınır.
 // Parçalar ortak orijinle aktarılmadığı için konumlar ofsetle taklit edilir.
 
-export type DemoCollection = Collection & { demoParts?: LampPart[] }
+export type DemoCollection = Collection & { demoParts?: LampPart[]; demoModels?: LampModelDef[] }
 
 export function buildDemoCollections(source: LampPart[]): DemoCollection[] {
   if (!DEMO_ENABLED || source.length === 0) return []
@@ -229,5 +229,58 @@ export function buildDemoCollections(source: LampPart[]): DemoCollection[] {
       ...heads.map((h) => ({ ...h, offsetMm: { x: 0, y: 120, z: 0 } })),
     ],
   }
-  return [pendant, table]
+  // Örnek Montajlı Model koleksiyonu: parça sayısı modelden modele değişen
+  // sarkıtlar — her renkli parça ayrı renklendirilir, kablo sabit.
+  const piece = (src: LampPart, id: string, tr: string, en: string, y: number, emits = false): LampPart => ({
+    ...src,
+    _id: id,
+    partId: id,
+    slotType: 'body',
+    name: name(tr, en),
+    isFixed: false,
+    emitsLight: emits,
+    offsetMm: { x: 0, y, z: 0 },
+  })
+  const cableFor = (id: string): LampPart => ({ ...cable, _id: id, partId: id, offsetMm: { x: 0, y: 260, z: 0 } })
+  const b0 = bodies[0]
+  const b1 = bodies[1] ?? bodies[0]
+  const h0 = heads[0]
+  const models: LampModelDef[] = [
+    {
+      _id: 'demo-s01',
+      modelId: 'demo-s01',
+      name: name('S-01 · Tek parça', 'S-01 · One piece'),
+      parts: [cableFor('demo-s01-kablo'), piece(h0, 'demo-s01-abajur', 'Abajur', 'Shade', 0, true)],
+    },
+    {
+      _id: 'demo-s02',
+      modelId: 'demo-s02',
+      name: name('S-02 · İki parça', 'S-02 · Two pieces'),
+      parts: [
+        cableFor('demo-s02-kablo'),
+        piece(b0, 'demo-s02-govde', 'Gövde', 'Body', 90),
+        piece(h0, 'demo-s02-abajur', 'Abajur', 'Shade', 0, true),
+      ],
+    },
+    {
+      _id: 'demo-s03',
+      modelId: 'demo-s03',
+      name: name('S-03 · Üç parça', 'S-03 · Three pieces'),
+      parts: [
+        cableFor('demo-s03-kablo'),
+        piece(b1, 'demo-s03-halka', 'Üst halka', 'Top ring', 180),
+        piece(b0, 'demo-s03-govde', 'Gövde', 'Body', 90),
+        piece(h0, 'demo-s03-abajur', 'Abajur', 'Shade', 0, true),
+      ],
+    },
+  ]
+  const modelCollection: DemoCollection = {
+    _id: 'demo-models',
+    key: { current: 'demo-models' },
+    name: name('Örnek Sarkıt Modelleri (demo)', 'Sample Pendant Models (demo)'),
+    layoutMode: 'model',
+    hangFromCeiling: true,
+    demoModels: models,
+  }
+  return [pendant, table, modelCollection]
 }
