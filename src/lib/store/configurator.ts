@@ -1,5 +1,26 @@
 import { create } from 'zustand'
-import type { SlotType, LampPart } from '@/types'
+import type { SlotType, LampPart, CollectionLayoutMode } from '@/types'
+
+/** Koleksiyonun 3D yerleşim ayarları (Sanity collection.layoutMode / hangFromCeiling). */
+export interface CollectionLayout {
+  mode?: CollectionLayoutMode | null
+  hangFromCeiling?: boolean | null
+}
+
+/**
+ * Sabit parçaları (ör. sarkıt kablosu) seçilebilir parçalardan ayırır.
+ * Seçim listeleri, kombinasyon sayısı vb. SADECE `selectable` görür;
+ * sabit parçalar 3D'de ve fiyatta otomatik yer alır.
+ */
+function splitParts(parts: LampPart[]): { selectable: LampPart[]; fixed: LampPart[] } {
+  const selectable: LampPart[] = []
+  const fixed: LampPart[] = []
+  for (const p of parts) {
+    if (p.isFixed) fixed.push({ ...p, materials: p.materials ?? [] })
+    else selectable.push({ ...p, materials: p.materials ?? [] })
+  }
+  return { selectable, fixed }
+}
 
 interface BodyLimits {
   min: number
@@ -43,7 +64,13 @@ const DEFAULT_HARDWARE_FEES: HardwareFees = {
 interface ConfiguratorStore {
   // ── State ────────────────────────────────────────────────
   collectionKey: string | null
-  availableParts: LampPart[] // Sanity'den çekilen, aktif koleksiyonun tüm parçaları
+  availableParts: LampPart[] // Sanity'den çekilen, aktif koleksiyonun SEÇİLEBİLİR parçaları (sabitler hariç)
+  /** Müşteriye gösterilmeyen, her tasarımda otomatik çizilen parçalar (ör. kablo). */
+  fixedParts: LampPart[]
+  /** 'stack' = üst üste istif, 'assembled' = Blender'daki konum (ortak orijin). */
+  layoutMode: CollectionLayoutMode
+  /** Sadece 'assembled': model tavandan asılı gösterilir. */
+  hangFromCeiling: boolean
   hardwareFees: HardwareFees // Aktif koleksiyonun Donanım Tahsisi/IoT ücretleri (Sanity'den)
   bodyLimits: BodyLimits // Aktif koleksiyonun min/max gövde sayısı (Sanity'den)
 
@@ -89,7 +116,8 @@ interface ConfiguratorStore {
     key: string,
     parts: LampPart[],
     hardwareFees?: Partial<HardwareFees>,
-    bodyLimits?: { min?: number | null; max?: number | null }
+    bodyLimits?: { min?: number | null; max?: number | null },
+    layout?: CollectionLayout
   ) => void
   clearCollection: () => void
 
@@ -104,7 +132,8 @@ interface ConfiguratorStore {
     parts: LampPart[],
     hardwareFees: Partial<HardwareFees> | undefined,
     preset: Array<{ slotType: SlotType; partId: string; materialId: string }>,
-    bodyLimits?: { min?: number | null; max?: number | null }
+    bodyLimits?: { min?: number | null; max?: number | null },
+    layout?: CollectionLayout
   ) => void
 
   /** Base/Head için: aynı parçaya tekrar tıklanırsa seçim kalkar (toggle). */
@@ -138,7 +167,9 @@ interface ConfiguratorStore {
   getSelectedPart: (slot: SlotType, bodyIndex?: number) => LampPart | undefined
   getSelectedMaterial: (slot: SlotType, bodyIndex?: number) => LampPart['materials'][number] | undefined
   getBodyPartCount: (partId: string) => number // aynı parça kaç katmanda kullanılıyor
-  isComplete: () => boolean // taban + başlık + koleksiyonun min–max gövde aralığı sağlanmış mı
+  isComplete: () => boolean // gerekli slotlar (koleksiyonda parçası olan taban/başlık) + min–max gövde aralığı
+  /** Bu koleksiyonda müşterinin seçebileceği bir taban/başlık parçası var mı? (yoksa slot gizlenir ve zorunlu değildir) */
+  hasSlot: (slot: 'base' | 'head') => boolean
 }
 
 const initialSlotState: SlotSelection = { partId: null, materialId: null }
@@ -146,6 +177,9 @@ const initialSlotState: SlotSelection = { partId: null, materialId: null }
 export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   collectionKey: null,
   availableParts: [],
+  fixedParts: [],
+  layoutMode: 'stack',
+  hangFromCeiling: false,
   hardwareFees: DEFAULT_HARDWARE_FEES,
   bodyLimits: DEFAULT_BODY_LIMITS,
 
@@ -189,7 +223,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
   cameraFitRequestId: 0,
   requestCameraFit: () => set((state) => ({ cameraFitRequestId: state.cameraFitRequestId + 1 })),
 
-  setCollection: (key, parts, hardwareFees, bodyLimits) => {
+  setCollection: (key, parts, hardwareFees, bodyLimits, layout) => {
+    const { selectable, fixed } = splitParts(parts)
     // Object.assign yerine tek tek kontrol: Sanity'den bir alan boş/undefined
     // gelirse (henüz doldurulmadıysa) varsayılanın üzerine yazılmasın.
     const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
@@ -200,7 +235,10 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     }
     set({
       collectionKey: key,
-      availableParts: parts,
+      availableParts: selectable,
+      fixedParts: fixed,
+      layoutMode: layout?.mode === 'assembled' ? 'assembled' : 'stack',
+      hangFromCeiling: layout?.mode === 'assembled' && !!layout?.hangFromCeiling,
       hardwareFees: merged,
       bodyLimits: resolveBodyLimits(bodyLimits),
       // Koleksiyon değişince seçimleri sıfırla
@@ -221,6 +259,9 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     set({
       collectionKey: null,
       availableParts: [],
+      fixedParts: [],
+      layoutMode: 'stack',
+      hangFromCeiling: false,
       hardwareFees: DEFAULT_HARDWARE_FEES,
       bodyLimits: DEFAULT_BODY_LIMITS,
       base: { ...initialSlotState },
@@ -235,7 +276,8 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
       displayDepth: 0,
     }),
 
-  loadPreset: (key, parts, hardwareFees, preset, bodyLimits) => {
+  loadPreset: (key, parts, hardwareFees, preset, bodyLimits, layout) => {
+    const { selectable, fixed } = splitParts(parts)
     const merged: HardwareFees = { ...DEFAULT_HARDWARE_FEES }
     if (hardwareFees) {
       for (const k of Object.keys(merged) as Array<keyof HardwareFees>) {
@@ -250,7 +292,10 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
 
     set({
       collectionKey: key,
-      availableParts: parts,
+      availableParts: selectable,
+      fixedParts: fixed,
+      layoutMode: layout?.mode === 'assembled' ? 'assembled' : 'stack',
+      hangFromCeiling: layout?.mode === 'assembled' && !!layout?.hangFromCeiling,
       hardwareFees: merged,
       bodyLimits: limits,
       base: baseEntry ? { partId: baseEntry.partId, materialId: baseEntry.materialId } : { ...initialSlotState },
@@ -359,6 +404,11 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     state.body.forEach(addSlotPrice)
     addSlotPrice(state.head)
 
+    // Sabit parçalar (ör. kablo) her tasarımda var — fiyatları girildiyse eklenir.
+    for (const part of state.fixedParts) {
+      total += (locale === 'tr' ? part.basePriceTRY : part.basePriceUSD) ?? 0
+    }
+
     // Donanım Tahsisi (Hardware Allocation) — taban ücret her zaman eklenir;
     // IoT açıksa bunun ÜZERİNE ek IoT ücreti de eklenir. Tutarlar koleksiyona
     // göre Sanity'den gelir (state.hardwareFees) — kod değişikliği gerekmez.
@@ -402,10 +452,14 @@ export const useConfiguratorStore = create<ConfiguratorStore>()((set, get) => ({
     return get().body.filter((b) => b.partId === partId).length
   },
 
+  hasSlot: (slot) => get().availableParts.some((p) => p.slotType === slot),
+
   isComplete: () => {
     const state = get()
-    const hasBase = !!state.base.partId && !!state.base.materialId
-    const hasHead = !!state.head.partId && !!state.head.materialId
+    // Koleksiyonda seçilebilir taban/başlık parçası YOKSA o slot zorunlu değildir
+    // (ör. sarkıt: sadece başlık + sabit kablo; masa lambası: taban + başlık).
+    const hasBase = !state.hasSlot('base') || (!!state.base.partId && !!state.base.materialId)
+    const hasHead = !state.hasSlot('head') || (!!state.head.partId && !!state.head.materialId)
     const hasAllBody = state.body.every((b) => !!b.partId && !!b.materialId)
     // Gövde sayısı koleksiyonun Sanity'deki min–max aralığında olmalı
     // (min 0 ise gövde opsiyoneldir). Taban ve başlık her zaman zorunlu.

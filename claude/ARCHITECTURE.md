@@ -436,6 +436,32 @@ anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
 `toggleIot`, `requestCameraFit`, `reset`, `getTotalPrice(locale)`,
 `isComplete()` — `minBodyLayers` sağlanmadan tasarım tamamlanmış sayılmaz).
 
+### İki yerleşim modu ve sabit parçalar (masa lambası, aplik, sarkıt...)
+- `collection.layoutMode`:
+  - `stack` (varsayılan, eski davranış): parçalar kendi merkezlerinden
+    dikey istiflenir (taban → gövdeler → başlık).
+  - `assembled` ("Blender konumu"): geometri MERKEZLENMEZ
+    (`useSTLGeometry(url, false)` / GLB'de düğüm dönüşümü uygulanır); her
+    parça dosyadaki konumunda + Sanity'deki `offsetMm` / `rotationDeg`
+    düzeltmesiyle durur. Model bütün olarak X/Z'de ortalanır ve zemine
+    oturtulur. Parçalar Blender'dan ORTAK ORİJİNLE ve Y ekseni yukarı
+    aktarılmalı (mevcut STL'lerle aynı eksen).
+- `collection.hangFromCeiling` (sadece `assembled`): model en üst noktası
+  yüksekliğin 1.6 katında olacak şekilde havada asılı gösterilir; ölçü
+  çizgileri bu modda gizlenir.
+- `lampPart.isFixed` + `fixedColor`: sabit parça (ör. sarkıt kablosu).
+  Store'da `fixedParts` olarak AYRI tutulur (`splitParts`); seçim
+  listelerinde, kombinasyon sayısında ve tasarım kaydında YOKTUR, 3D'de
+  her zaman sabit renkle çizilir, fiyatı (girildiyse) toplama eklenir.
+  Sabit parçalarda malzeme seçimi gerekmez.
+- Zorunlu slotlar parçalardan türetilir: koleksiyonda seçilebilir taban
+  yoksa Taban sekmesi gizlenir ve zorunlu değildir (başlık ve gövde için
+  de aynı; `hasSlot`). Tutorial adımları da buna göre süzülür.
+- Mobil uygulama (`ESPTest`) bu modları henüz bilmiyor — bkz. `TASKS.md`.
+- Local test: Sanity CDN model dosyaları CORS nedeniyle sadece
+  `localhost:3000`'e veriliyor; konfigüratörü başka portta açarsanız
+  modeller yüklenmez.
+
 ### Kombinasyon sayısı (`src/lib/combinatorics.ts`)
 Gövde katmanları SIRALI ve TEKRARLI kabul edilir:
 `TOPLAM = taban_varyant × başlık_varyant × Σ(k=min..max) gövde_varyant^k`.

@@ -62,11 +62,14 @@ export function DimensionAnnotations() {
   const labelWidth = useConfiguratorStore((s) => s.displayWidth)
   const labelDepth = useConfiguratorStore((s) => s.displayDepth)
   const labelHeight = useConfiguratorStore((s) => s.displayHeight)
+  // Asılı (sarkıt) modelde boy çizgisi zeminden başlayıp havadaki boşluğu
+  // da ölçeceği için ölçü çizgileri gösterilmez.
+  const hangFromCeiling = useConfiguratorStore((s) => s.hangFromCeiling)
 
   const isCaptureMode =
     typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('capture') === '1'
 
-  if (isCaptureMode || partCount === 0 || geomWidth <= 0 || geomDepth <= 0 || geomHeight <= 0) return null
+  if (hangFromCeiling || isCaptureMode || partCount === 0 || geomWidth <= 0 || geomDepth <= 0 || geomHeight <= 0) return null
 
   const halfW = geomWidth / 2
   const halfD = geomDepth / 2

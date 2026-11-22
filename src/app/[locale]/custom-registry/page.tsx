@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { getAllLampCollections, getProductBySlug } from '@/lib/queries'
+import { getAllLampCollections, getLampPartsByCollection, getProductBySlug } from '@/lib/queries'
+import { DEMO_ENABLED, buildDemoCollections } from '@/lib/bulletinDemo'
 import { CustomRegistryClient } from '@/components/configurator/CustomRegistryClient'
 import { createSupabaseServerClient, createSupabaseAdminClient } from '@/lib/supabase/server'
 import type { ProductConfiguratorPart } from '@/types'
@@ -81,7 +82,14 @@ export default async function CustomRegistryPage({
   const { locale } = await params
   const { collection, preset, capture } = await searchParams
   const isCaptureMode = capture === '1'
-  const collections = await getAllLampCollections()
+  const realCollections = await getAllLampCollections()
+  // SADECE local demo modunda: "Blender konumu" yerleşimini denemek için
+  // örnek sarkıt / masa lambası koleksiyonları (bkz. lib/bulletinDemo.ts).
+  const firstKey = realCollections[0]?.key?.current
+  const collections =
+    DEMO_ENABLED && firstKey
+      ? [...realCollections, ...buildDemoCollections(await getLampPartsByCollection(firstKey))]
+      : realCollections
   const presetResult = await getPresetDesign(preset)
   const presetDesign = presetResult.status === 'ok' ? presetResult.design : null
 

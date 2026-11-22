@@ -104,8 +104,10 @@ export function CustomRegistryClient({
   async function handleSelectCollection(key: string) {
     setIsLoadingParts(true)
     try {
-      const parts: LampPart[] = await getLampPartsByCollection(key)
       const selectedCollection = collections.find((c) => c.key?.current === key)
+      // demoParts: sadece local demo koleksiyonlarında dolu (lib/bulletinDemo.ts)
+      const demoParts = (selectedCollection as { demoParts?: LampPart[] } | undefined)?.demoParts
+      const parts: LampPart[] = demoParts ?? (await getLampPartsByCollection(key))
       setCollection(key, parts, {
         baseTRY: selectedCollection?.hardwareBaseFeeTRY,
         baseUSD: selectedCollection?.hardwareBaseFeeUSD,
@@ -114,6 +116,9 @@ export function CustomRegistryClient({
       }, {
         min: selectedCollection?.minBodyLayers,
         max: selectedCollection?.maxBodyLayers,
+      }, {
+        mode: selectedCollection?.layoutMode,
+        hangFromCeiling: selectedCollection?.hangFromCeiling,
       })
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
@@ -137,7 +142,8 @@ export function CustomRegistryClient({
           iotUSD: selectedCollection?.iotFeeUSD,
         },
         design.parts,
-        { min: selectedCollection?.minBodyLayers, max: selectedCollection?.maxBodyLayers }
+        { min: selectedCollection?.minBodyLayers, max: selectedCollection?.maxBodyLayers },
+        { mode: selectedCollection?.layoutMode, hangFromCeiling: selectedCollection?.hangFromCeiling }
       )
     } catch (err) {
       console.error('Ürün kombinasyonu yüklenemedi:', err)

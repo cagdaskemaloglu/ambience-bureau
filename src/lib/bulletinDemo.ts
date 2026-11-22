@@ -8,7 +8,7 @@
  *
  * Sanity'ye gerçek bültenler girildikten sonra bu dosya silinebilir.
  */
-import type { Bulletin, ProductCard } from '@/types'
+import type { Bulletin, Collection, LampPart, ProductCard } from '@/types'
 
 export const DEMO_ENABLED = process.env.BULLETIN_DEMO === '1'
 
@@ -170,4 +170,64 @@ export function withDemoStanding(real: ProductCard[], source: ProductCard[]): Pr
     make(2, 'desk', 'ENV-D-001', 'Masa Lambası D-01', 'Table Lamp D-01', 2490, null),
     make(3, 'desk', 'ENV-D-002', 'Masa Lambası D-02', 'Table Lamp D-02', 2790, 0),
   ]
+}
+
+// ── Konfigüratör: "Blender konumu" örnek koleksiyonları (SADECE local) ──
+// Sanity'de henüz masa lambası/sarkıt koleksiyonu yokken yeni yerleşimi
+// denemek için: mevcut bir koleksiyonun parça modelleri ödünç alınır.
+// Parçalar ortak orijinle aktarılmadığı için konumlar ofsetle taklit edilir.
+
+export type DemoCollection = Collection & { demoParts?: LampPart[] }
+
+export function buildDemoCollections(source: LampPart[]): DemoCollection[] {
+  if (!DEMO_ENABLED || source.length === 0) return []
+  const bases = source.filter((p) => p.slotType === 'base')
+  const bodies = source.filter((p) => p.slotType === 'body')
+  const heads = source.filter((p) => p.slotType === 'head')
+  if (heads.length === 0 || bodies.length === 0) return []
+
+  const name = (tr: string, en: string): Collection['name'] => [
+    { locale: 'tr', value: tr },
+    { locale: 'en', value: en },
+  ]
+
+  // Örnek Sarkıt: sabit "kablo" (bir gövde modeli, koyu renk, yukarıda) +
+  // seçilebilir başlıklar. Taban/gövde sekmesi yok, model tavandan asılı.
+  const cable: LampPart = {
+    ...bodies[0],
+    _id: 'demo-cable',
+    partId: 'demo-cable',
+    name: name('Kablo (sabit)', 'Cable (fixed)'),
+    isFixed: true,
+    fixedColor: '#1A1A1A',
+    basePriceTRY: 0,
+    basePriceUSD: 0,
+    offsetMm: { x: 0, y: 140, z: 0 },
+  }
+  const pendant: DemoCollection = {
+    _id: 'demo-pendant',
+    key: { current: 'demo-pendant' },
+    name: name('Örnek Sarkıt (demo)', 'Sample Pendant (demo)'),
+    minBodyLayers: 0,
+    maxBodyLayers: 0,
+    layoutMode: 'assembled',
+    hangFromCeiling: true,
+    demoParts: [cable, ...heads.map((h) => ({ ...h, offsetMm: { x: 0, y: 0, z: 0 } }))],
+  }
+
+  // Örnek Masa Lambası: taban + başlık, başlık ofsetle tabanın üstünde.
+  const table: DemoCollection = {
+    _id: 'demo-table',
+    key: { current: 'demo-table' },
+    name: name('Örnek Masa Lambası (demo)', 'Sample Table Lamp (demo)'),
+    minBodyLayers: 0,
+    maxBodyLayers: 0,
+    layoutMode: 'assembled',
+    hangFromCeiling: false,
+    demoParts: [
+      ...(bases.length > 0 ? bases : bodies.slice(0, 1).map((b) => ({ ...b, slotType: 'base' as const }))),
+      ...heads.map((h) => ({ ...h, offsetMm: { x: 0, y: 120, z: 0 } })),
+    ],
+  }
+  return [pendant, table]
 }

@@ -39,6 +39,10 @@ export function MobileControlPanel({
 }) {
   const locale = useLocale()
   const tr = locale === 'tr'
+  // Koleksiyonda seçilebilir taban/başlık parçası yoksa o sekme hiç gösterilmez
+  // (ör. sarkıt: sadece başlık; sabit parçalar zaten listelenmez).
+  const hasBaseSlot = useConfiguratorStore((s) => s.availableParts.some((p) => p.slotType === 'base'))
+  const hasHeadSlot = useConfiguratorStore((s) => s.availableParts.some((p) => p.slotType === 'head'))
   const [activeTab, setActiveTab] = useState<Tab>('base')
 
   const availableParts = useConfiguratorStore((s) => s.availableParts)
@@ -54,14 +58,14 @@ export function MobileControlPanel({
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
   // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
   const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
-  const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, sekme gizlenir
+  const hasBodySlot = bodyLimits.max > 0 && availableParts.some((p) => p.slotType === 'body') // max 0 ya da gövde parçası yok → sekme gizlenir
   const bodyAtMax = body.length >= bodyLimits.max
   const bodyBelowMin = body.length < bodyLimits.min
   const baseComplete = !!base.partId && !!base.materialId
   const headComplete = !!head.partId && !!head.materialId
 
   const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
-    { key: 'base', label: tr ? 'Taban' : 'Base', done: baseComplete },
+    ...(hasBaseSlot ? [{ key: 'base' as Tab, label: tr ? 'Taban' : 'Base', done: baseComplete }] : []),
     ...(hasBodySlot
       ? [
           {
@@ -71,8 +75,10 @@ export function MobileControlPanel({
           },
         ]
       : []),
-    { key: 'head', label: tr ? 'Başlık' : 'Head', done: headComplete },
+    ...(hasHeadSlot ? [{ key: 'head' as Tab, label: tr ? 'Başlık' : 'Head', done: headComplete }] : []),
   ]
+  // Seçili sekme bu koleksiyonda yoksa (ör. sarkıtta "Taban") ilk mevcut sekmeye düş.
+  const currentTab: Tab = TABS.some((t) => t.key === activeTab) ? activeTab : (TABS[0]?.key ?? 'head')
 
   return (
     <div className="flex flex-col">
@@ -94,7 +100,7 @@ export function MobileControlPanel({
             key={tabItem.key}
             onClick={() => setActiveTab(tabItem.key)}
             className={`flex flex-shrink-0 items-center gap-1 border-b-2 py-2 font-mono text-[10px] uppercase tracking-wider transition-colors ${
-              activeTab === tabItem.key
+              currentTab === tabItem.key
                 ? 'border-bureau-amber text-bureau-black'
                 : 'border-transparent text-bureau-muted'
             }`}
@@ -106,7 +112,7 @@ export function MobileControlPanel({
       </div>
 
       {/* Taban */}
-      {activeTab === 'base' && (
+      {currentTab === 'base' && (
         <Section label={locale === 'tr' ? 'Taban' : 'Base'}>
           <MobileSlotPicker
             slotType="base"
@@ -130,7 +136,7 @@ export function MobileControlPanel({
       )}
 
       {/* Gövde */}
-      {activeTab === 'body' && hasBodySlot && (
+      {currentTab === 'body' && hasBodySlot && (
         <Section
           label={locale === 'tr' ? 'Gövde' : 'Body'}
           hint={
@@ -250,7 +256,7 @@ export function MobileControlPanel({
       )}
 
       {/* Başlık */}
-      {activeTab === 'head' && (
+      {currentTab === 'head' && (
         <Section label={locale === 'tr' ? 'Başlık' : 'Head'}>
           <MobileSlotPicker
             slotType="head"

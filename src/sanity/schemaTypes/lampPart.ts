@@ -36,6 +36,28 @@ export const lampPartSchema = defineType({
       validation: (R) => R.required(),
     }),
 
+    // ── Sabit parça ─────────────────────────────────────────
+    // Ör. sarkıttaki kablo: 3D'de her zaman görünür ama müşterinin seçim
+    // listesinde YOKTUR ve rengi değiştirilemez. Koleksiyondaki her
+    // tasarıma otomatik eklenir; siparişe ayrıca kaydedilmez.
+    defineField({
+      name: 'isFixed',
+      title: 'Sabit parça (müşteriye gösterilmez)',
+      description:
+        'Açık: bu parça koleksiyondaki her tasarımda otomatik görünür, seçim listesinde çıkmaz, rengi değiştirilemez (ör. sarkıt kablosu). Fiyat girerseniz toplam fiyata eklenir.',
+      type: 'boolean',
+      initialValue: false,
+    }),
+    defineField({
+      name: 'fixedColor',
+      title: 'Sabit renk',
+      description: 'Hex, örn. #1A1A1A. Sadece sabit parçalarda.',
+      type: 'string',
+      initialValue: '#1A1A1A',
+      hidden: ({ document }) => !document?.isFixed,
+      validation: (R) => R.regex(/^#[0-9a-fA-F]{6}$/, { name: 'hex' }),
+    }),
+
     defineField({
       name: 'collections',
       title: 'Collections',
@@ -87,7 +109,39 @@ export const lampPartSchema = defineType({
           to: [{ type: 'material' }],
         }),
       ],
-      validation: (R) => R.required().min(1),
+      hidden: ({ document }) => Boolean(document?.isFixed),
+      validation: (R) =>
+        R.custom((value, context) => {
+          const fixed = (context.document as { isFixed?: boolean } | undefined)?.isFixed
+          if (fixed) return true
+          return Array.isArray(value) && value.length > 0 ? true : 'En az bir malzeme seçin.'
+        }),
+    }),
+
+    // ── Blender konumu düzeltmesi (sadece "Blender konumu" koleksiyonları) ──
+    defineField({
+      name: 'offsetMm',
+      title: 'Ofset (mm) — sadece ortak orijinle aktarılmadıysa',
+      description: 'Üst üste yerleşimde YOK SAYILIR.',
+      type: 'object',
+      options: { collapsible: true, collapsed: true },
+      fields: [
+        defineField({ name: 'x', type: 'number', initialValue: 0 }),
+        defineField({ name: 'y', type: 'number', initialValue: 0 }),
+        defineField({ name: 'z', type: 'number', initialValue: 0 }),
+      ],
+    }),
+    defineField({
+      name: 'rotationDeg',
+      title: 'Rotasyon (derece)',
+      description: 'Üst üste yerleşimde YOK SAYILIR.',
+      type: 'object',
+      options: { collapsible: true, collapsed: true },
+      fields: [
+        defineField({ name: 'x', type: 'number', initialValue: 0 }),
+        defineField({ name: 'y', type: 'number', initialValue: 0 }),
+        defineField({ name: 'z', type: 'number', initialValue: 0 }),
+      ],
     }),
 
     // ── Fiyat ────────────────────────────────────────────
@@ -120,14 +174,15 @@ export const lampPartSchema = defineType({
       partId: 'partId.current',
       name: 'name',
       slotType: 'slotType',
+      isFixed: 'isFixed',
     },
-    prepare({ partId, name, slotType }) {
+    prepare({ partId, name, slotType, isFixed }) {
       const nameStr = Array.isArray(name)
         ? (name.find((n: { locale: string }) => n.locale === 'en')?.value ?? name[0]?.value ?? '—')
         : '—'
       return {
         title: nameStr,
-        subtitle: `[${slotType?.toUpperCase() ?? '?'}] ${partId ?? ''}`,
+        subtitle: `[${slotType?.toUpperCase() ?? '?'}${isFixed ? ' · SABİT' : ''}] ${partId ?? ''}`,
       }
     },
   },

@@ -41,6 +41,35 @@ export const collectionSchema = defineType({
       initialValue: 0,
     }),
 
+    // ── 3D Yerleşim ─────────────────────────────────────────
+    // Lambader gibi koleksiyonlarda parçalar üst üste dizilir (taban →
+    // gövdeler → başlık). Masa lambası, aplik, sarkıt gibi koleksiyonlarda
+    // ise her parça Blender'da kaydedildiği KONUMDA durur (ortak orijin).
+    defineField({
+      name: 'layoutMode',
+      title: '3D Yerleşim',
+      description:
+        'Üst üste: parçalar dikey olarak istiflenir (bugünkü davranış). Blender konumu: her parça STL dosyasındaki kendi konumunda durur; tüm parçaları Blender\'da ORTAK ORİJİNLE ve Y ekseni yukarı olacak şekilde dışa aktarın.',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Üst üste (taban → gövde → başlık)', value: 'stack' },
+          { title: 'Blender konumu (ortak orijin)', value: 'assembled' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'stack',
+    }),
+    defineField({
+      name: 'hangFromCeiling',
+      title: 'Asılı (tavandan)',
+      description:
+        'Sarkıt gibi ürünler için: model zemine oturmaz, en üst noktasından asılı gibi havada gösterilir. Sadece "Blender konumu" yerleşiminde geçerli.',
+      type: 'boolean',
+      initialValue: false,
+      hidden: ({ document }) => document?.layoutMode !== 'assembled',
+    }),
+
     // ── Gövde (Body) Sayısı Sınırları ─────────────────────────
     // Custom Registry'de bu koleksiyon için eklenebilecek gövde katmanı
     // sayısı. Boş bırakılırsa kodtaki varsayılan kullanılır (min 0, max 5 —

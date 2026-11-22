@@ -9,11 +9,19 @@ import type { LampPart } from '@/types'
 interface ResolvedSlot {
   key: string
   part: LampPart
-  material: LampPart['materials'][number]
+  material: Pick<LampPart['materials'][number], 'color' | 'roughness' | 'metalness' | 'isTranslucent' | 'opacity'>
+  /** Sabit parça (ör. kablo): müşteri seçmez, sabit renkli, parlamaz. */
+  fixed?: boolean
+}
+
+/** Sabit parçalar için malzeme — Sanity'deki sabit renk, mat yüzey. */
+function fixedMaterial(part: LampPart): ResolvedSlot['material'] {
+  return { color: part.fixedColor ?? '#1A1A1A', roughness: 0.6, metalness: 0.1, isTranslucent: false, opacity: 1 }
 }
 
 function useResolvedSlots(): ResolvedSlot[] {
   const availableParts = useConfiguratorStore((s) => s.availableParts)
+  const fixedParts = useConfiguratorStore((s) => s.fixedParts)
   const base = useConfiguratorStore((s) => s.base)
   const body = useConfiguratorStore((s) => s.body)
   const head = useConfiguratorStore((s) => s.head)
@@ -34,12 +42,24 @@ function useResolvedSlots(): ResolvedSlot[] {
       slots.push({ key, part, material })
     }
 
+    // Sabit parçalar kendi slot türlerinin önüne eklenir (üst üste
+    // yerleşimde: sabit taban → seçili taban → ...). "Blender konumu"
+    // yerleşiminde sıra önemsizdir, her parça dosyadaki yerinde durur.
+    const addFixed = (slotType: LampPart['slotType']) => {
+      fixedParts
+        .filter((p) => p.slotType === slotType)
+        .forEach((part) => slots.push({ key: `fixed-${part.partId}`, part, material: fixedMaterial(part), fixed: true }))
+    }
+
+    addFixed('base')
     resolve('base', base)
+    addFixed('body')
     body.forEach((slot, idx) => resolve(`body-${idx}`, slot))
+    addFixed('head')
     resolve('head', head)
 
     return slots
-  }, [availableParts, base, body, head])
+  }, [availableParts, fixedParts, base, body, head])
 }
 
 /**
@@ -52,7 +72,7 @@ function SlotMesh({
   glowColor,
   targetGlowIntensity,
 }: {
-  item: ResolvedSlot & { yOffset: number }
+  item: ResolvedSlot & { position: [number, number, number]; rotation?: [number, number, number]; centered: boolean }
   onDimensionsCalculated: (key: string, dimensions: PartDimensions) => void
   glowColor?: string
   targetGlowIntensity?: number
@@ -65,7 +85,9 @@ function SlotMesh({
         roughness={item.material.roughness}
         metalness={item.material.metalness}
         opacity={item.material.isTranslucent ? (item.material.opacity ?? 0.6) : undefined}
-        position={[0, item.yOffset, 0]}
+        position={item.position}
+        rotation={item.rotation}
+        centered={item.centered}
         onDimensionsCalculated={(dimensions) => onDimensionsCalculated(item.key, dimensions)}
         glowColor={glowColor}
         targetGlowIntensity={targetGlowIntensity}
@@ -122,14 +144,23 @@ export function LampModel() {
   const lightBrightness = useConfiguratorStore((s) => s.lightBrightness)
   const lightColor = useConfiguratorStore((s) => s.lightColor)
 
+  const layoutMode = useConfiguratorStore((s) => s.layoutMode)
+  const hangFromCeiling = useConfiguratorStore((s) => s.hangFromCeiling)
+  const assembled = layoutMode === 'assembled'
+
   const handleDimensionsCalculated = useCallback((key: string, dimensions: PartDimensions) => {
     setDims((prev) => {
       const existing = prev[key]
+      // minX/minY/minZ da karşılaştırılır: yerleşim değişince (merkezli ↔
+      // Blender konumu) boyut aynı kalıp konum değişebilir.
       if (
         existing &&
         existing.width === dimensions.width &&
         existing.height === dimensions.height &&
-        existing.depth === dimensions.depth
+        existing.depth === dimensions.depth &&
+        existing.minX === dimensions.minX &&
+        existing.minY === dimensions.minY &&
+        existing.minZ === dimensions.minZ
       ) {
         return prev
       }
@@ -137,66 +168,107 @@ export function LampModel() {
     })
   }, [])
 
-  const positioned = useMemo(() => {
-    let currentY = 0
-    return slots.map((slot) => {
-      const height = dims[slot.key]?.height ?? FALLBACK_HEIGHT
-      const yOffset = currentY + height / 2
-      currentY += height
-      return { ...slot, yOffset }
+  // ── Yerleşim ────────────────────────────────────────────────
+  // stack     : parçalar kendi merkezlerinden dikey olarak istiflenir (eski davranış).
+  // assembled : her parça dosyadaki (Blender, ortak orijin) konumunda durur
+  //             (+ Sanity'deki ofset/rotasyon). Tüm model sonra bir bütün
+  //             olarak zemine oturtulur ya da tavandan asılır.
+  const layout = useMemo(() => {
+    if (!assembled) {
+      let currentY = 0
+      const items = slots.map((slot) => {
+        const height = dims[slot.key]?.height ?? FALLBACK_HEIGHT
+        const position: [number, number, number] = [0, currentY + height / 2, 0]
+        currentY += height
+        return { ...slot, position, rotation: undefined, centered: true }
+      })
+      return { items, groupPos: [0, 0, 0] as [number, number, number], bounds: null as null | { minX: number; maxX: number; minY: number; maxY: number; minZ: number; maxZ: number } }
+    }
+
+    const deg = (v?: number) => ((v ?? 0) * Math.PI) / 180
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity, minZ = Infinity, maxZ = -Infinity
+    const items = slots.map((slot) => {
+      const o = slot.part.offsetMm
+      const r = slot.part.rotationDeg
+      const position: [number, number, number] = [o?.x ?? 0, o?.y ?? 0, o?.z ?? 0]
+      const rotation: [number, number, number] | undefined = r ? [deg(r.x), deg(r.y), deg(r.z)] : undefined
+      const d = dims[slot.key]
+      if (d) {
+        // Rotasyon düzeltmesi sınırlara yaklaşık yansır (nadiren kullanılır).
+        minX = Math.min(minX, d.minX + position[0]); maxX = Math.max(maxX, d.maxX + position[0])
+        minY = Math.min(minY, d.minY + position[1]); maxY = Math.max(maxY, d.maxY + position[1])
+        minZ = Math.min(minZ, d.minZ + position[2]); maxZ = Math.max(maxZ, d.maxZ + position[2])
+      }
+      return { ...slot, position, rotation, centered: false }
     })
-  }, [slots, dims])
+    const bounds = Number.isFinite(minY) ? { minX, maxX, minY, maxY, minZ, maxZ } : null
+    const groupPos: [number, number, number] = [0, 0, 0]
+    if (bounds) {
+      const h = bounds.maxY - bounds.minY
+      // X/Z'de ortala (kamera ve ölçü çizgileri modeli orijinde varsayar).
+      groupPos[0] = -(bounds.minX + bounds.maxX) / 2
+      groupPos[2] = -(bounds.minZ + bounds.maxZ) / 2
+      // Asılı: modelin en üst noktası, model yüksekliğinin 1.6 katı
+      // yükseklikte durur (altında ~0.6h boşluk kalır). Değilse zemine oturur.
+      groupPos[1] = hangFromCeiling ? h * 1.6 - bounds.maxY : -bounds.minY
+    }
+    return { items, groupPos, bounds }
+  }, [slots, dims, assembled, hangFromCeiling])
 
-  // CameraFit'in gerçek stack yüksekliğine göre doğru mesafeyi
-  // hesaplayabilmesi, ve DimensionAnnotations'ın modelin gerçek toplam
-  // en/boy/derinliğini (mm) gösterebilmesi için bu ölçüleri store'a bildir.
+  // CameraFit'in gerçek yüksekliğe göre doğru mesafeyi hesaplayabilmesi ve
+  // DimensionAnnotations'ın modelin toplam en/boy/derinliğini (mm)
+  // gösterebilmesi için ölçüleri store'a bildir.
   const setStackMetrics = useConfiguratorStore((s) => s.setStackMetrics)
+  const setDisplayMetrics = useConfiguratorStore((s) => s.setDisplayMetrics)
   useEffect(() => {
-    const totalHeight = positioned.reduce((sum, slot) => sum + (dims[slot.key]?.height ?? FALLBACK_HEIGHT), 0)
+    if (assembled) {
+      const b = layout.bounds
+      if (!b) return
+      const h = b.maxY - b.minY
+      // Asılı modelde kamera, havadaki modelin tepesini de kapsamalı.
+      const fitHeight = hangFromCeiling ? h * 1.6 : h
+      setStackMetrics(fitHeight, layout.items.length, b.maxX - b.minX, b.maxZ - b.minZ)
+      setDisplayMetrics(b.maxX - b.minX, h, b.maxZ - b.minZ)
+      return
+    }
 
-    // Parçalar sadece Y ekseninde (yukarı/aşağı) kaydırılıyor — X/Z'de
-    // hepsi kendi yerel orijininde durduğu için, tüm parçaların X/Z
-    // min/max'larının kapsayıcısı (union'ı) doğrudan modelin toplam
-    // en/derinliğini verir.
+    const totalHeight = layout.items.reduce((sum, slot) => sum + (dims[slot.key]?.height ?? FALLBACK_HEIGHT), 0)
+    // Parçalar sadece Y ekseninde kaydırılıyor — X/Z'de hepsi kendi yerel
+    // orijininde durduğu için X/Z min/max'larının birleşimi toplam en/derinliktir.
     let minX = Infinity
     let maxX = -Infinity
     let minZ = Infinity
     let maxZ = -Infinity
-    for (const slot of positioned) {
+    for (const slot of layout.items) {
       const d = dims[slot.key]
       minX = Math.min(minX, d?.minX ?? -FALLBACK_HALF_WIDTH)
       maxX = Math.max(maxX, d?.maxX ?? FALLBACK_HALF_WIDTH)
       minZ = Math.min(minZ, d?.minZ ?? -FALLBACK_HALF_DEPTH)
       maxZ = Math.max(maxZ, d?.maxZ ?? FALLBACK_HALF_DEPTH)
     }
-    const totalWidth = positioned.length > 0 ? maxX - minX : 0
-    const totalDepth = positioned.length > 0 ? maxZ - minZ : 0
+    const totalWidth = layout.items.length > 0 ? maxX - minX : 0
+    const totalDepth = layout.items.length > 0 ? maxZ - minZ : 0
+    setStackMetrics(totalHeight, layout.items.length, totalWidth, totalDepth)
 
-    setStackMetrics(totalHeight, positioned.length, totalWidth, totalDepth)
-  }, [positioned, dims, setStackMetrics])
-
-  // Ölçü etiketleri (DimensionAnnotations) için AYRI metrik: yukarıdaki
-  // stack metrikleri gerçek geometriden hesaplanırken, bu etiketlerde
-  // gösterilecek sayılar Sanity'deki Dimensions (mm) alanından gelir.
-  const setDisplayMetrics = useConfiguratorStore((s) => s.setDisplayMetrics)
-  useEffect(() => {
-    let totalHeight = 0
-    let maxWidth = 0
-    let maxDepth = 0
-    for (const slot of positioned) {
+    // Ölçü ETİKETLERİ için Sanity'deki Dimensions (mm) önceliklidir.
+    let labelHeight = 0
+    let labelWidth = 0
+    let labelDepth = 0
+    for (const slot of layout.items) {
       const { width, height, depth } = getDisplayDimensions(slot.part, dims[slot.key])
-      totalHeight += height
-      maxWidth = Math.max(maxWidth, width)
-      maxDepth = Math.max(maxDepth, depth)
+      labelHeight += height
+      labelWidth = Math.max(labelWidth, width)
+      labelDepth = Math.max(labelDepth, depth)
     }
-    setDisplayMetrics(maxWidth, totalHeight, maxDepth)
-  }, [positioned, dims, setDisplayMetrics])
+    setDisplayMetrics(labelWidth, labelHeight, labelDepth)
+  }, [layout, dims, assembled, hangFromCeiling, setStackMetrics, setDisplayMetrics])
 
-  if (positioned.length === 0) return null
+  if (layout.items.length === 0) return null
 
   return (
-    <group>
-      {positioned.map((item) => {
+    <group position={layout.groupPos}>
+      {layout.items.map((item) => {
+        // Işık mekanizması başlıkta: seçilen başlık parlar; sabit parçalar parlamaz.
         const isHead = item.key === 'head'
         return (
           <SlotMesh

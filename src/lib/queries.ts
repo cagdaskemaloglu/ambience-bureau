@@ -291,7 +291,7 @@ export async function getAllDropsWithProducts() {
   async function getCombinationCount(collectionKey: string): Promise<number> {
     if (comboCache.has(collectionKey)) return comboCache.get(collectionKey)!
     const rows = await sanityClient.fetch<Array<{ slotType: string; materialCount: number }>>(
-      `*[_type == "lampPart" && $collectionKey in collections[]->key.current]{
+      `*[_type == "lampPart" && isFixed != true && $collectionKey in collections[]->key.current]{
         slotType,
         "materialCount": count(materials)
       }`,
@@ -412,7 +412,9 @@ export async function getAllCollections() {
       "iotFeeTRY": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeTRY)] | order(sortOrder desc)[0].iotFeeTRY, iotFeeTRY),
       "iotFeeUSD": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeUSD)] | order(sortOrder desc)[0].iotFeeUSD, iotFeeUSD),
       minBodyLayers,
-      maxBodyLayers
+      maxBodyLayers,
+      layoutMode,
+      hangFromCeiling
     }`,
     {},
     { next: { tags: ['collections'] } }
@@ -435,6 +437,10 @@ export async function getLampPartsByCollection(collectionKey: string) {
         ${LOCALIZED_FIELD('description')},
         "modelUrl": modelFile.asset->url,
         "thumbnail": thumbnail.asset->url,
+        isFixed,
+        fixedColor,
+        offsetMm,
+        rotationDeg,
         materials[]->{
           "materialId": materialId.current,
           color,
@@ -467,7 +473,9 @@ export async function getAllLampCollections() {
         "iotFeeTRY": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeTRY)] | order(sortOrder desc)[0].iotFeeTRY, iotFeeTRY),
         "iotFeeUSD": coalesce(*[_type == "drop" && collection._ref == ^._id && defined(iotFeeUSD)] | order(sortOrder desc)[0].iotFeeUSD, iotFeeUSD),
         minBodyLayers,
-        maxBodyLayers
+        maxBodyLayers,
+        layoutMode,
+        hangFromCeiling
       }`,
     {},
     { next: { tags: ['configurator-collections'] } }

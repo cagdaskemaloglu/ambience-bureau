@@ -35,7 +35,7 @@ export function HomeMasthead({
   return (
     <section
       aria-labelledby="home-title"
-      className="grid items-center gap-6 border-b border-bureau-rule px-5 py-6 md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:px-9 md:py-7"
+      className="grid items-center gap-5 border-b border-bureau-rule px-5 py-4 md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:px-9 md:py-4"
     >
       {/* Kompakt masthead: ziyaretçi ilk ekranda ürünleri de görebilsin
           diye başlık tek satır, bölüm butonları yapışkan çubukta (SectionNav). */}
@@ -45,7 +45,7 @@ export function HomeMasthead({
         </p>
         <h1
           id="home-title"
-          className="mt-2 text-[40px] font-semibold leading-[0.95] tracking-[-0.04em] text-bureau-black sm:text-[52px] lg:text-[64px] xl:text-[76px]"
+          className="mt-1 text-[34px] font-semibold leading-[0.95] tracking-[-0.04em] text-bureau-black sm:text-[42px] lg:text-[48px] xl:text-[54px]"
         >
           {tr ? (
             <>
@@ -57,13 +57,13 @@ export function HomeMasthead({
             </>
           )}
         </h1>
-        <p className="mt-3 max-w-[64ch] text-[14px] leading-relaxed text-bureau-muted md:text-[15px]">
+        <p className="mt-2 max-w-[82ch] text-[13px] leading-relaxed text-bureau-muted md:text-[14px]">
           {tr
             ? 'Ambience Bureau, akıllı ve standart aydınlatma nesneleri üretir. Koleksiyon parçaları numaralı drop’larla sınırlı sayıda tahsis edilir; lambader, avize, aplik ve masa lambaları daimi envanterde sürekli satıştadır.'
             : 'Ambience Bureau makes smart and standard lighting objects. Collection pieces are allocated in numbered, limited drops; floor lamps, chandeliers, wall sconces and table lamps are held in standing inventory, always available.'}
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
-          <Link href="/custom-registry" className="btn-file btn-file-amber focus-bureau !py-2.5">
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-3">
+          <Link href="/custom-registry" className="btn-file btn-file-amber focus-bureau !py-2">
             <span>{tr ? 'Kendi lambanı tasarla' : 'Design your own lamp'}</span>
           </Link>
           <a

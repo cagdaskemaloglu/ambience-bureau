@@ -20,6 +20,10 @@ type Tab = 'base' | 'body' | 'head'
 export function ControlPanel() {
   const locale = useLocale()
   const tr = locale === 'tr'
+  // Koleksiyonda seçilebilir taban/başlık parçası yoksa o sekme hiç gösterilmez
+  // (ör. sarkıt: sadece başlık; sabit parçalar zaten listelenmez).
+  const hasBaseSlot = useConfiguratorStore((s) => s.availableParts.some((p) => p.slotType === 'base'))
+  const hasHeadSlot = useConfiguratorStore((s) => s.availableParts.some((p) => p.slotType === 'head'))
   const [activeTab, setActiveTab] = useState<Tab>('base')
 
   const availableParts = useConfiguratorStore((s) => s.availableParts)
@@ -39,7 +43,7 @@ export function ControlPanel() {
   const toggleIot = useConfiguratorStore((s) => s.toggleIot)
 
   // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
-  const hasBodySlot = bodyLimits.max > 0 // max 0 → bu koleksiyonda gövde yok, sekme gizlenir
+  const hasBodySlot = bodyLimits.max > 0 && availableParts.some((p) => p.slotType === 'body') // max 0 ya da gövde parçası yok → sekme gizlenir
   const bodyAtMax = body.length >= bodyLimits.max
   const bodyBelowMin = body.length < bodyLimits.min
   const bodyRangeLabel =
@@ -77,7 +81,7 @@ export function ControlPanel() {
   }
 
   const TABS: Array<{ key: Tab; label: string; done: boolean }> = [
-    { key: 'base', label: tr ? 'Taban' : 'Base', done: baseComplete },
+    ...(hasBaseSlot ? [{ key: 'base' as Tab, label: tr ? 'Taban' : 'Base', done: baseComplete }] : []),
     ...(hasBodySlot
       ? [
           {
@@ -87,8 +91,10 @@ export function ControlPanel() {
           },
         ]
       : []),
-    { key: 'head', label: tr ? 'Başlık' : 'Head', done: headComplete },
+    ...(hasHeadSlot ? [{ key: 'head' as Tab, label: tr ? 'Başlık' : 'Head', done: headComplete }] : []),
   ]
+  // Seçili sekme bu koleksiyonda yoksa (ör. sarkıtta "Taban") ilk mevcut sekmeye düş.
+  const currentTab: Tab = TABS.some((t) => t.key === activeTab) ? activeTab : (TABS[0]?.key ?? 'head')
 
   return (
     <div className="space-y-4">
@@ -123,7 +129,7 @@ export function ControlPanel() {
             key={tabItem.key}
             onClick={() => setActiveTab(tabItem.key)}
             className={`flex items-center gap-1.5 border-b-2 pb-2.5 font-mono text-[11px] uppercase tracking-wider transition-colors ${
-              activeTab === tabItem.key
+              currentTab === tabItem.key
                 ? 'border-bureau-amber text-bureau-black'
                 : 'border-transparent text-bureau-muted hover:text-bureau-black'
             }`}
@@ -135,7 +141,7 @@ export function ControlPanel() {
       </div>
 
       {/* Taban */}
-      {activeTab === 'base' && (
+      {currentTab === 'base' && (
         <div>
           <SlotPicker
             slotType="base"
@@ -159,7 +165,7 @@ export function ControlPanel() {
       )}
 
       {/* Gövde */}
-      {activeTab === 'body' && hasBodySlot && (
+      {currentTab === 'body' && hasBodySlot && (
         <div>
           <SlotPicker
             slotType="body"
@@ -277,7 +283,7 @@ export function ControlPanel() {
       )}
 
       {/* Başlık */}
-      {activeTab === 'head' && (
+      {currentTab === 'head' && (
         <div>
           <SlotPicker
             slotType="head"

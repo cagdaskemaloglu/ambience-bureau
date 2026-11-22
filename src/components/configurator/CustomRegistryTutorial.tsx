@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { useConfiguratorStore } from '@/lib/store/configurator'
 
 interface TutorialStep {
   selector: string | null // null = son adım: belirli bir hedef yok, ekrana herhangi bir tıklama biter
+  /** Bu adım ancak koleksiyonda bu slot varsa gösterilir (ör. sarkıtta taban yok). */
+  requires?: 'base' | 'body' | 'head'
   titleTr: string
   titleEn: string
   descTr: string
@@ -14,50 +16,56 @@ interface TutorialStep {
 const STEPS: TutorialStep[] = [
   {
     selector: 'picker-base',
-    titleTr: 'Adım 1 — Taban',
-    titleEn: 'Step 1 — Base',
+    requires: 'base',
+    titleTr: 'Taban',
+    titleEn: 'Base',
     descTr: 'Başlamak için bir TABAN modeli seçin.',
     descEn: 'Select a BASE model to begin.',
   },
   {
     selector: 'material-base',
-    titleTr: 'Adım 2 — Renk',
-    titleEn: 'Step 2 — Color',
+    requires: 'base',
+    titleTr: 'Renk',
+    titleEn: 'Color',
     descTr: 'Şimdi bu taban için bir renk/malzeme seçin.',
     descEn: 'Now choose a color/material for this base.',
   },
   {
     selector: 'picker-body',
-    titleTr: 'Adım 3 — Gövde',
-    titleEn: 'Step 3 — Body',
+    requires: 'body',
+    titleTr: 'Gövde',
+    titleEn: 'Body',
     descTr: 'Bir GÖVDE modeli ekleyin. İstediğiniz kadar (en az 2 önerilir) ekleyerek tasarımınızın boyunu ayarlayabilirsiniz.',
     descEn: 'Add a BODY model. Add as many as you like (2+ recommended) to adjust the height of your design.',
   },
   {
     selector: 'remove-body-0',
-    titleTr: 'Adım 4 — Kaldırma',
-    titleEn: 'Step 4 — Removal',
+    requires: 'body',
+    titleTr: 'Kaldırma',
+    titleEn: 'Removal',
     descTr: 'Şimdi de eklediğiniz bir gövde modelini tasarımdan çıkarmayı deneyin.',
     descEn: 'Now try removing a body model you just added.',
   },
   {
     selector: 'continue-to-head',
-    titleTr: 'Adım 5 — Devam',
-    titleEn: 'Step 5 — Continue',
+    requires: 'body',
+    titleTr: 'Devam',
+    titleEn: 'Continue',
     descTr: 'Gövde eklemeyi tamamladığınızda Başlık adımına geçmek için bu butona tıklayın.',
     descEn: 'When you\u2019re done adding bodies, click this button to continue to the Head step.',
   },
   {
     selector: 'picker-head',
-    titleTr: 'Adım 6 — Başlık',
-    titleEn: 'Step 6 — Head',
+    requires: 'head',
+    titleTr: 'Başlık',
+    titleEn: 'Head',
     descTr: 'Bir BAŞLIK modeli ekleyerek tasarımınızı tamamlayın.',
     descEn: 'Add a HEAD model to complete your design.',
   },
   {
     selector: null,
-    titleTr: 'Adım 7 — Tamamlandı',
-    titleEn: 'Step 7 — Complete',
+    titleTr: 'Tamamlandı',
+    titleEn: 'Complete',
     descTr: 'Tasarımınız tamamlandı. Turu bitirmek ve modeli temizlemek için ekranın herhangi bir yerine tıklayın ya da aşağıdaki "Bitir" butonuna basın.',
     descEn: 'Your design is complete. Click anywhere on the screen, or press the "Finish" button below, to end the tour and clear the model.',
   },
@@ -103,6 +111,19 @@ export function CustomRegistryTutorial({
 }) {
   const collectionKey = useConfiguratorStore((s) => s.collectionKey)
   const [stepIndex, setStepIndex] = useState(0)
+  // Koleksiyonda olmayan slotların adımlarını atla (ör. sarkıt: sadece başlık;
+  // masa lambası: gövde yok). Sabit parçalar zaten seçim listesinde değil.
+  const availableParts = useConfiguratorStore((st) => st.availableParts)
+  const bodyMax = useConfiguratorStore((st) => st.bodyLimits.max)
+  const steps = useMemo(
+    () =>
+      STEPS.filter((st) => {
+        if (!st.requires) return true
+        if (st.requires === 'body' && bodyMax <= 0) return false
+        return availableParts.some((p) => p.slotType === st.requires)
+      }),
+    [availableParts, bodyMax]
+  )
   const [dismissed, setDismissed] = useState(false)
   const [isDesktop, setIsDesktop] = useState(true)
   const [rect, setRect] = useState<Rect | null>(null)
@@ -134,13 +155,13 @@ export function CustomRegistryTutorial({
   const advance = useCallback(() => {
     setStepIndex((i) => {
       const next = i + 1
-      if (next >= STEPS.length) {
+      if (next >= steps.length) {
         setDismissed(true)
         return i
       }
       return next
     })
-  }, [])
+  }, [steps.length])
 
   // Tutorial'dan çıkış — "Atla" veya son adımın tamamlanması. İkisinde de
   // kullanıcının pratik amaçlı yaptığı taban/gövde/başlık seçimlerini
@@ -155,7 +176,7 @@ export function CustomRegistryTutorial({
   useEffect(() => {
     if (!active || dismissed || !collectionKey) return
 
-    const step = STEPS[stepIndex]
+    const step = steps[stepIndex]
     let cancelled = false
 
     // Son adım: belirli bir hedef yok — spot ışığı kapanır. Ekranın/
@@ -198,13 +219,13 @@ export function CustomRegistryTutorial({
         attachedElRef.current = null
       }
     }
-  }, [active, dismissed, collectionKey, stepIndex, findTarget, advance, handleDismiss])
+  }, [active, dismissed, collectionKey, stepIndex, steps, findTarget, advance, handleDismiss])
 
   if (!active || dismissed || !collectionKey) return null
 
-  const step = STEPS[stepIndex]
+  const step = steps[stepIndex]
   const isFinalStep = step.selector === null
-  const title = locale === 'tr' ? step.titleTr : step.titleEn
+  const title = `${locale === 'tr' ? 'Adım' : 'Step'} ${stepIndex + 1} — ${locale === 'tr' ? step.titleTr : step.titleEn}`
   const desc = locale === 'tr' ? step.descTr : step.descEn
 
   const holeTop = rect ? rect.top - PAD : 0
@@ -253,7 +274,7 @@ export function CustomRegistryTutorial({
             FORM 300 // {locale === 'tr' ? 'OPERATÖR EĞİTİMİ' : 'OPERATOR TRAINING'}
           </span>
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-bureau-amber">
-            {stepIndex + 1} / {STEPS.length}
+            {stepIndex + 1} / {steps.length}
           </span>
         </div>
 

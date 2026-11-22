@@ -145,6 +145,10 @@ export interface Collection {
   /** Custom Registry'de eklenebilecek gövde sayısı (Sanity'de boşsa store varsayılanı kullanılır). */
   minBodyLayers?: number
   maxBodyLayers?: number
+  /** Boşsa 'stack' (eski davranış). */
+  layoutMode?: CollectionLayoutMode | null
+  /** Sadece 'assembled': model zemine oturmaz, tavandan asılı gösterilir. */
+  hangFromCeiling?: boolean | null
 }
 
 // ── Drop ──────────────────────────────────────────────────
@@ -200,7 +204,17 @@ export interface LampPart {
   modelUrl: string // Sanity asset URL (STL/GLB)
   thumbnail?: string // Sanity image URL — parça seçim grid'inde gösterilir
   materials: LampMaterial[]
+  /** Sabit parça: müşteriye gösterilmez, her tasarımda otomatik görünür (ör. sarkıt kablosu). */
+  isFixed?: boolean | null
+  /** Sabit parçanın rengi (hex). */
+  fixedColor?: string | null
+  /** Sadece "Blender konumu" yerleşiminde: ortak orijinle aktarılmamış parçalar için düzeltme. */
+  offsetMm?: { x?: number; y?: number; z?: number } | null
+  rotationDeg?: { x?: number; y?: number; z?: number } | null
 }
+
+/** Koleksiyonun 3D yerleşimi: üst üste istif ya da Blender'daki konum (ortak orijin). */
+export type CollectionLayoutMode = 'stack' | 'assembled'
 
 // ── SEO ───────────────────────────────────────────────────
 

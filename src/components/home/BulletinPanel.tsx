@@ -14,9 +14,9 @@ function InfoRows({ rows }: { rows: InfoRow[] }) {
   return (
     <dl className="divide-y divide-dashed divide-bureau-rule">
       {rows.map((r, i) => (
-        <div key={`${r.k}-${i}`} className="grid grid-cols-[120px_minmax(0,1fr)] gap-3 px-4 py-2">
-          <dt className="font-mono text-[10.5px] uppercase tracking-wider text-bureau-muted">{r.k}</dt>
-          <dd className="font-mono text-[12px] tabular-nums text-bureau-black">
+        <div key={`${r.k}-${i}`} className="grid grid-cols-[104px_minmax(0,1fr)] gap-3 px-3 py-1">
+          <dt className="truncate font-mono text-[10px] uppercase tracking-wider text-bureau-muted">{r.k}</dt>
+          <dd className="truncate font-mono text-[11.5px] tabular-nums text-bureau-black">
             {r.href ? (
               <a
                 href={r.href}
@@ -97,6 +97,21 @@ export function BulletinPanel({
   const current = index === 0 ? null : bulletins[index - 1]
   const currentRows = current ? bulletinRows(current, locale) : []
 
+  // Panel SABİT yükseklikte: sayfa değişince masthead'in boyu oynamasın ve
+  // ilk ekranda ürünlere yer kalsın. Bülten sayfasında en fazla 3 satır.
+  const BODY = 'h-[140px]'
+  const detailLink = current?.href ? (
+    current.href.startsWith('/#') ? (
+      <a href={current.href.slice(1)} className="nav-underline focus-bureau shrink-0 py-0.5 text-bureau-black no-underline">
+        {tr ? 'Ayrıntı' : 'Details'} →
+      </a>
+    ) : (
+      <Link href={current.href} className="nav-underline focus-bureau shrink-0 py-0.5 text-bureau-black no-underline">
+        {tr ? 'Ayrıntı' : 'Details'} →
+      </Link>
+    )
+  ) : null
+
   return (
     <aside
       ref={regionRef}
@@ -115,110 +130,88 @@ export function BulletinPanel({
       }}
       className="border border-bureau-black bg-bureau-surface/60"
     >
-      {/* Başlık + gezinme */}
-      <div className="flex items-center justify-between border-b border-bureau-black px-4 py-2">
-        <span className="font-mono text-[10.5px] uppercase tracking-widest text-bureau-black">
-          {tr ? 'Büro Bülteni' : 'Bureau Bulletin'}
-        </span>
-        {pageCount > 1 && (
-          <div className="flex items-center gap-1 font-mono text-[11px] tabular-nums text-bureau-muted">
-            <button
-              type="button"
-              onClick={() => go(-1)}
-              aria-label={tr ? 'Önceki bülten' : 'Previous bulletin'}
-              className="focus-bureau flex h-7 w-7 items-center justify-center border border-transparent transition-colors hover:border-bureau-black hover:bg-bureau-black hover:text-bureau-white"
-            >
-              ‹
-            </button>
-            <span aria-live="polite" className="min-w-[46px] text-center">
-              {pad(index + 1)} / {pad(pageCount)}
-            </span>
-            <button
-              type="button"
-              onClick={() => go(1)}
-              aria-label={tr ? 'Sonraki bülten' : 'Next bulletin'}
-              className="focus-bureau flex h-7 w-7 items-center justify-center border border-transparent transition-colors hover:border-bureau-black hover:bg-bureau-black hover:text-bureau-white"
-            >
-              ›
-            </button>
-          </div>
-        )}
+      {/* Üst şerit: başlık · gezinme · arşiv linki */}
+      <div className="flex items-center justify-between gap-3 border-b border-bureau-black px-3 font-mono text-[10px] uppercase tracking-widest">
+        <span className="py-1.5 text-bureau-black">{tr ? 'Büro Bülteni' : 'Bureau Bulletin'}</span>
+        <div className="flex items-center gap-3">
+          {pageCount > 1 && (
+            <div className="flex items-center tabular-nums text-bureau-muted">
+              <button
+                type="button"
+                onClick={() => go(-1)}
+                aria-label={tr ? 'Önceki bülten' : 'Previous bulletin'}
+                className="focus-bureau flex h-6 w-6 items-center justify-center transition-colors hover:bg-bureau-black hover:text-bureau-white"
+              >
+                ‹
+              </button>
+              <span aria-live="polite" className="min-w-[40px] text-center">
+                {pad(index + 1)}/{pad(pageCount)}
+              </span>
+              <button
+                type="button"
+                onClick={() => go(1)}
+                aria-label={tr ? 'Sonraki bülten' : 'Next bulletin'}
+                className="focus-bureau flex h-6 w-6 items-center justify-center transition-colors hover:bg-bureau-black hover:text-bureau-white"
+              >
+                ›
+              </button>
+            </div>
+          )}
+          <Link
+            href="/bulletin"
+            className="nav-underline focus-bureau whitespace-nowrap py-1.5 text-bureau-black no-underline"
+          >
+            {tr ? 'Tümü' : 'All'} →
+          </Link>
+        </div>
       </div>
+      {/* İnce ilerleme çizgisi */}
+      {pageCount > 1 && (
+        <div className="flex gap-[3px] px-3 pt-1.5" aria-hidden="true">
+          {Array.from({ length: pageCount }).map((_, i) => (
+            <span key={i} className={`h-[2px] flex-1 transition-colors ${i === index ? 'bg-bureau-amber' : 'bg-bureau-rule'}`} />
+          ))}
+        </div>
+      )}
 
-      {/* Sayfa — sabit minimum yükseklik: sayfa değişince düzen zıplamasın */}
-      <div className="min-h-[232px] overflow-hidden">
+      <div className={`${BODY} overflow-hidden`}>
         <div key={index} className="animate-drawer-in">
           {current === null ? (
             <>
-              <p className="flex items-center gap-2 px-4 pb-1 pt-3 font-mono text-[10.5px] tabular-nums text-bureau-muted">
-                <span aria-hidden="true" className="bureau-lamp h-[7px] w-[7px] rounded-full bg-bureau-amber" />
+              <p className="flex items-center gap-2 px-3 pb-0.5 pt-1.5 font-mono text-[10px] tabular-nums text-bureau-muted">
+                <span aria-hidden="true" className="bureau-lamp h-[6px] w-[6px] rounded-full bg-bureau-amber" />
                 {tr ? 'Büro açık' : 'Bureau open'} · {today}
               </p>
               <InfoRows rows={liveRows} />
             </>
           ) : (
-            <article className="flex min-h-[232px] flex-col">
-              <div className="px-4 pt-3">
-                <p className="font-mono text-[10.5px] uppercase tabular-nums tracking-wider text-bureau-muted">
-                  {tr ? 'Bülten' : 'Bulletin'} {String(current.bulletinNo).padStart(3, '0')} ·{' '}
-                  <span className="text-bureau-amber">{KIND_LABEL[current.kind]?.[tr ? 'tr' : 'en'] ?? current.kind}</span> ·{' '}
-                  {new Date(current.publishedAt).toLocaleDateString(intl, { day: '2-digit', month: '2-digit', year: 'numeric' })}
-                  {current.pinned && <span className="ml-1">· {tr ? 'Sabit' : 'Pinned'}</span>}
+            <article>
+              <div className="px-3 pt-1.5">
+                <p className="flex items-center justify-between gap-3 font-mono text-[10px] uppercase tabular-nums tracking-wider text-bureau-muted">
+                  <span className="truncate">
+                    {tr ? 'Bülten' : 'Bulletin'} {String(current.bulletinNo).padStart(3, '0')} ·{' '}
+                    <span className="text-bureau-amber">{KIND_LABEL[current.kind]?.[tr ? 'tr' : 'en'] ?? current.kind}</span> ·{' '}
+                    {new Date(current.publishedAt).toLocaleDateString(intl, { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </span>
+                  {detailLink}
                 </p>
-                <h2 className="mt-1.5 text-[16px] font-semibold leading-tight tracking-[-0.01em] text-bureau-black">
+                <h2 className="mt-1 truncate text-[14.5px] font-semibold leading-tight tracking-[-0.01em] text-bureau-black">
                   {getLocalizedValue(current.title, locale, '—')}
                 </h2>
-                {current.text && (
-                  <p className="mt-1.5 text-[13px] leading-relaxed text-bureau-muted">
+                {current.text && currentRows.length === 0 && (
+                  <p className="mt-1 line-clamp-3 text-[12.5px] leading-snug text-bureau-muted">
                     {getLocalizedValue(current.text, locale, '')}
                   </p>
                 )}
               </div>
               {currentRows.length > 0 && (
-                <div className="mt-2 border-t border-dashed border-bureau-rule">
-                  <InfoRows rows={currentRows} />
-                </div>
-              )}
-              {current.href && (
-                <div className="mt-auto px-4 pb-3 pt-3">
-                  {current.href.startsWith('/#') ? (
-                    <a href={current.href.slice(1)} className="btn-file focus-bureau !px-3 !py-2">
-                      <span>{tr ? 'Ayrıntı' : 'Details'} →</span>
-                    </a>
-                  ) : (
-                    <Link href={current.href} className="btn-file focus-bureau !px-3 !py-2">
-                      <span>{tr ? 'Ayrıntı' : 'Details'} →</span>
-                    </Link>
-                  )}
+                <div className="mt-1.5 border-t border-dashed border-bureau-rule">
+                  <InfoRows rows={currentRows.slice(0, 3)} />
                 </div>
               )}
             </article>
           )}
         </div>
-      </div>
-
-      {/* Alt şerit: sayfa göstergesi + arşiv */}
-      <div className="flex items-center justify-between gap-4 border-t border-bureau-black px-4 py-2.5">
-        {pageCount > 1 ? (
-          <div className="flex flex-1 gap-1" aria-hidden="true">
-            {Array.from({ length: pageCount }).map((_, i) => (
-              <span
-                key={i}
-                className={`h-[2px] flex-1 transition-colors ${i === index ? 'bg-bureau-amber' : 'bg-bureau-rule'}`}
-              />
-            ))}
-          </div>
-        ) : (
-          <span className="font-mono text-[10px] uppercase tracking-wider text-bureau-subtle">
-            {tr ? 'Her nesne sicile işlenir.' : 'Every object is registered.'}
-          </span>
-        )}
-        <Link
-          href="/bulletin"
-          className="nav-underline focus-bureau whitespace-nowrap py-1 font-mono text-[10.5px] uppercase tracking-wider text-bureau-black no-underline"
-        >
-          {tr ? 'Tüm bültenler' : 'All bulletins'} →
-        </Link>
       </div>
     </aside>
   )

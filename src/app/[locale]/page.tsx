@@ -11,7 +11,6 @@ import { SectionHeading } from '@/components/home/SectionHeading'
 import { StandingInventory } from '@/components/home/StandingInventory'
 import { CustomAllocationBand, ControlProtocolBand } from '@/components/home/HomeBands'
 import { RegisterSection } from '@/components/home/RegisterSection'
-import { SectionNav, type SectionLink } from '@/components/home/SectionNav'
 import { REGISTER_SECTION_ID } from '@/lib/registerFilter'
 import type { Bulletin, DropWithProducts, ProductCard } from '@/types'
 
@@ -69,13 +68,6 @@ export default async function HomePage({ params }: Props) {
   const realIds = new Set(realProducts.map((p) => p._id))
   const registerProducts = [...realProducts, ...standingProducts.filter((p) => !realIds.has(p._id))]
 
-  const sections: SectionLink[] = [
-    { id: 'sinirli-tahsis', number: '1', tr: 'Sınırlı Tahsis', en: 'Limited Allocation' },
-    { id: 'daimi-envanter', number: '2', tr: 'Daimi Envanter', en: 'Standing Inventory' },
-    { id: REGISTER_SECTION_ID, number: '3', tr: 'Tüm Kayıtlar', en: 'Full Register' },
-    { id: 'ozel-tahsis', number: '4', tr: 'Özel Tahsis', en: 'Custom Allocation' },
-    { id: 'kontrol-protokolu', number: '5', tr: 'Kontrol Protokolü', en: 'Control Protocol' },
-  ]
 
   // Yayında olan drop'lar (ürünü olanlar) + zamanlanmış "yakında" drop'lar,
   // sortOrder sırasıyla tek listede. Ürünü olmayan CANLI drop'lar boş satır
@@ -117,7 +109,6 @@ export default async function HomePage({ params }: Props) {
   return (
     <div className="border-t border-bureau-line-header dark:border-black">
       <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} />
-      <SectionNav links={sections} locale={locale} />
 
       {/* §1 Sınırlı Tahsis */}
       <section aria-label={tr ? 'Sınırlı Tahsis' : 'Limited Allocation'}>

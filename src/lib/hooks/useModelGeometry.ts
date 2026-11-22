@@ -11,28 +11,41 @@ export function isGLTFUrl(url: string): boolean {
   return url.endsWith('.glb') || url.endsWith('.gltf')
 }
 
-export function useSTLGeometry(url: string): THREE.BufferGeometry {
+/**
+ * `centered` (varsayılan): geometri kendi merkezine taşınır — "üst üste"
+ * yerleşimde parçalar bu merkezden istiflenir.
+ * `centered: false`: Blender'dan ortak orijinle aktarılan konum KORUNUR
+ * ("Blender konumu" yerleşimi — masa lambası, aplik, sarkıt...).
+ */
+export function useSTLGeometry(url: string, centered = true): THREE.BufferGeometry {
   const geometry = useLoader(STLLoader, url)
   return useMemo(() => {
     const cloned = geometry.clone()
     cloned.computeVertexNormals()
+    if (centered) cloned.center()
     cloned.computeBoundingBox()
-    cloned.center()
     return cloned
-  }, [geometry])
+  }, [geometry, centered])
 }
 
-export function useGLTFGeometry(url: string): THREE.BufferGeometry {
+export function useGLTFGeometry(url: string, centered = true): THREE.BufferGeometry {
   const gltf = useLoader(GLTFLoader, url)
   return useMemo(() => {
+    // "Blender konumu" yerleşiminde düğümün dünya dönüşümü (konum/rotasyon)
+    // geometriye işlenir; aksi halde GLB'deki konum kaybolurdu.
+    if (!centered) gltf.scene.updateMatrixWorld(true)
     let foundGeometry: THREE.BufferGeometry | null = null
     gltf.scene.traverse((child) => {
       if (!foundGeometry && (child as THREE.Mesh).isMesh) {
-        foundGeometry = (child as THREE.Mesh).geometry.clone()
+        const g = (child as THREE.Mesh).geometry.clone()
+        if (!centered) g.applyMatrix4(child.matrixWorld)
+        foundGeometry = g
       }
     })
-    return foundGeometry ?? new THREE.BoxGeometry(1, 1, 1)
-  }, [gltf])
+    const result: THREE.BufferGeometry = foundGeometry ?? new THREE.BoxGeometry(1, 1, 1)
+    result.computeBoundingBox()
+    return result
+  }, [gltf, centered])
 }
 
 /**

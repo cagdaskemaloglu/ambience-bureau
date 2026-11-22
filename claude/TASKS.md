@@ -29,6 +29,14 @@
 
 ## 🟠 Teknik Borç / Sağlamlaştırma
 
+- [ ] **Mobil uygulama:** "Blender konumu" (`layoutMode: assembled`)
+      koleksiyonlarını ve sabit parçaları (`isFixed`) uygulamadaki 3D
+      çizimde destekleyin (`ESPTest`). Şu an uygulama parçaları üst üste
+      diziyor olabilir.
+- [ ] İlk gerçek masa lambası / sarkıt koleksiyonunu Studio'da kurup
+      (Yerleşim: Blender konumu, kablo için Sabit parça) konfigüratörde
+      doğrulayın; ardından `lib/bulletinDemo.ts`'teki örnek koleksiyonları silin.
+
 - [ ] **Güvenlik:** `/api/checkout` fiyatları istemciden alıyor; sunucuda
       Sanity fiyatından yeniden hesaplayın (bkz. `CURRENT_STATUS.md` #3).
 

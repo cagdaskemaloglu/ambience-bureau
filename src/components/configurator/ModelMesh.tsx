@@ -16,6 +16,9 @@ export interface PartDimensions {
   maxX: number
   minZ: number
   maxZ: number
+  /** Dikey sınırlar — "Blender konumu" yerleşiminde modeli zemine oturtmak/asmak için. */
+  minY: number
+  maxY: number
 }
 
 interface ModelMeshProps {
@@ -24,6 +27,10 @@ interface ModelMeshProps {
   roughness: number
   metalness: number
   position?: [number, number, number]
+  /** Radyan. Sadece "Blender konumu" yerleşiminde Sanity'deki rotasyon düzeltmesi için. */
+  rotation?: [number, number, number]
+  /** false: geometri merkeze taşınmaz, dosyadaki (Blender) konum korunur. Varsayılan true. */
+  centered?: boolean
   onDimensionsCalculated?: (dimensions: PartDimensions) => void
   /**
    * Yarı saydam filament malzemeleri için (bkz. material.ts'teki
@@ -60,6 +67,8 @@ function useReportDimensions(
       maxX: box.max.x,
       minZ: box.min.z,
       maxZ: box.max.z,
+      minY: box.min.y,
+      maxY: box.max.y,
     })
   }, [geometry, onDimensionsCalculated])
 }
@@ -81,14 +90,14 @@ function useGlowMaterial(
   })
 }
 
-function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onDimensionsCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
-  const geometry = useSTLGeometry(url)
+function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], rotation, centered = true, onDimensionsCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
+  const geometry = useSTLGeometry(url, centered)
   useReportDimensions(geometry, onDimensionsCalculated)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
   useGlowMaterial(materialRef, glowColor, targetGlowIntensity)
 
   return (
-    <mesh geometry={geometry} position={position} castShadow receiveShadow>
+    <mesh geometry={geometry} position={position} rotation={rotation} castShadow receiveShadow>
       <meshStandardMaterial
         ref={materialRef}
         color={color}
@@ -103,14 +112,14 @@ function STLMesh({ url, color, roughness, metalness, position = [0, 0, 0], onDim
   )
 }
 
-function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], onDimensionsCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
-  const geometry = useGLTFGeometry(url)
+function GLTFMesh({ url, color, roughness, metalness, position = [0, 0, 0], rotation, centered = true, onDimensionsCalculated, opacity, glowColor, targetGlowIntensity }: ModelMeshProps) {
+  const geometry = useGLTFGeometry(url, centered)
   useReportDimensions(geometry, onDimensionsCalculated)
   const materialRef = useRef<THREE.MeshStandardMaterial>(null)
   useGlowMaterial(materialRef, glowColor, targetGlowIntensity)
 
   return (
-    <mesh geometry={geometry} position={position} castShadow receiveShadow>
+    <mesh geometry={geometry} position={position} rotation={rotation} castShadow receiveShadow>
       <meshStandardMaterial
         ref={materialRef}
         color={color}

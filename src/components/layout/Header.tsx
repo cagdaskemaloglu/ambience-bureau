@@ -11,10 +11,20 @@ import { getLocalizedValue } from '@/lib/sanity'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import { HeaderStickman } from './HeaderStickman'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
+import { useActiveSection, scrollToSection } from '@/lib/useActiveSection'
 import type { Collection } from '@/types'
 
+// Anasayfa bölümleri — header'da TEK menü (eskiden header altında ayrı bir
+// §1–§5 çubuğu da vardı). Anasayfada sayfa içi kaydırır, diğer sayfalarda
+// anasayfanın ilgili bölümüne gider. "Envanter" linkinin yerini §3 aldı.
+const HOME_SECTIONS = [
+  // short*: 1800px altındaki masaüstü genişliklerinde header taşmasın diye.
+  { id: 'sinirli-tahsis', n: '1', tr: 'Sınırlı Tahsis', en: 'Limited Allocation', shortTr: 'Sınırlı', shortEn: 'Limited' },
+  { id: 'daimi-envanter', n: '2', tr: 'Daimi Envanter', en: 'Standing Inventory', shortTr: 'Daimi', shortEn: 'Standing' },
+  { id: 'tum-kayitlar', n: '3', tr: 'Tüm Kayıtlar', en: 'Full Register', shortTr: 'Kayıtlar', shortEn: 'Register' },
+] as const
+
 const NAV_ITEMS = [
-  { href: '/registry' as const, labelKey: 'registry', isCTA: false },
   { href: '/control-protocol' as const, labelKey: 'controlProtocol', isCTA: false },
   { href: '/bureau' as const, labelKey: 'bureau', isCTA: false },
   { href: '/archive' as const, labelKey: 'archive', isCTA: false },
@@ -119,6 +129,14 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
   }
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
+  const isHome = pathname === '/'
+  const activeSection = useActiveSection(HOME_SECTIONS.map((s) => s.id), isHome)
+  // Anasayfada: sayfa içi kaydır. Başka sayfada: Link anasayfanın bölümüne gider.
+  const onSectionClick = (id: string) => (e: React.MouseEvent) => {
+    if (!isHome || e.metaKey || e.ctrlKey || e.shiftKey) return
+    e.preventDefault()
+    scrollToSection(id)
+  }
 
   function goToCollection(key: string) {
     router.push(`/custom-registry?collection=${key}`)
@@ -136,11 +154,11 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
           <Link
             href="/"
             data-stickman-anchor="brand"
-            className="group no-underline flex items-center gap-3"
+            className="group no-underline flex shrink-0 items-center gap-3 lg:mr-8"
             onClick={() => setMenuOpen(false)}
           >
             <div
-              className="brand-glow-text text-lg font-black tracking-[0.12em] uppercase sm:text-xl"
+              className="brand-glow-text whitespace-nowrap text-lg font-black tracking-[0.12em] uppercase sm:text-xl"
               style={{ paddingLeft: '0.65em' }}
             >
               THE AMBIENCE <span data-stickman-anchor="bureau-word">BUREAU</span>
@@ -148,7 +166,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden items-center gap-8 mt-1 lg:flex">
+          <nav className="hidden min-w-0 items-center gap-4 mt-1 lg:flex min-[1800px]:gap-8">
             {/* Custom Registry — link + dropdown trigger birlikte */}
             <div ref={dropdownRef} className="relative flex items-stretch">
               <div
@@ -163,7 +181,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               >
                 <Link
                   href="/custom-registry"
-                  className={`flex items-center gap-2 px-3.5 py-1.5 no-underline transition-colors font-semibold ${
+                  className={`flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 no-underline transition-colors font-semibold ${
                     isActive('/custom-registry') ? '' : 'hover:bg-bureau-black hover:text-bureau-white'
                   }`}
                 >
@@ -222,6 +240,25 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               )}
             </div>
 
+            {HOME_SECTIONS.map((sec) => {
+              const on = isHome && activeSection === sec.id
+              return (
+                <Link
+                  key={sec.id}
+                  href={{ pathname: '/', hash: sec.id }}
+                  onClick={onSectionClick(sec.id)}
+                  aria-current={on ? 'location' : undefined}
+                  className={`nav-underline focus-bureau whitespace-nowrap py-2 font-nav text-[12px] uppercase tracking-wider no-underline transition-opacity duration-150 ${
+                    on ? 'font-bold text-bureau-black' : 'font-semibold text-bureau-black opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <span className="text-bureau-amber">§{sec.n}</span>{' '}
+                  <span className="min-[1800px]:hidden">{locale === 'tr' ? sec.shortTr : sec.shortEn}</span>
+                  <span className="hidden min-[1800px]:inline">{locale === 'tr' ? sec.tr : sec.en}</span>
+                </Link>
+              )
+            })}
+
             {NAV_ITEMS.map(({ href, labelKey }) => {
               // Büro ve Arşiv linkleri menüden KALDIRILDI (artık Footer'da).
               // Ancak HeaderStickman animasyonu bu iki yazının konumunu
@@ -245,19 +282,26 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 href={href}
                 aria-current={isActive(href) ? 'page' : undefined}
                 className={`
-                  nav-underline focus-bureau py-2 font-nav text-[12px] tracking-wider uppercase no-underline
+                  nav-underline focus-bureau whitespace-nowrap py-2 font-nav text-[12px] tracking-wider uppercase no-underline
                   transition-opacity duration-150
                   ${isActive(href) ? 'text-bureau-black font-bold' : 'text-bureau-black font-semibold opacity-70 hover:opacity-100'}
                 `}
               >
-                {t(labelKey)}
+                {labelKey === 'controlProtocol' ? (
+                  <>
+                    <span className="min-[1800px]:hidden">{locale === 'tr' ? 'Protokol' : 'Protocol'}</span>
+                    <span className="hidden min-[1800px]:inline">{t(labelKey)}</span>
+                  </>
+                ) : (
+                  t(labelKey)
+                )}
               </Link>
               )
             })}
           </nav>
 
           {/* Desktop right */}
-          <div data-stickman-anchor="nav-end" className="hidden items-center gap-6 mt-1 lg:flex">
+          <div data-stickman-anchor="nav-end" className="hidden shrink-0 items-center gap-3 mt-1 whitespace-nowrap lg:ml-6 lg:flex min-[1800px]:gap-6">
             <ThemeToggle locale={locale} />
             <button
               onClick={switchLocale}
@@ -335,7 +379,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             )}
             <Link
               href="/cart"
-              className="border-l border-bureau-black pl-6 font-nav text-[12px] tracking-wider uppercase text-bureau-black no-underline hover:text-bureau-amber transition-colors"
+              className="border-l border-bureau-black pl-4 font-nav min-[1800px]:pl-6 text-[12px] tracking-wider uppercase text-bureau-black no-underline hover:text-bureau-amber transition-colors"
             >
               {locale === 'tr' ? 'Sepet' : 'Cart'} ({String(displayCount).padStart(2, '0')})
             </Link>
@@ -505,6 +549,20 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 </Link>
               </>
             )}
+
+            {HOME_SECTIONS.map((sec) => (
+              <Link
+                key={sec.id}
+                href={{ pathname: '/', hash: sec.id }}
+                onClick={(e) => {
+                  setMenuOpen(false)
+                  onSectionClick(sec.id)(e)
+                }}
+                className="block px-5 py-5 font-nav text-[12px] font-semibold uppercase tracking-wider text-bureau-black no-underline"
+              >
+                <span className="text-bureau-amber">§{sec.n}</span> {locale === 'tr' ? sec.tr : sec.en}
+              </Link>
+            ))}
 
             {NAV_ITEMS.map(({ href, labelKey }) => (
               <Link
