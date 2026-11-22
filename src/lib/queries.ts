@@ -313,7 +313,7 @@ export async function getAllDropsWithProducts() {
       // malzeme sayılarının ÇARPIMI; modeller arasında TOPLAM.
       const models = await sanityClient.fetch<Array<{ counts: Array<{ c: number | null }> | null }>>(
         `*[_type == "lampModel" && active != false && collection->key.current == $collectionKey]{
-          "counts": parts[]->[isFixed != true]{ "c": ${MATERIALS_COUNT} }
+          "counts": parts[@->isFixed != true]->{ "c": ${MATERIALS_COUNT} }
         }`,
         { collectionKey }
       )
@@ -373,7 +373,20 @@ export async function getStandingInventory() {
  * ("…'den başlayan"; renk farkları ve IoT hariç).
  */
 export async function getModelStandingCards(): Promise<ProductCard[]> {
-  return sanityClient.fetch(
+  type Raw = ProductCard & {
+    defaultParts?: Array<{
+      partId: string
+      basePriceTRY?: number | null
+      basePriceUSD?: number | null
+      m?: { materialId?: string; priceModifierTRY?: number | null; priceModifierUSD?: number | null } | null
+    }> | null
+    fixedTRY?: number | null
+    fixedUSD?: number | null
+    hwTRY?: number | null
+    hwUSD?: number | null
+    imageUrl?: string | null
+  }
+  const rows: Raw[] = await sanityClient.fetch(
     `*[_type == "lampModel" && active != false && defined(key.current)
         && collection->layoutMode == "model" && collection->active != false
         && count(*[_type == "product" && active != false && linkedModel._ref == ^._id]) == 0
@@ -385,19 +398,62 @@ export async function getModelStandingCards(): Promise<ProductCard[]> {
       "category": coalesce(collection->productClass, "pendant"),
       "saleMode": "standing",
       "stockQuantity": null,
-      "priceTRY": math::sum(parts[]->basePriceTRY) + coalesce(collection->hardwareBaseFeeTRY, 0),
-      "priceUSD": math::sum(parts[]->basePriceUSD) + coalesce(collection->hardwareBaseFeeUSD, 0),
       "isConfigurable": false,
       ${LOCALIZED_FIELD('name')},
       "image": coalesce(images[0], thumbnail){
         ${IMAGE_FRAGMENT}
       },
+      "imageUrl": coalesce(images[0].asset->url, thumbnail.asset->url),
       "collection": collection->{ key, ${LOCALIZED_FIELD('name')} },
-      "modelLink": { "collectionKey": collection->key.current, "modelId": key.current }
+      "modelLink": { "collectionKey": collection->key.current, "modelId": key.current },
+      // Varsayılan tasarım: konfigüratörle AYNI kural — her renkli parçanın
+      // ilk rengi (tüm renkler modunda sortOrder'a göre ilk malzeme).
+      "defaultParts": parts[@->isFixed != true]->{
+        "partId": partId.current,
+        basePriceTRY,
+        basePriceUSD,
+        "m": select(
+          ${MATERIALS_ALL_COND} => *[_type == "material" && !(_id in coalesce(^.excludedMaterials[]._ref, []))] | order(sortOrder asc)[0],
+          materials[0]->
+        ){ "materialId": materialId.current, priceModifierTRY, priceModifierUSD }
+      },
+      "fixedTRY": math::sum(parts[@->isFixed == true]->basePriceTRY),
+      "fixedUSD": math::sum(parts[@->isFixed == true]->basePriceUSD),
+      "hwTRY": collection->hardwareBaseFeeTRY,
+      "hwUSD": collection->hardwareBaseFeeUSD
     }`,
     {},
     { next: { tags: ['products', 'configurator-collections'] } }
   )
+  // Kart fiyatı = varsayılan tasarımın fiyatı (renk farkları dahil, IoT
+  // hariç) — "Nesne Talep Et" ile sepete giden tutarla birebir aynı.
+  return rows.map(({ defaultParts, fixedTRY, fixedUSD, hwTRY, hwUSD, imageUrl, ...card }) => {
+    const parts = (defaultParts ?? [])
+      .filter((p) => p.partId && p.m?.materialId)
+      .map((p) => ({
+        partId: p.partId,
+        materialId: p.m!.materialId as string,
+        priceTRY: (p.basePriceTRY ?? 0) + (p.m?.priceModifierTRY ?? 0),
+        priceUSD: (p.basePriceUSD ?? 0) + (p.m?.priceModifierUSD ?? 0),
+      }))
+    const sum = (k: 'priceTRY' | 'priceUSD') => parts.reduce((a, p) => a + p[k], 0)
+    return {
+      ...card,
+      priceTRY: sum('priceTRY') + (fixedTRY ?? 0) + (hwTRY ?? 0),
+      priceUSD: sum('priceUSD') + (fixedUSD ?? 0) + (hwUSD ?? 0),
+      modelDefault:
+        parts.length > 0 && parts.length === (defaultParts ?? []).length
+          ? {
+              parts,
+              fixedTRY: fixedTRY ?? 0,
+              fixedUSD: fixedUSD ?? 0,
+              hardwareTRY: hwTRY ?? 0,
+              hardwareUSD: hwUSD ?? 0,
+              imageUrl: imageUrl ?? null,
+            }
+          : null,
+    }
+  })
 }
 
 // ── Büro Bülteni ──────────────────────────────────────────

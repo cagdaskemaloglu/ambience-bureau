@@ -11,11 +11,14 @@ import { useRouter } from '@/i18n/navigation'
  */
 export function CustomizeButtonMini({
   slug,
+  href,
   isConfigurable,
   compact,
   className,
 }: {
   slug: string
+  /** Verilirse ?preset=<slug> yerine buraya gider (Montajlı Model kartları). */
+  href?: string
   isConfigurable: boolean
   compact?: boolean
   /** Verilirse varsayılan dış boşluk (mt/py) yerine bu kullanılır. */
@@ -31,7 +34,7 @@ export function CustomizeButtonMini({
     e.stopPropagation()
 
     if (!isConfigurable) return
-    router.push(`/custom-registry?preset=${slug}`)
+    router.push(href ?? `/custom-registry?preset=${slug}`)
   }
 
   return (

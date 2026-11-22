@@ -5,6 +5,7 @@ import { Link } from '@/i18n/navigation'
 import { getLocalizedValue, formatPrice, getPricingForLocale } from '@/lib/sanity'
 import { useTheme } from '@/components/theme/ThemeProvider'
 import { AddToCartMini } from './AddToCartMini'
+import { ModelRequestMini } from './ModelRequestMini'
 import { CustomizeButtonMini } from './CustomizeButtonMini'
 import { ProductCardMedia } from './ProductCardMedia'
 import {
@@ -119,10 +120,16 @@ export function ProductCard({
   const hasActions = purchasable || configurable || !!modelLink
 
   const actions = modelLink ? (
-    // Kartın tamamı konfigüratöre gider; bu sadece görsel çağrı (link içinde link olmasın).
-    <span className="block w-full border border-bureau-amber py-2 text-center font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-amber transition-colors group-hover:bg-bureau-amber group-hover:text-white">
-      {tr ? 'Renkleri Seç →' : 'Choose Colors →'}
-    </span>
+    // Montajlı Model: varsayılan renklerle doğrudan sepete + konfigüratörde özelleştir.
+    <>
+      {product.modelDefault && <ModelRequestMini product={product} className="min-w-0 flex-[3] basis-0 py-2" />}
+      <CustomizeButtonMini
+        slug={product.slug.current}
+        href={href}
+        isConfigurable
+        className="min-w-0 flex-[2] basis-0 py-2"
+      />
+    </>
   ) : hasActions ? (
     <>
       {/* basis-0 + oranlı flex: iki buton varken genişlik 3:2 bölünür, yazılar sıkışmaz */}

@@ -495,7 +495,13 @@ anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
   fiyatları + koleksiyonun donanım taban ücreti ("…'den başlayan").
 - Kart ürün sayfasına değil konfigüratöre gider:
   `/custom-registry?collection=<key>&model=<modelKey>` → model seçili açılır.
-  Sepete doğrudan eklenmez (siparişe üretim, stok yok).
+  Kartta iki eylem: "Nesne Talep Et" (`ModelRequestMini`) modeli
+  VARSAYILAN renklerle (her parçanın ilk rengi, IoT'siz) `/api/custom-design`
+  ile kaydedip özel tasarım olarak sepete ekler; "Özelleştir" konfigüratörü
+  açar. Kart fiyatı = bu varsayılan tasarımın fiyatı (`modelDefault`).
+- GROQ notu: referans dizisini deref öncesi süzmek için
+  `parts[@->isFixed != true]->` kullanın; `parts[]->[isFixed != true]`
+  null dizisi döndürür.
 - Tekrarı önleme: `product.linkedModel` bir modele bağlıysa o modelin
   otomatik kartı üretilmez, ürün kartı görünür.
 - Konfigüratörde model seçiliyken model ızgarası daralır ("Modeli değiştir").

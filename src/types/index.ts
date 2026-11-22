@@ -95,6 +95,19 @@ export interface ProductCard {
    * fiyat "başlayan" fiyattır. Bkz. queries.ts → getModelStandingCards.
    */
   modelLink?: { collectionKey: string; modelId: string } | null
+  /**
+   * Sadece model kartlarında: varsayılan renklerle hazır tasarım ("Nesne
+   * Talep Et" bunu doğrudan sepete ekler). Parçalardan biri renk
+   * bulunamadıysa null (o zaman sadece "Özelleştir" gösterilir).
+   */
+  modelDefault?: {
+    parts: Array<{ partId: string; materialId: string; priceTRY: number; priceUSD: number }>
+    fixedTRY: number
+    fixedUSD: number
+    hardwareTRY: number
+    hardwareUSD: number
+    imageUrl: string | null
+  } | null
 }
 
 export interface ProductConfiguratorPart {
