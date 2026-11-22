@@ -39,7 +39,7 @@ export interface SanityImage {
 
 export type ProductStatus = 'certified' | 'limited' | 'decommissioned' | 'owned'
 
-export type ProductCategory = 'floor' | 'chandelier' | 'wall' | 'desk' | 'pendant' | 'strip'
+export type ProductCategory = 'floor' | 'wall' | 'desk' | 'pendant' | 'strip'
 
 /** limited = Sınırlı Tahsis (drop), standing = Daimi Envanter (sürekli satış). Boşsa limited kabul edilir. */
 export type ProductSaleMode = 'limited' | 'standing'
@@ -89,6 +89,12 @@ export interface ProductCard {
     key: { current: string }
     name: LocalizedString[]
   }
+  /**
+   * Sadece Montajlı Modelden OTOMATİK üretilen Daimi Envanter kartlarında
+   * dolu: kart ürün sayfası yerine konfigüratörü bu model seçili açar,
+   * fiyat "başlayan" fiyattır. Bkz. queries.ts → getModelStandingCards.
+   */
+  modelLink?: { collectionKey: string; modelId: string } | null
 }
 
 export interface ProductConfiguratorPart {

@@ -59,8 +59,8 @@ export function HomeMasthead({
         </h1>
         <p className="mt-2 max-w-[82ch] text-[13px] leading-relaxed text-bureau-muted md:text-[14px]">
           {tr
-            ? 'Ambience Bureau, akıllı ve standart aydınlatma nesneleri üretir. Koleksiyon parçaları numaralı drop’larla sınırlı sayıda tahsis edilir; lambader, avize, aplik ve masa lambaları daimi envanterde sürekli satıştadır.'
-            : 'Ambience Bureau makes smart and standard lighting objects. Collection pieces are allocated in numbered, limited drops; floor lamps, chandeliers, wall sconces and table lamps are held in standing inventory, always available.'}
+            ? 'Ambience Bureau, akıllı ve standart aydınlatma nesneleri üretir. Koleksiyon parçaları numaralı drop’larla sınırlı sayıda tahsis edilir; lambader, sarkıt, aplik ve masa lambaları daimi envanterde sürekli satıştadır.'
+            : 'Ambience Bureau makes smart and standard lighting objects. Collection pieces are allocated in numbered, limited drops; floor lamps, pendants, wall sconces and table lamps are held in standing inventory, always available.'}
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-3">
           <Link href="/custom-registry" className="btn-file btn-file-amber focus-bureau !py-2">

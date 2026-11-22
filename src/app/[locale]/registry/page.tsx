@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
-import { getAllProducts } from '@/lib/queries'
+import { getAllProducts, getModelStandingCards } from '@/lib/queries'
 import { CategoryFilterBar } from '@/components/registry/CategoryFilterBar'
 import { ProductGrid } from '@/components/registry/ProductGrid'
 import { getTranslations } from 'next-intl/server'
 import { Link } from '@/i18n/navigation'
 import { getLightClass } from '@/lib/lightClasses'
-import type { ProductCategory, ProductStatus, PhotonOutput, ControlCompatibility } from '@/types'
+import type { ProductCategory, ProductStatus, PhotonOutput, ControlCompatibility, ProductCard as ProductCardType } from '@/types'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -50,7 +50,7 @@ export default async function RegistryPage({ params, searchParams }: Props) {
   const { minPrice, maxPrice } = parsePriceRange(resolvedSearch.price)
   const tr = locale === 'tr'
 
-  const products = await getAllProducts({
+  const productDocs = await getAllProducts({
     category: resolvedSearch.category as ProductCategory | undefined,
     status: resolvedSearch.status as ProductStatus | undefined,
     photonOutput: resolvedSearch.photon as PhotonOutput | undefined,
@@ -60,6 +60,25 @@ export default async function RegistryPage({ params, searchParams }: Props) {
     drop: resolvedSearch.drop,
     mode: resolvedSearch.mode,
   })
+  // Montajlı Modellerden otomatik Daimi Envanter kartları: sadece model
+  // kartlarına uygulanabilen süzgeçler (sınıf, fiyat, mod) varken eklenir.
+  const modelFilterable =
+    (!resolvedSearch.mode || resolvedSearch.mode === 'standing') &&
+    !resolvedSearch.status &&
+    !resolvedSearch.photon &&
+    !resolvedSearch.compat &&
+    !resolvedSearch.drop
+  const modelCards = modelFilterable
+    ? (await getModelStandingCards()).filter((c) => {
+        const price = tr ? c.priceTRY : c.priceUSD
+        return (
+          (!resolvedSearch.category || c.category === resolvedSearch.category) &&
+          (minPrice === undefined || price >= minPrice) &&
+          (maxPrice === undefined || price <= maxPrice)
+        )
+      })
+    : []
+  const products = [...(productDocs as ProductCardType[]), ...modelCards]
   const activeClass = getLightClass(resolvedSearch.category)
   const modeTitle =
     resolvedSearch.mode === 'standing'

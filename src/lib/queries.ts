@@ -1,6 +1,6 @@
 import { resolveDropState } from '@/lib/dropSchedule'
 import { sanityClient } from './sanity'
-import type { LampModelDef } from '@/types'
+import type { LampModelDef, ProductCard } from '@/types'
 
 // ── Fragment'lar (tekrar kullanılan GROQ parçaları) ───────
 
@@ -362,6 +362,41 @@ export async function getStandingInventory() {
     `*[_type == "product" && active != false && saleMode == "standing"] | order(coalesce(priority, 999999) asc, registryNo asc) {${PRODUCT_CARD_FRAGMENT}}`,
     {},
     { next: { tags: ['products'] } }
+  )
+}
+
+/**
+ * Montajlı Modellerden OTOMATİK Daimi Envanter kartları — Studio'da her
+ * model için ayrıca ürün belgesi açmak gerekmesin diye. Bir ürün belgesi
+ * modele bağlıysa (product.linkedModel) o modelin kartı üretilmez.
+ * Fiyat = parça taban fiyatları + koleksiyonun donanım taban ücreti
+ * ("…'den başlayan"; renk farkları ve IoT hariç).
+ */
+export async function getModelStandingCards(): Promise<ProductCard[]> {
+  return sanityClient.fetch(
+    `*[_type == "lampModel" && active != false && defined(key.current)
+        && collection->layoutMode == "model" && collection->active != false
+        && count(*[_type == "product" && active != false && linkedModel._ref == ^._id]) == 0
+      ] | order(collection->sortOrder asc, sortOrder asc) {
+      "_id": "model-" + _id,
+      "registryNo": upper(key.current),
+      "slug": { "current": key.current },
+      "status": "certified",
+      "category": coalesce(collection->productClass, "pendant"),
+      "saleMode": "standing",
+      "stockQuantity": null,
+      "priceTRY": math::sum(parts[]->basePriceTRY) + coalesce(collection->hardwareBaseFeeTRY, 0),
+      "priceUSD": math::sum(parts[]->basePriceUSD) + coalesce(collection->hardwareBaseFeeUSD, 0),
+      "isConfigurable": false,
+      ${LOCALIZED_FIELD('name')},
+      "image": coalesce(images[0], thumbnail){
+        ${IMAGE_FRAGMENT}
+      },
+      "collection": collection->{ key, ${LOCALIZED_FIELD('name')} },
+      "modelLink": { "collectionKey": collection->key.current, "modelId": key.current }
+    }`,
+    {},
+    { next: { tags: ['products', 'configurator-collections'] } }
   )
 }
 

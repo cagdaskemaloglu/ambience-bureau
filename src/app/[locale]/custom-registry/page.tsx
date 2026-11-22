@@ -77,10 +77,10 @@ export default async function CustomRegistryPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>
-  searchParams: Promise<{ collection?: string; preset?: string; capture?: string }>
+  searchParams: Promise<{ collection?: string; model?: string; preset?: string; capture?: string }>
 }) {
   const { locale } = await params
-  const { collection, preset, capture } = await searchParams
+  const { collection, model, preset, capture } = await searchParams
   const isCaptureMode = capture === '1'
   const realCollections = await getAllLampCollections()
   // SADECE local demo modunda: "Blender konumu" yerleşimini denemek için
@@ -138,6 +138,7 @@ export default async function CustomRegistryPage({
         <CustomRegistryClient
           collections={collections}
           initialCollectionKey={collection}
+          initialModelId={model}
           presetDesign={presetDesign}
           presetStatus={presetResult.status}
           showTutorial={showTutorial}

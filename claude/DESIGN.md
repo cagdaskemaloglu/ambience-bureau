@@ -47,7 +47,6 @@ Bütün ürünler iki rejimden birindedir (`product.saleMode`):
   | Sınıf | Kod | TR | EN |
   |---|---|---|---|
   | F | `floor` | Lambader | Floor Lamp |
-  | C | `chandelier` | Avize | Chandelier |
   | W | `wall` | Aplik | Wall Sconce |
   | D | `desk` | Masa Lambası | Table Lamp |
   | P | `pendant` | Sarkıt | Pendant |

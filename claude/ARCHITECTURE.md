@@ -485,6 +485,21 @@ anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
   `localhost:3000`'e veriliyor; konfigüratörü başka portta açarsanız
   modeller yüklenmez.
 
+### Montajlı Modeller → Daimi Envanter (otomatik kartlar)
+- `getModelStandingCards()` (`queries.ts`): "Montajlı model" koleksiyonlarındaki
+  her aktif `lampModel`, ürün belgesi OLMADAN Daimi Envanter kartına
+  (`ProductCard` biçimi, `_id: "model-<id>"`, `modelLink` dolu) çevrilir.
+  Anasayfa §2/§3 ve `/registry` (sadece sınıf/fiyat/mod süzgeçleriyle)
+  bu kartları ürün belgelerinin yanına ekler.
+- Sınıf: `collection.productClass` (boşsa `pendant`). Fiyat: parça taban
+  fiyatları + koleksiyonun donanım taban ücreti ("…'den başlayan").
+- Kart ürün sayfasına değil konfigüratöre gider:
+  `/custom-registry?collection=<key>&model=<modelKey>` → model seçili açılır.
+  Sepete doğrudan eklenmez (siparişe üretim, stok yok).
+- Tekrarı önleme: `product.linkedModel` bir modele bağlıysa o modelin
+  otomatik kartı üretilmez, ürün kartı görünür.
+- Konfigüratörde model seçiliyken model ızgarası daralır ("Modeli değiştir").
+
 ### Parça renkleri: "Tüm renkler" varsayılanı
 - `lampPart.materialMode`: `all` (yeni parçaların varsayılanı) → Studio >
   Materials'taki TÜM malzemeler, `excludedMaterials` hariç; yeni eklenen
@@ -625,7 +640,7 @@ Bileşenler `src/components/home/`. Bölüm başlıkları `SectionHeading`.
   olarak kullanılır (`ENV-F-012`); kartta `ENV. KODU` + stok durumu.
   `stockQuantity`: boş = siparişe üretim, 0 = tükendi, >0 = adet.
 - Sınıflar (`product.category`) TEK kaynaktan: `src/lib/lightClasses.ts`
-  → `LIGHT_CLASSES` (F Lambader, C Avize, W Aplik, D Masa Lambası,
+  → `LIGHT_CLASSES` (F Lambader, W Aplik, D Masa Lambası,
   P Sarkıt, S Şerit). Sanity şeması, Registry filtresi, anasayfa ve
   ürün sayfası buradan okur.
 - Yardımcılar: `resolveSaleMode`, `resolveStockState`,

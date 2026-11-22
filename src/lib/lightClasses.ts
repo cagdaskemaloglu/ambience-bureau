@@ -12,7 +12,7 @@
  * SAF modül: hem sunucu hem istemci hem Sanity Studio import edebilir.
  */
 
-export type LightClassValue = 'floor' | 'chandelier' | 'wall' | 'desk' | 'pendant' | 'strip'
+export type LightClassValue = 'floor' | 'wall' | 'desk' | 'pendant' | 'strip'
 
 export interface LightClass {
   value: LightClassValue
@@ -33,14 +33,6 @@ export const LIGHT_CLASSES: LightClass[] = [
     en: 'Floor Lamp',
     descTr: 'Zemine yerleşik, ayakta duran aydınlatma nesneleri.',
     descEn: 'Free-standing lighting objects placed on the floor.',
-  },
-  {
-    value: 'chandelier',
-    code: 'C',
-    tr: 'Avize',
-    en: 'Chandelier',
-    descTr: 'Tavandan asılan, çok kollu ana aydınlatma birimleri.',
-    descEn: 'Multi-arm primary fixtures suspended from the ceiling.',
   },
   {
     value: 'wall',

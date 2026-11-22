@@ -128,7 +128,7 @@ kartlardaki spin karesi ile konfigüratörün açılış açısı uyuşmaz.
 (`standing`, stoklu). Kart/sayfa/sepet mantığı yazarken ikisini de düşün;
 satın alınabilirlik için `isProductPurchasable()` kullan, `status ===
 'decommissioned'` kontrolünü elle tekrarlama. Aydınlatma sınıfları
-(lambader, avize, aplik...) SADECE `src/lib/lightClasses.ts`'te
+(lambader, sarkıt, aplik...) SADECE `src/lib/lightClasses.ts`'te
 tanımlanır. Görsel/kurgu kararları için önce `DESIGN.md`.
 
 ### 16. Konfigüratörde üç yerleşim modu var

@@ -20,7 +20,7 @@ export const productSchema = defineType({
     // ── Satış Rejimi ─────────────────────────────────────
     // Sınırlı Tahsis: drop'a bağlı, numaralı adet (eski davranış — alan
     // boşsa da bu kabul edilir). Daimi Envanter: sürekli satış, stoklu
-    // (lambader, avize, aplik, masa lambası...). Bkz. claude/DESIGN.md.
+    // (lambader, sarkıt, aplik, masa lambası...). Bkz. claude/DESIGN.md.
     defineField({
       name: 'saleMode',
       title: 'Satış Rejimi',
@@ -51,7 +51,7 @@ export const productSchema = defineType({
       name: 'registryNo',
       title: 'Registry Number / Envanter Kodu',
       description:
-        'Sınırlı Tahsis: 001/050 gibi seri no / toplam adet. Daimi Envanter: ENV-F-012 gibi envanter kodu (F=Lambader, C=Avize, W=Aplik, D=Masa Lambası, P=Sarkıt, S=Şerit). Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
+        'Sınırlı Tahsis: 001/050 gibi seri no / toplam adet. Daimi Envanter: ENV-F-012 gibi envanter kodu (F=Lambader, W=Aplik, D=Masa Lambası, P=Sarkıt, S=Şerit). Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
       type: 'string',
       validation: (R) => R.required(),
       components: { field: RegistryNoHint },
@@ -337,6 +337,15 @@ export const productSchema = defineType({
       title: 'Custom Registry ile yapılandırılabilir mi?',
       type: 'boolean',
       initialValue: false,
+    }),
+
+    defineField({
+      name: 'linkedModel',
+      title: 'Bağlı Montajlı Model (opsiyonel)',
+      description:
+        'Bu ürün bir Montajlı Modelin (sarkıt vb.) ayrıntılı ürün sayfasıysa modeli seçin: Daimi Envanter\'de modelin otomatik kartı GİZLENİR, yerine bu ürün kartı görünür (aynı ürün iki kez listelenmez).',
+      type: 'reference',
+      to: [{ type: 'lampModel' }],
     }),
 
     defineField({

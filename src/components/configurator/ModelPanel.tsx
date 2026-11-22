@@ -24,6 +24,11 @@ export function ModelPanel({ mobile = false }: { mobile?: boolean }) {
   const availableParts = useConfiguratorStore((s) => s.availableParts)
   const selectModel = useConfiguratorStore((s) => s.selectModel)
   const selectMaterial = useConfiguratorStore((s) => s.selectMaterial)
+  // Model seçiliyken model ızgarası daralır (seçili model + "Değiştir"),
+  // böylece parça renkleri kaydırmadan görünür. Seçim yokken açık gelir.
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const showGrid = pickerOpen || !modelId
+  const selectedModel = models.find((x) => x.modelId === modelId)
 
   const currency = tr ? 'TRY' : 'USD'
   const intlLocale = tr ? 'tr-TR' : 'en-US'
@@ -48,10 +53,46 @@ export function ModelPanel({ mobile = false }: { mobile?: boolean }) {
         <div>
           <div className="mb-2 flex items-center justify-between">
             <span className={label}>{tr ? 'Model' : 'Model'}</span>
-            <span className="font-mono text-[9.5px] text-bureau-subtle">
-              {models.length} {tr ? 'model' : 'models'}
-            </span>
+            {modelId && models.length > 1 ? (
+              <button
+                type="button"
+                onClick={() => setPickerOpen((v) => !v)}
+                aria-expanded={showGrid}
+                className="focus-bureau font-mono text-[9.5px] uppercase tracking-wide text-bureau-amber hover:underline"
+              >
+                {showGrid
+                  ? tr ? 'Kapat ▴' : 'Close ▴'
+                  : tr ? `Modeli değiştir (${models.length}) ▾` : `Change model (${models.length}) ▾`}
+              </button>
+            ) : (
+              <span className="font-mono text-[9.5px] text-bureau-subtle">
+                {models.length} {tr ? 'model' : 'models'}
+              </span>
+            )}
           </div>
+          {!showGrid && selectedModel && (
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="focus-bureau flex w-full items-center gap-2.5 border border-bureau-amber p-1.5 text-left"
+            >
+              <div className="h-12 w-12 flex-shrink-0 overflow-hidden bg-bureau-surface">
+                {(selectedModel.images?.[0] ?? selectedModel.thumbnail) && (
+                  <Image
+                    src={(selectedModel.images?.[0] ?? selectedModel.thumbnail) as string}
+                    alt=""
+                    width={48}
+                    height={48}
+                    className="h-full w-full object-cover"
+                  />
+                )}
+              </div>
+              <span className="min-w-0 flex-1 truncate font-mono text-[11px] uppercase tracking-wide text-bureau-black">
+                {getLocalizedValue(selectedModel.name, locale, selectedModel.modelId)}
+              </span>
+            </button>
+          )}
+          {showGrid && (
           <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={tr ? 'Model seçimi' : 'Model selection'}>
             {models.map((m) => {
               const name = getLocalizedValue(m.name, locale, m.modelId) ?? m.modelId
@@ -62,7 +103,10 @@ export function ModelPanel({ mobile = false }: { mobile?: boolean }) {
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  onClick={() => selectModel(m.modelId)}
+                  onClick={() => {
+                    selectModel(m.modelId)
+                    setPickerOpen(false)
+                  }}
                   title={name}
                   className={`focus-bureau flex w-[100px] flex-col items-stretch border p-1 text-left transition-colors ${
                     active ? 'border-bureau-amber' : 'border-bureau-rule hover:border-bureau-black'
@@ -84,6 +128,7 @@ export function ModelPanel({ mobile = false }: { mobile?: boolean }) {
               )
             })}
           </div>
+          )}
         </div>
       )}
 

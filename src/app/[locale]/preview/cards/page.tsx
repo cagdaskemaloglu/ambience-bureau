@@ -46,7 +46,7 @@ export default async function CardPreviewPage({ params }: { params: Promise<{ lo
     },
     {
       label: tr ? 'Daimi Envanter · siparişe üretim' : 'Standing · made to order',
-      product: { ...pick(6), saleMode: 'standing', stockQuantity: null, category: 'chandelier', registryNo: 'ENV-C-002', isConfigurable: false },
+      product: { ...pick(6), saleMode: 'standing', stockQuantity: null, category: 'wall', registryNo: 'ENV-W-002', isConfigurable: false },
     },
     {
       label: tr ? 'Daimi Envanter · tükendi' : 'Standing · sold out',

@@ -1,5 +1,6 @@
 import { defineField, defineType } from 'sanity'
 import { localizedStringField } from './localeHelper'
+import { LIGHT_CLASSES } from '../../lib/lightClasses'
 
 export const collectionSchema = defineType({
   name: 'collection',
@@ -60,6 +61,16 @@ export const collectionSchema = defineType({
         layout: 'radio',
       },
       initialValue: 'stack',
+    }),
+    defineField({
+      name: 'productClass',
+      title: 'Ürün sınıfı (Daimi Envanter)',
+      description:
+        'Bu koleksiyonun Montajlı Modelleri anasayfadaki §2 Daimi Envanter\'de ve Envanter sayfasında OTOMATİK kart olarak listelenir; hangi sınıfın altında görüneceğini seçin. Boşsa: Sarkıt. Bir modeli listeden çıkarmak için modelde "Aktif"i kapatın ya da bir ürün belgesini o modele bağlayın (ürün kartı onun yerine geçer).',
+      type: 'string',
+      options: { list: LIGHT_CLASSES.map((c) => ({ title: `${c.code} — ${c.tr}`, value: c.value })) },
+      initialValue: 'pendant',
+      hidden: ({ document }) => document?.layoutMode !== 'model',
     }),
     defineField({
       name: 'hangFromCeiling',

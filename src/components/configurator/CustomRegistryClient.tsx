@@ -23,6 +23,7 @@ const ConfiguratorCanvas = dynamic(
 export function CustomRegistryClient({
   collections,
   initialCollectionKey,
+  initialModelId,
   presetDesign,
   presetStatus,
   showTutorial = false,
@@ -30,6 +31,8 @@ export function CustomRegistryClient({
 }: {
   collections: Collection[]
   initialCollectionKey?: string
+  /** Montajlı model koleksiyonunda açılışta seçilecek model (Daimi Envanter kartından gelir). */
+  initialModelId?: string
   /** "Customize" butonundan gelen ürünün tam koleksiyon + parça/malzeme kombinasyonu. */
   presetDesign?: { collectionKey: string; parts: ProductConfiguratorPart[] } | null
   /** presetDesign neden null — kullanıcıya/admin'e sessizce boş ekran yerine sebep gösterilir. */
@@ -96,10 +99,12 @@ export function CustomRegistryClient({
     if (presetDesign) {
       handleLoadPresetDesign(presetDesign)
     } else if (initialCollectionKey && initialCollectionKey !== collectionKey) {
-      handleSelectCollection(initialCollectionKey)
+      handleSelectCollection(initialCollectionKey, initialModelId)
+    } else if (initialModelId && initialCollectionKey === collectionKey) {
+      useConfiguratorStore.getState().selectModel(initialModelId)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [presetDesign, initialCollectionKey])
+  }, [presetDesign, initialCollectionKey, initialModelId])
 
   /**
    * Koleksiyonun parçaları ve (Montajlı model yerleşiminde) modelleri.
@@ -117,7 +122,7 @@ export function CustomRegistryClient({
     return { selected, parts, models: null }
   }
 
-  async function handleSelectCollection(key: string) {
+  async function handleSelectCollection(key: string, modelId?: string) {
     setIsLoadingParts(true)
     try {
       const { selected: selectedCollection, parts, models } = await fetchCollectionData(key)
@@ -134,6 +139,7 @@ export function CustomRegistryClient({
         hangFromCeiling: selectedCollection?.hangFromCeiling,
         models,
       })
+      if (modelId) useConfiguratorStore.getState().selectModel(modelId)
     } catch (err) {
       console.error('Parçalar yüklenemedi:', err)
     } finally {

@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { getAllDropsWithProducts, getAllProducts, getPanelBulletins, getStandingInventory } from '@/lib/queries'
+import { getAllDropsWithProducts, getAllProducts, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
 import { withDemoBulletins, withDemoStanding } from '@/lib/bulletinDemo'
 import { getLocalizedValue } from '@/lib/sanity'
 import { DropRow } from '@/components/registry/DropRow'
@@ -27,8 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: { absolute: locale === 'tr' ? 'The Ambience Bureau: Işık Tahsis Bürosu' : 'The Ambience Bureau: Bureau of Light Allocation' },
     description:
       locale === 'tr'
-        ? 'Akıllı ve standart aydınlatma nesneleri: numaralı drop’lar ve sürekli satıştaki lambader, avize, aplik ve masa lambaları.'
-        : 'Smart and standard lighting objects: numbered drops and an always-available range of floor lamps, chandeliers, wall sconces and table lamps.',
+        ? 'Akıllı ve standart aydınlatma nesneleri: numaralı drop’lar ve sürekli satıştaki lambader, sarkıt, aplik ve masa lambaları.'
+        : 'Smart and standard lighting objects: numbered drops and an always-available range of floor lamps, pendants, wall sconces and table lamps.',
     alternates: {
       canonical: `/${locale}`,
       languages: { tr: '/tr', en: '/en' },
@@ -48,12 +48,15 @@ export default async function HomePage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: 'home' })
   const tr = locale === 'tr'
 
-  const [allDropsRaw, standing, panelBulletins, allProductsRaw] = await Promise.all([
+  const [allDropsRaw, standingDocs, panelBulletins, allProductsRaw, modelCards] = await Promise.all([
     getAllDropsWithProducts(),
     getStandingInventory(),
     getPanelBulletins(),
     getAllProducts(),
+    getModelStandingCards(),
   ])
+  // Daimi Envanter = ürün belgeleri + Montajlı Modellerden otomatik kartlar.
+  const standing = [...(standingDocs as ProductCard[]), ...modelCards]
 
   const allDrops = allDropsRaw as Array<
     DropWithProducts & { dropState: 'live' | 'upcoming'; scheduledAt?: string | null }
@@ -176,8 +179,8 @@ export default async function HomePage({ params }: Props) {
           title={tr ? 'Daimi Envanter' : 'Standing Inventory'}
           lede={
             tr
-              ? 'Sürekli satıştaki aydınlatma nesneleri, sınıflarına göre dosyalanmıştır: lambader, avize, aplik, masa lambası ve sarkıt.'
-              : 'Lighting objects that are always available, filed by class: floor lamps, chandeliers, wall sconces, table lamps and pendants.'
+              ? 'Sürekli satıştaki aydınlatma nesneleri, sınıflarına göre dosyalanmıştır: lambader, sarkıt, aplik ve masa lambası.'
+              : 'Lighting objects that are always available, filed by class: floor lamps, pendants, wall sconces and table lamps.'
           }
           meta={
             standingProducts.length > 0

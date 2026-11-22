@@ -98,18 +98,32 @@ export function ProductCard({
     : (STATUS_LABEL[product.status] ?? STATUS_LABEL.certified)
   const stamp = resolveStamp(product, tr, dropSoldOut)
 
+  // Montajlı Modelden otomatik üretilen kart: ürün sayfası yok, kart
+  // konfigüratörü o model seçili açar; sepete doğrudan eklenmez.
+  const modelLink = product.modelLink ?? null
+
   // Başlık şeridi — dosyanın kimliği.
-  const fileId = isStanding
+  const fileId = modelLink
+    ? `${tr ? 'Sınıf' : 'Class'} ${lightClass?.code ?? '—'} · ${tr ? 'Model' : 'Model'}`
+    : isStanding
     ? `${tr ? 'Sınıf' : 'Class'} ${lightClass?.code ?? '—'} · ${product.registryNo}`
     : product.dropNo
       ? `DROP-${product.dropNo} · ${product.registryNo}`
       : `REG. NO. ${product.registryNo}`
 
-  const purchasable = !dropSoldOut && isProductPurchasable(product)
-  const configurable = !dropSoldOut && product.isConfigurable
-  const hasActions = purchasable || configurable
+  const href = modelLink
+    ? `/custom-registry?collection=${encodeURIComponent(modelLink.collectionKey)}&model=${encodeURIComponent(modelLink.modelId)}`
+    : `/registry/${product.slug.current}`
+  const purchasable = !modelLink && !dropSoldOut && isProductPurchasable(product)
+  const configurable = !modelLink && !dropSoldOut && product.isConfigurable
+  const hasActions = purchasable || configurable || !!modelLink
 
-  const actions = hasActions ? (
+  const actions = modelLink ? (
+    // Kartın tamamı konfigüratöre gider; bu sadece görsel çağrı (link içinde link olmasın).
+    <span className="block w-full border border-bureau-amber py-2 text-center font-mono text-[9px] font-semibold uppercase tracking-wide text-bureau-amber transition-colors group-hover:bg-bureau-amber group-hover:text-white">
+      {tr ? 'Renkleri Seç →' : 'Choose Colors →'}
+    </span>
+  ) : hasActions ? (
     <>
       {/* basis-0 + oranlı flex: iki buton varken genişlik 3:2 bölünür, yazılar sıkışmaz */}
       {purchasable && <AddToCartMini product={product} className="min-w-0 flex-[3] basis-0 py-2" />}
@@ -127,7 +141,7 @@ export function ProductCard({
 
   return (
     <Link
-      href={`/registry/${product.slug.current}`}
+      href={href}
       className="product-file focus-bureau group relative flex flex-col border border-bureau-black bg-bureau-white no-underline"
     >
       {/* Başlık şeridi */}
@@ -195,6 +209,7 @@ export function ProductCard({
         )}
 
         <div className={`mt-auto flex items-baseline gap-1.5 border-t border-dashed border-bureau-rule ${compact ? 'mt-2 py-2' : 'mt-2.5 py-2.5'}`}>
+          {modelLink && !tr && <span className={`font-mono uppercase tracking-wider text-bureau-muted ${text}`}>From</span>}
           {pricing.discounted !== undefined && (
             <span className={`font-mono text-bureau-subtle line-through ${compact ? 'text-[11px]' : 'text-[12px]'}`}>
               {formatPrice(pricing.original, pricing.currency, intlLocale)}
@@ -207,6 +222,8 @@ export function ProductCard({
           >
             {formatPrice(pricing.discounted ?? pricing.original, pricing.currency, intlLocale)}
           </span>
+          {modelLink && tr && <span className={`font-mono uppercase tracking-wider text-bureau-muted ${text}`}>'den başlayan</span>}
+
         </div>
       </div>
 

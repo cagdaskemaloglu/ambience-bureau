@@ -62,8 +62,8 @@ function demoBulletins(drops: DemoDrop[]): Bulletin[] {
         {
           label: [{ locale: 'tr', value: 'Sınıflar' }, { locale: 'en', value: 'Classes' }],
           value: [
-            { locale: 'tr', value: 'Lambader, Avize, Aplik, Masa Lambası, Sarkıt' },
-            { locale: 'en', value: 'Floor, Chandelier, Sconce, Table, Pendant' },
+            { locale: 'tr', value: 'Lambader, Sarkıt, Aplik, Masa Lambası' },
+            { locale: 'en', value: 'Floor, Pendant, Sconce, Table' },
           ],
         },
         {
