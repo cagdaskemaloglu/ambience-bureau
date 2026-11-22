@@ -470,6 +470,9 @@ anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
     `loadPreset` modeli, preset'teki partId'leri en çok kapsayan model
     olarak bulur.
   - Parlayan parça: `lampPart.emitsLight` ("Işık yayar").
+  - Model Görselleri: `lampModel.images[]` (ilki seçim kartında; tümü
+    model seçilince panelde şerit + tam ekran görüntüleyici). Eski tek
+    `thumbnail` alanı sadece doluysa görünür, geriye dönük okunur.
   - Model parçalarında `slotType` ve `collections` zorunlu değil (Studio
     doğrulaması parçanın bir lampModel'de kullanılıp kullanılmadığına bakar).
   - Sorgular: `getLampModelsByCollection`; `getAllLampCollections`
@@ -481,6 +484,16 @@ anotasyonları için), `cameraFitRequestId` + action'lar (`setCollection`,
 - Local test: Sanity CDN model dosyaları CORS nedeniyle sadece
   `localhost:3000`'e veriliyor; konfigüratörü başka portta açarsanız
   modeller yüklenmez.
+
+### Parça renkleri: "Tüm renkler" varsayılanı
+- `lampPart.materialMode`: `all` (yeni parçaların varsayılanı) → Studio >
+  Materials'taki TÜM malzemeler, `excludedMaterials` hariç; yeni eklenen
+  malzeme otomatik gelir. `custom` → elle seçilen `materials[]`.
+- Modu boş ESKİ parçalar: `materials[]` doluysa `custom`, boşsa `all`.
+  Kural iki yerde aynı tutulmalı: GROQ `MATERIALS_ALL_COND`
+  (`queries.ts`) ve Studio `isAllMaterialsDoc` (`lampPart.ts`); ürün
+  preset'indeki malzeme filtresi (`product.ts`) de aynı koşulu kullanır.
+- Sıralama: malzemenin `sortOrder`'ı.
 
 ### Kombinasyon sayısı (`src/lib/combinatorics.ts`)
 Gövde katmanları SIRALI ve TEKRARLI kabul edilir:

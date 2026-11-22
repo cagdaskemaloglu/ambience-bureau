@@ -54,11 +54,22 @@ export const lampModelSchema = defineType({
     }),
 
     defineField({
+      name: 'images',
+      title: 'Model Görselleri',
+      description:
+        'İlki model seçim kartında gösterilir; tümü, model seçilince panelde küçük resimler olarak çıkar ve tıklanınca büyür. Sürükleyerek sıralayabilirsiniz.',
+      type: 'array',
+      of: [defineArrayMember({ type: 'image', options: { hotspot: true } })],
+      options: { layout: 'grid' },
+    }),
+    // Eski tek görsel alanı — sadece doluysa görünür (yenisi: Model Görselleri).
+    defineField({
       name: 'thumbnail',
-      title: 'Model Görseli',
-      description: 'Birden fazla model varsa model seçim ekranında gösterilir.',
+      title: 'Model Görseli (eski)',
+      description: 'Bu görseli "Model Görselleri"ne taşıyıp buradan silebilirsiniz.',
       type: 'image',
       options: { hotspot: true },
+      hidden: ({ document }) => !document?.thumbnail,
     }),
 
     defineField({
@@ -70,12 +81,12 @@ export const lampModelSchema = defineType({
   ],
 
   preview: {
-    select: { name: 'name', key: 'key.current', media: 'thumbnail', count: 'parts.length' },
-    prepare({ name, key, media }) {
+    select: { name: 'name', key: 'key.current', media: 'images.0', legacy: 'thumbnail' },
+    prepare({ name, key, media, legacy }) {
       const nameStr = Array.isArray(name)
         ? (name.find((n: { locale: string }) => n.locale === 'tr')?.value ?? name[0]?.value ?? '—')
         : '—'
-      return { title: nameStr, subtitle: key ?? '', media }
+      return { title: nameStr, subtitle: key ?? '', media: media ?? legacy }
     },
   },
 })

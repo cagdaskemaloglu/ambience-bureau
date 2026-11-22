@@ -428,7 +428,10 @@ export const productSchema = defineType({
                   const partId = (parent as { part?: { _ref?: string } })?.part?._ref
                   if (!partId) return { filter: '' }
                   return {
-                    filter: '_id in *[_type == "lampPart" && _id == $partId][0].materials[]._ref',
+                    // Parça "tüm renkler" modundaysa hariç tutulanlar dışındaki
+                    // tüm malzemeler, değilse parçada seçilenler (bkz. queries.ts MATERIALS_ALL_COND).
+                    filter:
+                      'select(count(*[_type == "lampPart" && _id == $partId && (materialMode == "all" || (!defined(materialMode) && count(coalesce(materials, [])) == 0))]) > 0 => !(_id in coalesce(*[_type == "lampPart" && _id == $partId][0].excludedMaterials[]._ref, [])), _id in *[_type == "lampPart" && _id == $partId][0].materials[]._ref)',
                     params: { partId },
                   }
                 },

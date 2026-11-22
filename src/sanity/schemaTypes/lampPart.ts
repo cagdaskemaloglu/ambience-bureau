@@ -13,6 +13,15 @@ async function isUsedInModel(context: { document?: { _id?: string } | null; getC
   return typeof n === 'number' && n > 0
 }
 
+/** Parça "tüm renkler" modunda mı? (GROQ'taki MATERIALS_ALL_COND ile aynı kural) */
+function isAllMaterialsDoc(raw?: object | null) {
+  const doc = raw as { materialMode?: unknown; materials?: unknown } | null | undefined
+  if (!doc) return true
+  if (doc.materialMode === 'all') return true
+  if (doc.materialMode === 'custom') return false
+  return !Array.isArray(doc.materials) || doc.materials.length === 0
+}
+
 export const lampPartSchema = defineType({
   name: 'lampPart',
   title: 'Lamp Part (Configurator)',
@@ -128,9 +137,35 @@ export const lampPartSchema = defineType({
     }),
 
     // ── Malzemeler ────────────────────────────────────────
+    // Varsayılan: Studio > Materials'taki TÜM renkler (yeni eklenen renk de
+    // otomatik gelir); istenmeyenler "Hariç tutulan renkler"e eklenir.
+    // "Sadece seçilenler" eski davranış: liste elle tutulur. Modu boş olan
+    // ESKİ parçalar: listesi doluysa "seçilenler", boşsa "tüm renkler".
+    defineField({
+      name: 'materialMode',
+      title: 'Renkler',
+      type: 'string',
+      options: {
+        list: [
+          { title: 'Tüm renkler (yeni renkler otomatik eklenir)', value: 'all' },
+          { title: 'Sadece seçilenler', value: 'custom' },
+        ],
+        layout: 'radio',
+      },
+      initialValue: 'all',
+      hidden: ({ document }) => Boolean(document?.isFixed),
+    }),
+    defineField({
+      name: 'excludedMaterials',
+      title: 'Hariç tutulan renkler',
+      description: 'Bu parçada SUNULMAYACAK renkler. Boşsa tüm renkler sunulur.',
+      type: 'array',
+      of: [defineArrayMember({ type: 'reference', to: [{ type: 'material' }] })],
+      hidden: ({ document }) => Boolean(document?.isFixed) || !isAllMaterialsDoc(document),
+    }),
     defineField({
       name: 'materials',
-      title: 'Available Materials',
+      title: 'Available Materials (sadece seçilenler)',
       description: 'Studio > Materials altında bir kere tanımlanan malzemelerden bu parça için geçerli olanları seçin.',
       type: 'array',
       of: [
@@ -139,11 +174,11 @@ export const lampPartSchema = defineType({
           to: [{ type: 'material' }],
         }),
       ],
-      hidden: ({ document }) => Boolean(document?.isFixed),
+      hidden: ({ document }) => Boolean(document?.isFixed) || isAllMaterialsDoc(document),
       validation: (R) =>
         R.custom((value, context) => {
-          const fixed = (context.document as { isFixed?: boolean } | undefined)?.isFixed
-          if (fixed) return true
+          const doc = context.document as { isFixed?: boolean; materialMode?: string } | undefined
+          if (doc?.isFixed || isAllMaterialsDoc(doc)) return true
           return Array.isArray(value) && value.length > 0 ? true : 'En az bir malzeme seçin.'
         }),
     }),

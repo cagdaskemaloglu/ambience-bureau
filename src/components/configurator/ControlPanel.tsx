@@ -96,13 +96,16 @@ export function ControlPanel() {
           onClick={toggleIot}
           role="switch"
           aria-checked={iotEnabled}
-          className={`relative h-6 w-11 flex-shrink-0 rounded-full transition-colors ${
+          aria-label={tr ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
+          // p-0 + sabit sol konum: global buton stilleri knob'u kaydırmasın
+          // (açıkken yuvarlak pencereden taşıyordu).
+          className={`relative block h-6 w-11 flex-shrink-0 overflow-hidden rounded-full p-0 transition-colors ${
             iotEnabled ? 'bg-bureau-amber' : 'bg-bureau-rule'
           }`}
         >
           <span
-            className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
-              iotEnabled ? 'translate-x-5' : 'translate-x-0.5'
+            className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+              iotEnabled ? 'translate-x-5' : 'translate-x-0'
             }`}
           />
         </button>

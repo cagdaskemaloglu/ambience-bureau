@@ -225,6 +225,8 @@ export interface LampModelDef {
   modelId: string
   name: LocalizedString[]
   thumbnail?: string | null
+  /** Model Görselleri (ilki kartta). */
+  images?: string[] | null
   parts: LampPart[]
 }
 

@@ -294,7 +294,7 @@ export async function getAllDropsWithProducts() {
     const rows = await sanityClient.fetch<Array<{ slotType: string; materialCount: number }>>(
       `*[_type == "lampPart" && isFixed != true && $collectionKey in collections[]->key.current]{
         slotType,
-        "materialCount": count(materials)
+        "materialCount": ${MATERIALS_COUNT}
       }`,
       { collectionKey }
     )
@@ -313,7 +313,7 @@ export async function getAllDropsWithProducts() {
       // malzeme sayılarının ÇARPIMI; modeller arasında TOPLAM.
       const models = await sanityClient.fetch<Array<{ counts: Array<{ c: number | null }> | null }>>(
         `*[_type == "lampModel" && active != false && collection->key.current == $collectionKey]{
-          "counts": parts[]->[isFixed != true]{ "c": count(materials) }
+          "counts": parts[]->[isFixed != true]{ "c": ${MATERIALS_COUNT} }
         }`,
         { collectionKey }
       )
@@ -438,6 +438,26 @@ export async function getAllCollections() {
 
 // ── Konfigüratör Sorguları ────────────────────────────────
 
+// Parçanın renkleri: "tüm renkler" modunda Studio'daki TÜM malzemeler
+// (hariç tutulanlar dışında, yeni eklenenler otomatik), aksi halde elle
+// seçilen liste. Modu boş eski parçalar: listesi boşsa "tüm renkler".
+// (Studio tarafındaki karşılığı: lampPart.ts → isAllMaterialsDoc)
+export const MATERIALS_ALL_COND = `(materialMode == "all" || (!defined(materialMode) && count(coalesce(materials, [])) == 0))`
+const MATERIALS_COUNT = `select(${MATERIALS_ALL_COND} => count(*[_type == "material" && !(_id in coalesce(^.excludedMaterials[]._ref, []))]), count(materials))`
+
+const MATERIAL_PROJECTION = `
+  "materialId": materialId.current,
+  color,
+  roughness,
+  metalness,
+  priceModifierTRY,
+  priceModifierUSD,
+  isTranslucent,
+  opacity,
+  ${LOCALIZED_FIELD('label')},
+  "thumbnail": thumbnail.asset->url
+`
+
 // Konfigüratör parçasının ortak projeksiyonu (slot parçaları ve
 // Montajlı Model parçaları aynı alanları kullanır).
 const LAMP_PART_PROJECTION = `
@@ -456,18 +476,10 @@ const LAMP_PART_PROJECTION = `
   offsetMm,
   rotationDeg,
   emitsLight,
-  materials[]->{
-    "materialId": materialId.current,
-    color,
-    roughness,
-    metalness,
-    priceModifierTRY,
-    priceModifierUSD,
-    isTranslucent,
-    opacity,
-    ${LOCALIZED_FIELD('label')},
-    "thumbnail": thumbnail.asset->url
-  }
+  "materials": select(
+    ${MATERIALS_ALL_COND} => *[_type == "material" && !(_id in coalesce(^.excludedMaterials[]._ref, []))] | order(sortOrder asc) {${MATERIAL_PROJECTION}},
+    materials[]->{${MATERIAL_PROJECTION}}
+  )
 `
 
 export async function getLampPartsByCollection(collectionKey: string) {
@@ -487,7 +499,8 @@ export async function getLampModelsByCollection(collectionKey: string): Promise<
         _id,
         "modelId": key.current,
         ${LOCALIZED_FIELD('name')},
-        "thumbnail": thumbnail.asset->url,
+        "images": images[].asset->url,
+        "thumbnail": coalesce(images[0].asset->url, thumbnail.asset->url),
         "parts": parts[]->{${LAMP_PART_PROJECTION}}
       }`,
     { collectionKey },

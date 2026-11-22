@@ -202,7 +202,7 @@ export function ConfigSummary({
             {!compact && (
               <button
                 onClick={toggleIot}
-                className={`relative h-4 w-7 flex-shrink-0 border transition-colors ${
+                className={`relative block h-4 w-7 flex-shrink-0 overflow-hidden border p-0 transition-colors ${
                   iotEnabled ? 'border-bureau-amber bg-bureau-amber' : 'border-bureau-rule bg-bureau-white'
                 }`}
                 aria-pressed={iotEnabled}
@@ -210,10 +210,10 @@ export function ConfigSummary({
                 title={locale === 'tr' ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
               >
                 <span
-                  className={`absolute top-0.5 h-2.5 w-2.5 border transition-transform ${
+                  className={`absolute left-0.5 top-0.5 h-2.5 w-2.5 border transition-transform ${
                     iotEnabled
-                      ? 'translate-x-3.5 border-white bg-white'
-                      : 'translate-x-0.5 border-bureau-rule bg-bureau-subtle'
+                      ? 'translate-x-3 border-white bg-white'
+                      : 'translate-x-0 border-bureau-rule bg-bureau-subtle'
                   }`}
                 />
               </button>

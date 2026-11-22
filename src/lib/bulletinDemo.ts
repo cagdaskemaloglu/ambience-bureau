@@ -266,6 +266,8 @@ export function buildDemoCollections(source: LampPart[]): DemoCollection[] {
       _id: 'demo-s03',
       modelId: 'demo-s03',
       name: name('S-03 · Üç parça', 'S-03 · Three pieces'),
+      // Galeri denemesi için yerel örnek görseller (gerçekte: Studio > Model Görselleri)
+      images: ['/app-showcase/tr/feature-groups.png', '/app-showcase/tr/feature-stats.png', '/app-showcase/tr/onboarding-1.png'],
       parts: [
         cableFor('demo-s03-kablo'),
         piece(b1, 'demo-s03-halka', 'Üst halka', 'Top ring', 180),
