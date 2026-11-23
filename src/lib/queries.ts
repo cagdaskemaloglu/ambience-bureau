@@ -400,10 +400,11 @@ export async function getModelStandingCards(): Promise<ProductCard[]> {
       "stockQuantity": null,
       "isConfigurable": false,
       ${LOCALIZED_FIELD('name')},
-      "image": coalesce(images[0], thumbnail){
+      // Dosyası yüklenmemiş görsel satırları atlanır (yoksa kart çöker).
+      "image": coalesce(images[defined(asset)][0], select(defined(thumbnail.asset) => thumbnail)){
         ${IMAGE_FRAGMENT}
       },
-      "imageUrl": coalesce(images[0].asset->url, thumbnail.asset->url),
+      "imageUrl": coalesce(images[defined(asset)][0].asset->url, thumbnail.asset->url),
       "collection": collection->{ key, ${LOCALIZED_FIELD('name')} },
       "modelLink": { "collectionKey": collection->key.current, "modelId": key.current },
       // Varsayılan tasarım: konfigüratörle AYNI kural — her renkli parçanın
@@ -590,8 +591,8 @@ export async function getLampModelsByCollection(collectionKey: string): Promise<
         _id,
         "modelId": key.current,
         ${LOCALIZED_FIELD('name')},
-        "images": images[].asset->url,
-        "thumbnail": coalesce(images[0].asset->url, thumbnail.asset->url),
+        "images": images[defined(asset)].asset->url,
+        "thumbnail": coalesce(images[defined(asset)][0].asset->url, thumbnail.asset->url),
         "parts": parts[]->{${LAMP_PART_PROJECTION}}
       }`,
     { collectionKey },

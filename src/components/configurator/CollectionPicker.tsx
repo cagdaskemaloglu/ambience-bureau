@@ -38,7 +38,7 @@ export function CollectionPicker({
           >
             {/* Sol: önizleme görseli */}
             <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center overflow-hidden bg-bureau-surface">
-              {collection.coverImage ? (
+              {collection.coverImage?.asset ? (
                 <Image
                   src={urlFor(collection.coverImage).width(128).height(128).fit('max').url()}
                   alt={name ?? ''}

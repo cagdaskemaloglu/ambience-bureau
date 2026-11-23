@@ -219,7 +219,8 @@ export function ProductCardMedia({
           className="absolute inset-0 flex items-center justify-center border border-bureau-rule bg-bureau-surface"
           style={{ backfaceVisibility: 'hidden' }}
         >
-          {image ? (
+          {/* asset yoksa (Studio'da görsel satırı eklenip dosya yüklenmemiş) yer tutucu */}
+          {image?.asset ? (
             <Image
               src={urlFor(image).width(600).height(800).fit('max').url()}
               alt={alt}

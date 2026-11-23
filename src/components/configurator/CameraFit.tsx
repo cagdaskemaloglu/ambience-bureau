@@ -17,6 +17,7 @@ const AUTO_FIT_PART_THRESHOLD = 4
 const VERTICAL_FOV_DEG = 40
 // Modelin üstünde/altında rahat bir boşluk payı bıraksın diye çarpan.
 const FIT_MARGIN = 1.35
+const MODEL_FIT_MARGIN = 1.8
 
 // Orijinal sabit izometrik kamera açısı (position = d*0.6, d*0.45, d*0.6)
 // azimuth=45° / elevation≈27.94°'ye karşılık gelir. Bunu azimuth'u
@@ -32,6 +33,32 @@ export function distanceForHeight(totalHeight: number): number {
   const halfFovRad = (VERTICAL_FOV_DEG * Math.PI) / 180 / 2
   const raw = halfHeight / Math.tan(halfFovRad)
   return Math.max(DEFAULT_DISTANCE, raw)
+}
+
+/**
+ * Montajlı model için kadraj: modelin TÜM boyutlarını (en/boy/derinlik)
+ * kapsayan küre ekrana sığacak mesafe + modelin gerçek dikey merkezi.
+ * Sadece yüksekliğe bakmak geniş/basık modellerde (abajur, masa lambası)
+ * kamerayı fazla yaklaştırıyordu. Dar (dikey) ekranlarda yatay görüş açısı
+ * daraldığı için o da hesaba katılır.
+ *  - Asılı modelde store'daki yükseklik h*1.6'dır (bkz. LampModel): model
+ *    tepesi 1.6h'de, merkezi 1.1h'de durur.
+ */
+export function fitAssembledModel(
+  fitHeight: number,
+  width: number,
+  depth: number,
+  hanging: boolean,
+  aspect: number
+): { distance: number; targetY: number } {
+  if (fitHeight <= 0) return { distance: DEFAULT_DISTANCE, targetY: DEFAULT_TARGET_Y }
+  const h = hanging ? fitHeight / 1.6 : fitHeight
+  const radius = 0.5 * Math.sqrt(h * h + width * width + depth * depth)
+  const vHalf = (VERTICAL_FOV_DEG * Math.PI) / 180 / 2
+  const hHalf = Math.atan(Math.tan(vHalf) * Math.max(0.2, aspect))
+  // Montajlı modellerde daha geniş pay: model kadrajın ~yarısını kaplasın.
+  const distance = (radius * MODEL_FIT_MARGIN) / Math.sin(Math.min(vHalf, hHalf))
+  return { distance: Math.max(120, distance), targetY: hanging ? h * 1.1 : h / 2 }
 }
 
 /**
@@ -79,7 +106,11 @@ export function CameraFit() {
   const cameraFitRequestId = useConfiguratorStore((s) => s.cameraFitRequestId)
   const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
   const modelId = useConfiguratorStore((s) => s.modelId)
-  const { camera, controls } = useThree()
+  const stackWidth = useConfiguratorStore((s) => s.stackWidth)
+  const stackDepth = useConfiguratorStore((s) => s.stackDepth)
+  const hanging = useConfiguratorStore((s) => s.hangFromCeiling)
+  const { camera, controls, size } = useThree()
+  const aspect = size.height > 0 ? size.width / size.height : 1
 
   const lastCollectionKey = useRef<string | null>(null)
   const lastAutoFitPartCount = useRef<number>(0)
@@ -115,20 +146,30 @@ export function CameraFit() {
     if (cameraFitRequestId === lastFitRequestId.current) return
     lastFitRequestId.current = cameraFitRequestId
 
+    if (modelMode) {
+      const fit = fitAssembledModel(stackTotalHeight, stackWidth, stackDepth, hanging, aspect)
+      // @ts-expect-error - drei'nin OrbitControls tipi eksik olabilir
+      positionCamera(camera, controls, fit.distance, fit.targetY)
+      return
+    }
     const distance = distanceForHeight(stackTotalHeight)
     const targetY = stackTotalHeight > 0 ? stackTotalHeight / 2 : DEFAULT_TARGET_Y
     // @ts-expect-error - drei'nin OrbitControls tipi eksik olabilir
     positionCamera(camera, controls, distance, targetY)
-  }, [cameraFitRequestId, stackTotalHeight, camera, controls])
+  }, [cameraFitRequestId, stackTotalHeight, stackWidth, stackDepth, hanging, aspect, modelMode, camera, controls])
 
   // 4) Montajlı model: model seçilince/değişince ve geometri ölçülünce
   // modeli bütün olarak sığdır (parça eklenmediği için 2. kural tetiklenmez;
   // asılı modeller de varsayılan kadraja sığmaz).
   useEffect(() => {
     if (!modelMode || !modelId || stackTotalHeight <= 0) return
+    const fit = fitAssembledModel(stackTotalHeight, stackWidth, stackDepth, hanging, aspect)
     // @ts-expect-error - drei'nin OrbitControls tipi eksik olabilir
-    positionCamera(camera, controls, distanceForHeight(stackTotalHeight), stackTotalHeight / 2)
-  }, [modelMode, modelId, stackTotalHeight, camera, controls])
+    positionCamera(camera, controls, fit.distance, fit.targetY)
+    // aspect bilerek bağımlılık değil: pencere boyutu değişince kullanıcının
+    // çevirdiği kamera sıfırlanmasın ("Sığdır" butonu yeniden hesaplar).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modelMode, modelId, stackTotalHeight, stackWidth, stackDepth, hanging, camera, controls])
 
   return null
 }
