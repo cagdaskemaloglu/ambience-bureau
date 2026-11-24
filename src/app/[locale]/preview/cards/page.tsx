@@ -38,19 +38,19 @@ export default async function CardPreviewPage({ params }: { params: Promise<{ lo
     { label: tr ? 'Hizmet dışı' : 'Decommissioned', product: { ...pick(3), status: 'decommissioned' } },
     {
       label: tr ? 'Daimi Envanter · stokta' : 'Standing · in stock',
-      product: { ...pick(4), saleMode: 'standing', stockQuantity: 24, category: 'floor', registryNo: 'ENV-F-001', isConfigurable: false },
+      product: { ...pick(4), saleMode: 'standing', stockQuantity: 24, category: 'floor', registryNo: 'ENV-S-001', isConfigurable: false },
     },
     {
       label: tr ? 'Daimi Envanter · son adetler' : 'Standing · low stock',
-      product: { ...pick(5), saleMode: 'standing', stockQuantity: 2, category: 'desk', registryNo: 'ENV-D-004', isConfigurable: false },
+      product: { ...pick(5), saleMode: 'standing', stockQuantity: 2, category: 'desk', registryNo: 'ENV-F-004', isConfigurable: false },
     },
     {
       label: tr ? 'Daimi Envanter · siparişe üretim' : 'Standing · made to order',
-      product: { ...pick(6), saleMode: 'standing', stockQuantity: null, category: 'wall', registryNo: 'ENV-W-002', isConfigurable: false },
+      product: { ...pick(6), saleMode: 'standing', stockQuantity: null, category: 'wall', registryNo: 'ENV-D-002', isConfigurable: false },
     },
     {
       label: tr ? 'Daimi Envanter · tükendi' : 'Standing · sold out',
-      product: { ...pick(7), saleMode: 'standing', stockQuantity: 0, category: 'wall', registryNo: 'ENV-W-003', isConfigurable: false },
+      product: { ...pick(7), saleMode: 'standing', stockQuantity: 0, category: 'wall', registryNo: 'ENV-D-003', isConfigurable: false },
     },
   ]
 

@@ -40,17 +40,20 @@ Bütün ürünler iki rejimden birindedir (`product.saleMode`):
 - Dil: "drop", "tahsis", "kalan adet", "sicile işlendi".
 
 ### 2. Daimi Envanter (`standing`) — sürekli satış
-- Sürekli satışta, stoklu. Kimlik bir **envanter kodu**: `ENV-F-012`
+- Sürekli satışta, stoklu. Kimlik bir **envanter kodu**: `ENV-S-012`
   (`registryNo` alanı bu ürünlerde stok kodu olarak kullanılır).
 - **Sınıflar** (`product.category`):
 
   | Sınıf | Kod | TR | EN |
   |---|---|---|---|
-  | F | `floor` | Lambader | Floor Lamp |
-  | W | `wall` | Aplik | Wall Sconce |
-  | D | `desk` | Masa Lambası | Table Lamp |
-  | P | `pendant` | Sarkıt | Pendant |
-  | S | `strip` | Şerit | Strip |
+  | S | `floor` | Lambader | Floor Lamp |
+  | D | `wall` | Aplik | Wall Sconce |
+  | F | `desk` | Masa Lambası | Table Lamp |
+  | G | `pendant` | Sarkıt | Pendant |
+  | H | `strip` | Şerit | Strip |
+
+  Harfler sol el ana sırasıdır (A = Drops): anasayfa dizininde klavye
+  kısayolu olarak da çalışır.
 
 - Stok: `stockQuantity` boşsa "siparişe üretim" (sınırsız), `0` ise
   "stok tükendi", >0 ise adet. Ödeme onayında stok düşer.
@@ -64,15 +67,17 @@ Ziyaretçi TÜM ürünleri anasayfadan ayrılmadan keşfedebilmeli.
    açıklama. Sağda kaydırmalı **Büro Bülteni** paneli.
    (Alternatif: 3D görüntüleyici görünümlü "sahne" anasayfası
    `deneme/sahne-hero` branch'inde duruyor.)
-2. **Yapışkan bölüm çubuğu** (§1 · §2 · §3 · §4 · §5): masthead'in altında
-   durur, kaydırınca üste yapışır; ekrandaki bölüm amber çizgiyle işaretli.
-3. **§1 Sınırlı Tahsis** — drop satırları.
-4. **§2 Daimi Envanter** — sınıf indeksi (dosya dolabı). Bir sınıfa
-   tıklamak sayfadan ayrılmaz: §3'e kayar ve onu o sınıfa süzer.
-5. **§3 Tüm Kayıtlar** — bütün ürünler tek ızgarada; rejim (Tümü / Sınırlı /
+2. **Tahsis dizini** (`HomeIndex.tsx`, bölüm başlığı YOK): tek liste —
+   `A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt`. Satırlar
+   KAPALI başlar; tıklamak ya da harfe klavyeden basmak satırı açar/kapatır
+   (Drops → drop satırları, sınıf → ürün kartları). Sağdaki yapışkan dosya
+   kartı üzerine gelinen satırı önizler (sınıfta ilk 4 görsel, Drops'ta
+   canlı drop). `#drop-NNN` bağlantıları Drops'u açıp o drop'a kaydırır.
+3. **§1 Tüm Kayıtlar** — bütün ürünler tek ızgarada; rejim (Tümü / Sınırlı /
    Daimi), sınıf çipleri ve fiyat sıralaması sayfa içinde, 12'şer kart.
-6. **§4 Özel Tahsis** — Custom Registry daveti.
-7. **§5 Kontrol Protokolü** — mobil uygulama.
+4. **§2 Özel Tahsis** — Custom Registry daveti.
+5. **§3 Kontrol Protokolü** — mobil uygulama.
+   Header'daki bölüm linkleri: §1 Dizin, §2 Kayıtlar.
 
 ## Büro Bülteni (duyuru paneli)
 
@@ -89,7 +94,7 @@ Ziyaretçi TÜM ürünleri anasayfadan ayrılmadan keşfedebilmeli.
 ## Ürün kartı = dosya kartı
 
 - Başlık şeridi kimliği taşır: `DROP-001 · 006/050` ya da
-  `SINIF F · ENV-F-012`; sağda küçük durum yazısı.
+  `SINIF S · ENV-S-012`; sağda küçük durum yazısı.
 - **Damga** sadece önemli durumlarda basılır: `TAHSİS EDİLDİ` (owned, amber),
   `HİZMET DIŞI` / `TÜKENDİ` (kırmızı), `SON N ADET` (amber, stok ≤ 3).
   Sıradan "sertifikalı" ürün sessiz kalır.

@@ -165,10 +165,10 @@ export function withDemoStanding(real: ProductCard[], source: ProductCard[]): Pr
     ],
   })
   return [
-    make(0, 'pendant', 'ENV-P-001', 'Sarkıt P-01', 'Pendant P-01', 3890, 12),
-    make(1, 'pendant', 'ENV-P-002', 'Sarkıt P-02', 'Pendant P-02', 4290, 2),
-    make(2, 'desk', 'ENV-D-001', 'Masa Lambası D-01', 'Table Lamp D-01', 2490, null),
-    make(3, 'desk', 'ENV-D-002', 'Masa Lambası D-02', 'Table Lamp D-02', 2790, 0),
+    make(0, 'pendant', 'ENV-G-001', 'Sarkıt P-01', 'Pendant P-01', 3890, 12),
+    make(1, 'pendant', 'ENV-G-002', 'Sarkıt P-02', 'Pendant P-02', 4290, 2),
+    make(2, 'desk', 'ENV-F-001', 'Masa Lambası D-01', 'Table Lamp D-01', 2490, null),
+    make(3, 'desk', 'ENV-F-002', 'Masa Lambası D-02', 'Table Lamp D-02', 2790, 0),
   ]
 }
 

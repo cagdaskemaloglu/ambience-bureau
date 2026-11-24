@@ -19,9 +19,9 @@ import type { Collection } from '@/types'
 // anasayfanın ilgili bölümüne gider. "Envanter" linkinin yerini §3 aldı.
 const HOME_SECTIONS = [
   // short*: 1800px altındaki masaüstü genişliklerinde header taşmasın diye.
-  { id: 'sinirli-tahsis', n: '1', tr: 'Sınırlı Tahsis', en: 'Limited Allocation', shortTr: 'Sınırlı', shortEn: 'Limited' },
-  { id: 'daimi-envanter', n: '2', tr: 'Daimi Envanter', en: 'Standing Inventory', shortTr: 'Daimi', shortEn: 'Standing' },
-  { id: 'tum-kayitlar', n: '3', tr: 'Tüm Kayıtlar', en: 'Full Register', shortTr: 'Kayıtlar', shortEn: 'Register' },
+  // Tahsis dizini: Drops + sınıflar (A/S/D/F/G) — bkz. components/home/HomeIndex.tsx
+  { id: 'tahsis-dizini', n: '1', tr: 'Tahsis Dizini', en: 'Allocation Index', shortTr: 'Dizin', shortEn: 'Index' },
+  { id: 'tum-kayitlar', n: '2', tr: 'Tüm Kayıtlar', en: 'Full Register', shortTr: 'Kayıtlar', shortEn: 'Register' },
 ] as const
 
 const NAV_ITEMS = [

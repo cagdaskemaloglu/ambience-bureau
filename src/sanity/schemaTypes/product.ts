@@ -25,7 +25,7 @@ export const productSchema = defineType({
       name: 'saleMode',
       title: 'Satış Rejimi',
       description:
-        'Sınırlı Tahsis: drop\'a bağlı, numaralı adet (REG. NO. 006/050). Daimi Envanter: sürekli satışta, stoklu ürün (Registry Number alanına envanter kodu yazın, örn. ENV-F-012).',
+        'Sınırlı Tahsis: drop\'a bağlı, numaralı adet (REG. NO. 006/050). Daimi Envanter: sürekli satışta, stoklu ürün (Registry Number alanına envanter kodu yazın, örn. ENV-S-012).',
       type: 'string',
       options: {
         list: [
@@ -51,7 +51,7 @@ export const productSchema = defineType({
       name: 'registryNo',
       title: 'Registry Number / Envanter Kodu',
       description:
-        'Sınırlı Tahsis: 001/050 gibi seri no / toplam adet. Daimi Envanter: ENV-F-012 gibi envanter kodu (F=Lambader, W=Aplik, D=Masa Lambası, P=Sarkıt, S=Şerit). Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
+        'Sınırlı Tahsis: 001/050 gibi seri no / toplam adet. Daimi Envanter: ENV-S-012 gibi envanter kodu (S=Lambader, D=Aplik, F=Masa Lambası, G=Sarkıt, H=Şerit). Hâlâ ELLE girilir; aşağıdaki Drop\'u seçtiğinizde o Drop için "şu an sırada ne var" diye bir ipucu belirir. (Satın alma sonrası kod tarafından otomatik oluşturulan ürünlerde bu alan zaten programatik dolduruluyor.)',
       type: 'string',
       validation: (R) => R.required(),
       components: { field: RegistryNoHint },

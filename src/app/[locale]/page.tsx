@@ -8,7 +8,7 @@ import { UpcomingDropRow } from '@/components/registry/UpcomingDropRow'
 import { HomeMasthead, buildLiveRows, type BulletinData } from '@/components/home/HomeMasthead'
 import { BulletinPanel } from '@/components/home/BulletinPanel'
 import { SectionHeading } from '@/components/home/SectionHeading'
-import { StandingInventory } from '@/components/home/StandingInventory'
+import { HomeIndex, HOME_INDEX_ID } from '@/components/home/HomeIndex'
 import { CustomAllocationBand, ControlProtocolBand } from '@/components/home/HomeBands'
 import { RegisterSection } from '@/components/home/RegisterSection'
 import { REGISTER_SECTION_ID } from '@/lib/registerFilter'
@@ -90,6 +90,7 @@ export default async function HomePage({ params }: Props) {
   )
 
   const live = visibleDrops.find((d) => d.dropState === 'live')
+  const featureDrop = live ?? visibleDrops[0] ?? null
   const next = visibleDrops.find((d) => d.dropState === 'upcoming' && d.scheduledAt)
   const bulletin: BulletinData = {
     liveDrop: live
@@ -113,55 +114,7 @@ export default async function HomePage({ params }: Props) {
     <div className="border-t border-bureau-line-header dark:border-black">
       <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} />
 
-      {/* §1 Sınırlı Tahsis */}
-      <section aria-label={tr ? 'Sınırlı Tahsis' : 'Limited Allocation'}>
-        <SectionHeading
-          id="sinirli-tahsis"
-          number="1"
-          title={tr ? 'Sınırlı Tahsis' : 'Limited Allocation'}
-          lede={
-            tr
-              ? 'Numaralı ve sonlu drop’lar. Her adet bir seri numarası taşır; drop kapandığında aynı nesne bir daha üretilmez.'
-              : 'Numbered, finite drops. Every unit carries a serial number; once a drop closes, the same object is never made again.'
-          }
-          meta={
-            tr
-              ? `${visibleDrops.length} drop kayıtlı`
-              : `${visibleDrops.length} ${visibleDrops.length === 1 ? 'drop' : 'drops'} on record`
-          }
-        />
-        {visibleDrops.length === 0 ? (
-          <div className="flex h-40 items-center justify-center">
-            <p className="font-mono text-[12px] uppercase tracking-wide text-bureau-muted">{t('noDrops')}</p>
-          </div>
-        ) : (
-          visibleDrops.map((drop, i) => {
-            const prevDrop = i > 0 ? visibleDrops[i - 1] : null
-            const nextDrop = i < visibleDrops.length - 1 ? visibleDrops[i + 1] : null
-            if (drop.dropState === 'upcoming' && drop.scheduledAt) {
-              return (
-                <UpcomingDropRow
-                  key={drop._id}
-                  drop={{
-                    _id: drop._id,
-                    dropNo: drop.dropNo,
-                    name: drop.name,
-                    scheduledAt: drop.scheduledAt,
-                    plannedQuantity: drop.plannedQuantity,
-                    totalCombinations: drop.totalCombinations,
-                  }}
-                  index={i}
-                  prevDrop={prevDrop}
-                  nextDrop={nextDrop}
-                />
-              )
-            }
-            return <DropRow key={drop._id} drop={drop} index={i} prevDrop={prevDrop} nextDrop={nextDrop} />
-          })
-        )}
-      </section>
-
-      {/* Telefonda Büro Bülteni burada (masaüstünde masthead'de) — ürünler ilk ekrana yaklaşsın. */}
+      {/* Telefonda Büro Bülteni burada (masaüstünde masthead'de). */}
       <div className="border-b border-bureau-rule px-5 py-6 md:hidden">
         <BulletinPanel
           locale={locale}
@@ -171,35 +124,69 @@ export default async function HomePage({ params }: Props) {
         />
       </div>
 
-      {/* §2 Daimi Envanter */}
-      <section aria-label={tr ? 'Daimi Envanter' : 'Standing Inventory'}>
-        <SectionHeading
-          id="daimi-envanter"
-          number="2"
-          title={tr ? 'Daimi Envanter' : 'Standing Inventory'}
-          lede={
-            tr
-              ? 'Sürekli satıştaki aydınlatma nesneleri, sınıflarına göre dosyalanmıştır: lambader, sarkıt, aplik ve masa lambası.'
-              : 'Lighting objects that are always available, filed by class: floor lamps, pendants, wall sconces and table lamps.'
-          }
-          meta={
-            standingProducts.length > 0
-              ? tr
-                ? `${standingProducts.length} kayıt`
-                : `${standingProducts.length} records`
-              : tr
-                ? 'Kayıt açılıyor'
-                : 'Registration opening'
+      {/* Tahsis dizini: A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt
+          (bölüm başlığı yok; satırlar kapalı başlar, harfler klavye kısayolu). */}
+      <section id={HOME_INDEX_ID} aria-label={tr ? 'Tahsis dizini' : 'Allocation index'} className="scroll-mt-2">
+        {/* Eski bağlantılar (#daimi-envanter) için takma ad */}
+        <span id="daimi-envanter" aria-hidden="true" />
+        <HomeIndex
+          products={standingProducts}
+          locale={locale}
+          drops={{
+            count: visibleDrops.length,
+            feature: featureDrop
+              ? {
+                  dropNo: featureDrop.dropNo,
+                  name: getLocalizedValue(featureDrop.name, locale, '') ?? '',
+                  image: featureDrop.products.find((p) => p.image?.asset?.url)?.image ?? null,
+                  planned: typeof featureDrop.plannedQuantity === 'number' ? featureDrop.plannedQuantity : null,
+                  remaining:
+                    typeof featureDrop.plannedQuantity === 'number'
+                      ? Math.max(0, featureDrop.plannedQuantity - featureDrop.soldCount)
+                      : null,
+                  live: featureDrop.dropState === 'live',
+                }
+              : null,
+          }}
+          dropsContent={
+            visibleDrops.length === 0 ? (
+              <div className="flex h-40 items-center justify-center">
+                <p className="font-mono text-[12px] uppercase tracking-wide text-bureau-muted">{t('noDrops')}</p>
+              </div>
+            ) : (
+              visibleDrops.map((drop, i) => {
+                const prevDrop = i > 0 ? visibleDrops[i - 1] : null
+                const nextDrop = i < visibleDrops.length - 1 ? visibleDrops[i + 1] : null
+                if (drop.dropState === 'upcoming' && drop.scheduledAt) {
+                  return (
+                    <UpcomingDropRow
+                      key={drop._id}
+                      drop={{
+                        _id: drop._id,
+                        dropNo: drop.dropNo,
+                        name: drop.name,
+                        scheduledAt: drop.scheduledAt,
+                        plannedQuantity: drop.plannedQuantity,
+                        totalCombinations: drop.totalCombinations,
+                      }}
+                      index={i}
+                      prevDrop={prevDrop}
+                      nextDrop={nextDrop}
+                    />
+                  )
+                }
+                return <DropRow key={drop._id} drop={drop} index={i} prevDrop={prevDrop} nextDrop={nextDrop} />
+              })
+            )
           }
         />
-        <StandingInventory products={standingProducts} locale={locale} />
       </section>
 
-      {/* §3 Tüm Kayıtlar — tüm ürünler, sayfadan ayrılmadan */}
+      {/* §1 Tüm Kayıtlar — tüm ürünler, sayfadan ayrılmadan */}
       <section aria-label={tr ? 'Tüm Kayıtlar' : 'Full Register'}>
         <SectionHeading
           id={REGISTER_SECTION_ID}
-          number="3"
+          number="1"
           title={tr ? 'Tüm Kayıtlar' : 'Full Register'}
           lede={
             tr
@@ -211,15 +198,15 @@ export default async function HomePage({ params }: Props) {
         <RegisterSection products={registerProducts} locale={locale} />
       </section>
 
-      {/* §4 Özel Tahsis */}
+      {/* §2 Özel Tahsis */}
       <section aria-label={tr ? 'Özel Tahsis' : 'Custom Allocation'}>
-        <SectionHeading id="ozel-tahsis" number="4" title={tr ? 'Özel Tahsis' : 'Custom Allocation'} />
+        <SectionHeading id="ozel-tahsis" number="2" title={tr ? 'Özel Tahsis' : 'Custom Allocation'} />
         <CustomAllocationBand locale={locale} />
       </section>
 
-      {/* §5 Kontrol Protokolü */}
+      {/* §3 Kontrol Protokolü */}
       <section aria-label={tr ? 'Kontrol Protokolü' : 'Control Protocol'} className="pb-6">
-        <SectionHeading id="kontrol-protokolu" number="5" title={tr ? 'Kontrol Protokolü' : 'Control Protocol'} />
+        <SectionHeading id="kontrol-protokolu" number="3" title={tr ? 'Kontrol Protokolü' : 'Control Protocol'} />
         <ControlProtocolBand locale={locale} />
       </section>
     </div>

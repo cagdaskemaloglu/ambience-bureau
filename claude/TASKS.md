@@ -23,7 +23,7 @@
       `public/parts/stl/`'den okuyor. Tek kaynağa mı indirilecek, yoksa
       yeni parça eklerken ikisini de güncellemek bir süreç olarak mı
       belgelenecek?
-- [ ] **Daimi Envanter ürünlerinin envanter kodu düzeni.** `ENV-F-012`
+- [ ] **Daimi Envanter ürünlerinin envanter kodu düzeni.** `ENV-S-012`
       önerildi (sınıf harfi + sıra). Onaylanırsa Studio'da otomatik
       öneri (RegistryNoHint benzeri) eklenebilir.
 

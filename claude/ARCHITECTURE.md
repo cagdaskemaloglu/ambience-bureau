@@ -643,12 +643,13 @@ Bileşenler `src/components/home/`. Bölüm başlıkları `SectionHeading`.
 - `limited` (veya boş — eski kayıtlar): Sınırlı Tahsis, drop'a bağlı,
   numaralı adet. Kartta `REG. NO.` + sertifika durumu.
 - `standing`: Daimi Envanter, sürekli satış. `registryNo` envanter kodu
-  olarak kullanılır (`ENV-F-012`); kartta `ENV. KODU` + stok durumu.
+  olarak kullanılır (`ENV-S-012`); kartta `ENV. KODU` + stok durumu.
   `stockQuantity`: boş = siparişe üretim, 0 = tükendi, >0 = adet.
 - Sınıflar (`product.category`) TEK kaynaktan: `src/lib/lightClasses.ts`
-  → `LIGHT_CLASSES` (F Lambader, W Aplik, D Masa Lambası,
-  P Sarkıt, S Şerit). Sanity şeması, Registry filtresi, anasayfa ve
-  ürün sayfası buradan okur.
+  → `LIGHT_CLASSES` (S Lambader, D Aplik, F Masa Lambası,
+  G Sarkıt, H Şerit; A = Drops). Harf hem envanter kodu hem anasayfa
+  dizininin klavye kısayolu (`HomeIndex.tsx`). Sanity şeması, Registry
+  filtresi, anasayfa ve ürün sayfası buradan okur.
 - Yardımcılar: `resolveSaleMode`, `resolveStockState`,
   `isProductPurchasable` (decommissioned / owned / stoğu tükenmiş
   standing ürün sepete eklenemez).

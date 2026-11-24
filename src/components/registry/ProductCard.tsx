@@ -20,7 +20,7 @@ import type { ProductCard as ProductCardType } from '@/types'
 /**
  * Ürün kartı = DOSYA KARTI (bkz. claude/DESIGN.md).
  *
- *  ┌ başlık şeridi: DROP-001 · 006/050  |  durum ┐   (Daimi Envanter: SINIF F · ENV-F-012)
+ *  ┌ başlık şeridi: DROP-001 · 006/050  |  durum ┐   (Daimi Envanter: SINIF S · ENV-S-012)
  *  │ fotoğraf / 360° dönüş  + [DAMGA]           │   damga SADECE önemli durumlarda
  *  │ ad                                          │
  *  │ sınıf · ● 2700K · uygulama                  │

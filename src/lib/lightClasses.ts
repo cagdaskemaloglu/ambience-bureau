@@ -16,7 +16,10 @@ export type LightClassValue = 'floor' | 'wall' | 'desk' | 'pendant' | 'strip'
 
 export interface LightClass {
   value: LightClassValue
-  /** Envanter kodundaki sınıf harfi: ENV-F-012 */
+  /**
+   * Sınıf harfi = anasayfa dizinindeki KLAVYE KISAYOLU (A Drops, S/D/F/G…)
+   * ve envanter kodundaki harf: ENV-S-012. Sol el ana sırası.
+   */
   code: string
   tr: string
   en: string
@@ -28,7 +31,7 @@ export interface LightClass {
 export const LIGHT_CLASSES: LightClass[] = [
   {
     value: 'floor',
-    code: 'F',
+    code: 'S',
     tr: 'Lambader',
     en: 'Floor Lamp',
     descTr: 'Zemine yerleşik, ayakta duran aydınlatma nesneleri.',
@@ -36,7 +39,7 @@ export const LIGHT_CLASSES: LightClass[] = [
   },
   {
     value: 'wall',
-    code: 'W',
+    code: 'D',
     tr: 'Aplik',
     en: 'Wall Sconce',
     descTr: 'Duvara monte edilen yönlendirilmiş ışık birimleri.',
@@ -44,7 +47,7 @@ export const LIGHT_CLASSES: LightClass[] = [
   },
   {
     value: 'desk',
-    code: 'D',
+    code: 'F',
     tr: 'Masa Lambası',
     en: 'Table Lamp',
     descTr: 'Masa ve komodin yüzeyleri için çalışma ve ortam ışığı.',
@@ -52,7 +55,7 @@ export const LIGHT_CLASSES: LightClass[] = [
   },
   {
     value: 'pendant',
-    code: 'P',
+    code: 'G',
     tr: 'Sarkıt',
     en: 'Pendant',
     descTr: 'Tek noktadan sarkan, odaklı tavan aydınlatması.',
@@ -60,7 +63,7 @@ export const LIGHT_CLASSES: LightClass[] = [
   },
   {
     value: 'strip',
-    code: 'S',
+    code: 'H',
     tr: 'Şerit',
     en: 'Strip',
     descTr: 'Gizli ve doğrusal ışık elemanları.',
