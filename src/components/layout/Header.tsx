@@ -147,7 +147,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   return (
     <>
-      <header className="relative z-40 flex-shrink-0 border-b border-bureau-fixed-black bg-bureau-white dark:border-black">
+      <header className="relative z-40 flex-shrink-0 border-b border-bureau-fixed-black bg-bureau-white dark:border-[rgb(var(--bureau-line-header))]">
         <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}

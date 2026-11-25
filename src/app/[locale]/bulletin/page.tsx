@@ -70,7 +70,7 @@ export default async function BulletinArchivePage({ params, searchParams }: Prop
   }
 
   return (
-    <div className="border-t border-bureau-line-header dark:border-black">
+    <div className="border-t border-bureau-line-header dark:border-[rgb(var(--bureau-line-header))]">
       <header className="border-b border-bureau-rule px-5 pb-6 pt-8 md:px-9 md:pt-12">
         <p className="font-mono text-[10.5px] uppercase tracking-widest text-bureau-muted">
           {tr ? 'Form 003 · Bülten Defteri' : 'Form 003 · Bulletin Ledger'}

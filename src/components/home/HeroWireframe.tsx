@@ -5,23 +5,65 @@ import dynamic from 'next/dynamic'
 import { Link } from '@/i18n/navigation'
 import { getLocalizedValue } from '@/lib/sanity'
 import type { HeroWireframeData } from '@/lib/queries'
+import { useTheme } from '@/components/theme/ThemeProvider'
 
 // three.js yalnızca geniş ekranda ve tarayıcıda yüklenir — telefona inmez.
 const Scene = dynamic(() => import('./HeroWireframeScene'), { ssr: false })
 
+/** Bir ürün en az bu kadar ekranda kalır; sıradaki hazır değilse daha uzun. */
+const MIN_SHOW_MS = 12000
+const FADE_MS = 450
+
 /**
  * Masthead'in ortasındaki "çizim masası": siyahtan uzay mavisine giden
- * zeminde, Extruded Conduit drop'undan bir ürünün 3B tel kafesi döner.
- * Yalnızca lg (≥1024px) ekranlarda görünür; ekran dışındayken çizim durur.
+ * zeminde ürünlerin 3B tel kafesi döner. İlk ürün (Extruded Conduit 001)
+ * yüklenince sıradaki ürünün STL'leri ARKA PLANDA indirilir; hazır olunca
+ * (ve ilki en az MIN_SHOW_MS göründükten sonra) yumuşak geçişle o girer.
+ * Yalnızca lg (≥1024px) ekranlarda görünür; ekran dışındayken çizim ve
+ * sıra durur; "hareketi azalt" açıksa ilk üründe kalır.
  */
-export function HeroWireframe({ data, locale }: { data: HeroWireframeData; locale: string }) {
+export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; locale: string }) {
   const tr = locale === 'tr'
+  const { theme } = useTheme()
   const boxRef = useRef<HTMLDivElement>(null)
   const [enabled, setEnabled] = useState(false)
   const [visible, setVisible] = useState(true)
   const [animate, setAnimate] = useState(true)
   const [ready, setReady] = useState(false)
   const onReady = useCallback(() => setReady(true), [])
+  const [idx, setIdx] = useState(0)
+  const [nextReady, setNextReady] = useState(false)
+  const [fading, setFading] = useState(false)
+  const shownAt = useRef(0)
+  const onPreloaded = useCallback(() => setNextReady(true), [])
+  const rotating = items.length > 1 && animate
+  const nextIdx = (idx + 1) % items.length
+
+  useEffect(() => {
+    if (ready && !shownAt.current) shownAt.current = Date.now()
+  }, [ready])
+
+  // Sıradaki hazır + süre doldu + görünür → sönerek değiştir.
+  useEffect(() => {
+    if (!rotating || !ready || !nextReady || !visible) return
+    const wait = Math.max(0, MIN_SHOW_MS - (Date.now() - shownAt.current))
+    let swap = 0
+    const t = window.setTimeout(() => {
+      setFading(true)
+      swap = window.setTimeout(() => {
+        setIdx(nextIdx)
+        setNextReady(false)
+        shownAt.current = Date.now()
+        requestAnimationFrame(() => setFading(false))
+      }, FADE_MS)
+    }, wait)
+    return () => {
+      window.clearTimeout(t)
+      window.clearTimeout(swap)
+    }
+  }, [rotating, ready, nextReady, visible, nextIdx])
+
+  const data = items[idx]
 
   useEffect(() => {
     const wide = window.matchMedia('(min-width: 1024px)')
@@ -55,7 +97,9 @@ export function HeroWireframe({ data, locale }: { data: HeroWireframeData; local
   }, [])
 
   const name = getLocalizedValue(data.name, locale, '') ?? ''
-  const bodyCount = data.parts.filter((p) => p.slotType === 'body').length
+  const count = (t: string) => data.parts.filter((p) => p.slotType === t).length
+  const [baseN, bodyN, headN] = [count('base'), count('body'), count('head')]
+  const labelFade = { opacity: fading ? 0 : 1, transition: `opacity ${FADE_MS}ms ease-out` }
 
   return (
     <div
@@ -65,26 +109,39 @@ export function HeroWireframe({ data, locale }: { data: HeroWireframeData; local
       {/* Çerçevesiz: zemin header'ın hemen altından başlar, kenarlara doğru
           maskeyle sayfaya erir — kutu değil, header'ın uzantısı gibi. */}
       <div className="hero-wireframe absolute inset-0">
-        {enabled && <Scene parts={data.parts} running={visible} animate={animate} onReady={onReady} />}
+        {enabled && (
+          <div className="absolute inset-0 transition-opacity ease-out" style={{ opacity: fading ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}>
+            <Scene
+              parts={data.parts}
+              tone={theme === 'dark' ? 'night' : 'paper'}
+              preloadUrls={rotating && ready ? items[nextIdx].parts.map((p) => p.url) : undefined}
+              running={visible}
+              animate={animate}
+              onReady={onReady}
+              onPreloaded={onPreloaded}
+            />
+          </div>
+        )}
       </div>
 
       {/* Çizim masası künyesi */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-3 whitespace-nowrap px-[9%] py-3 font-mono text-[9.5px] uppercase tracking-widest text-[#a9c8ff]/80">
-        <span>{tr ? 'Tel kafes' : 'Wireframe'}{data.dropNo ? ` · DROP-${data.dropNo}` : ''}</span>
-        <span className="hidden tabular-nums xl:inline">
-          {tr ? `1 taban · ${bodyCount} gövde · 1 başlık` : `1 base · ${bodyCount} body · 1 head`}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-3 whitespace-nowrap px-[9%] py-3 font-mono text-[9.5px] uppercase tracking-widest text-bureau-wire/80">
+        <span style={labelFade}>{tr ? 'Tel kafes' : 'Wireframe'}{data.dropNo ? ` · DROP-${data.dropNo}` : ''}</span>
+        <span className="hidden tabular-nums xl:inline" style={labelFade}>
+          {tr ? `${baseN} taban · ${bodyN} gövde · ${headN} başlık` : `${baseN} base · ${bodyN} body · ${headN} head`}
+          {items.length > 1 ? ` · ${String(idx + 1).padStart(2, '0')}/${String(items.length).padStart(2, '0')}` : ''}
         </span>
       </div>
       {!ready && enabled && (
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-[#a9c8ff]/60">
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bureau-wire/60">
           {tr ? 'Model çiziliyor…' : 'Drafting model…'}
         </span>
       )}
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 whitespace-nowrap px-[9%] py-3">
-        <span className="truncate font-mono text-[10px] uppercase tracking-wider text-white/85">{name}</span>
+      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 whitespace-nowrap px-[9%] py-3" style={labelFade}>
+        <span className="truncate font-mono text-[10px] uppercase tracking-wider text-bureau-black/85">{name}</span>
         <Link
           href={`/registry/${data.slug}`}
-          className="focus-bureau flex-shrink-0 font-mono text-[10px] uppercase tracking-wider text-[#f2a35e] no-underline hover:underline"
+          className="focus-bureau flex-shrink-0 font-mono text-[10px] uppercase tracking-wider text-bureau-amber no-underline hover:underline"
         >
           {tr ? 'Kaydı aç →' : 'Open record →'}
         </Link>

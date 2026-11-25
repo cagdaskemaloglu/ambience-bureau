@@ -59,19 +59,49 @@ Bütün ürünler iki rejimden birindedir (`product.saleMode`):
   "stok tükendi", >0 ise adet. Ödeme onayında stok düşer.
 - Dil: "envanter", "sınıf", "stokta", "siparişe üretim".
 
+## Tel kafes teması (karanlık tema)
+
+Karanlık tema = **tel kafes teması**; aydınlık tema = **materyal**
+görünümü (kırık beyaz kâğıt). Tema düğmesi, uygulamadaki
+Tel kafes ↔ Materyal fikrinin site karşılığıdır.
+
+- Renkler `globals.css` → `.dark` değişkenlerinde: zemin `#050A18`, yüzey
+  `#0A152E`, tel çizgi (`rule`) `#1F2F52`, ikincil metin mavi-gri
+  `#A4B2CC`, ön plan kırık beyaz `#F2F0EA`, vurgu yine amber. Header/footer
+  çizgisi `#1F3A66`. Yeni token: `bureau-wire` (karanlıkta `#A9C8FF`,
+  aydınlıkta Space Blue) — 3B çizimlerle aynı mavi.
+- Sayfa zemini (`.dark body`): siyahtan uzay mavisine sabit gradyan.
+- 3B tel kafes sahneleri (`HeroWireframeScene.tsx`) iki tonda çizilir:
+  `night` (gece mavisi zemin, açık mavi additive çizgi) ve `paper` (kâğıt
+  zemin, Space Blue mürekkep). Zemin sınıfları `.hero-wireframe` /
+  `.wire-stage`, temaya göre değişir.
+- Ürün sayfası (`ProductViewer.tsx`): parça dizilimi kayıtlı "stack"
+  ürünlerde **TEL KAFES | MATERYAL** düğmesi. Varsayılan temaya göre
+  (karanlık → tel kafes, aydınlık → materyal/fotoğraflar).
+
 ## Anasayfa düzeni (yukarıdan aşağı) — tek sayfa
 
 Ziyaretçi TÜM ürünleri anasayfadan ayrılmadan keşfedebilmeli.
 
 1. **Masthead** (`<h1>`): "Işık, tahsis edilir." + bir cümlelik
    açıklama. Sağda kaydırmalı **Büro Bülteni** paneli. Ortada (yalnızca
-   ≥1024px) **tel kafes kutusu** (`HeroWireframe.tsx`): siyahtan uzay
-   mavisine zeminde, Extruded Conduit drop'unun `extruded-conduit-1.0`
-   ürününün kayıtlı dizilimi (taban → gövdeler → başlık) Sanity STL'lerinden
-   kenar + soluk üçgen ağı olarak çizilip yavaşça döner. Canvas sayfa
-   boşa çıkınca (requestIdleCallback) başlar, ~30 fps çizer, ekran
-   dışındayken durur; telefona three.js inmez. Ürün slug'ı
-   `queries.ts` → `HERO_WIREFRAME_PRODUCT_SLUG`.
+   ≥1024px) **tel kafes sahnesi** (`HeroWireframe.tsx`): çerçevesiz,
+   header'ın hemen altına yapışık, kenarlarda maskeyle sayfaya erir;
+   siyahtan uzay mavisine zeminde ürünün kayıtlı dizilimi (taban →
+   gövdeler → başlık) Sanity STL'lerinden DİK istiflenir. Üçgen ağı
+   ÇİZİLMEZ: her parça yatay kesitlerle (halkalar, lamba boyunca ~15) ve
+   dönmeyen bir dış hatla (yarıçap profilinden silüet) çizilir — organik
+   formlarda da temiz teknik çizim gibi okunur. Kutunun CSS zemininde
+   ızgara YOK (ızgarayı 3B oda çizer). Etrafında tel kafes oda: zemin ve duvar
+   ızgarası, duvarda priz, tabandan prize kablo ve fiş. Lamba kendi
+   ekseninde döner, oda sabittir; kadraj odanın tamamını sığdırır.
+   Ürünler SIRAYLA gösterilir (`queries.ts` → `getHeroWireframes`: önce
+   `HERO_WIREFRAME_PRODUCT_SLUG`, sonra parça dizilimi kayıtlı diğer
+   "stack" ürünler, en çok 8). Gösterilen ürün yüklenince sıradakinin
+   STL'leri arka planda iner; hazır olunca ve en az 12 sn geçince yumuşak
+   geçişle o girer.
+   Canvas sayfa boşa çıkınca (requestIdleCallback) başlar, ~30 fps çizer,
+   ekran dışındayken durur; telefona three.js inmez.
    (Alternatif: 3D görüntüleyici görünümlü "sahne" anasayfası
    `deneme/sahne-hero` branch'inde duruyor.)
 2. **Tahsis dizini** (`HomeIndex.tsx`, bölüm başlığı YOK): tek liste —

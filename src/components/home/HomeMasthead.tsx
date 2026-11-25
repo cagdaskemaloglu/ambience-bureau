@@ -22,13 +22,13 @@ export function HomeMasthead({
   locale,
   bulletin,
   bulletins,
-  wireframe,
+  wireframes,
 }: {
   locale: string
   bulletin: BulletinData
   bulletins: Bulletin[]
-  /** Ortadaki 3B tel kafes (yoksa iki sütunlu eski düzen). */
-  wireframe?: HeroWireframeData | null
+  /** Ortadaki 3B tel kafes ürünleri, gösterim sırasıyla (boşsa iki sütunlu eski düzen). */
+  wireframes?: HeroWireframeData[]
 }) {
   const tr = locale === 'tr'
   const intl = tr ? 'tr-TR' : 'en-US'
@@ -41,7 +41,7 @@ export function HomeMasthead({
     <section
       aria-labelledby="home-title"
       className={`grid items-center gap-5 border-b border-bureau-rule px-5 py-5 md:min-h-[300px] md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:px-9 md:py-8 lg:min-h-[360px] ${
-        wireframe ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_340px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_360px]' : ''
+        wireframes?.length ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_340px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_360px]' : ''
       }`}
     >
       {/* Kompakt masthead: ziyaretçi ilk ekranda ürünleri de görebilsin
@@ -82,7 +82,7 @@ export function HomeMasthead({
         </div>
       </div>
 
-      {wireframe && <HeroWireframe data={wireframe} locale={locale} />}
+      {wireframes && wireframes.length > 0 && <HeroWireframe items={wireframes} locale={locale} />}
 
       {/* Büro Bülteni — masaüstünde masthead'de; telefonda §1'in altında
           (page.tsx), böylece telefonda da ürünler ilk ekrana yaklaşır. */}

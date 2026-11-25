@@ -114,7 +114,10 @@ yer tutucular kasıtlı olarak header'da duruyor.
 ### 13. Tema renkleri CSS değişkeni
 `bureau.*` renkleri `globals.css`'teki `--bureau-*` değişkenlerinden gelir
 ve karanlık/aydınlık temayla değişir. Temadan bağımsız kalması gereken
-bir renk için `bureau-fixed-*` kullan. Tema başlangıç mantığını
+bir renk için `bureau-fixed-*` kullan. Karanlık tema = **tel kafes
+teması** (gece mavisi zemin, mavi tel çizgiler; `bureau-wire` vurgusu);
+aydınlık tema = materyal görünümü. Ayrıntı: `DESIGN.md` → "Tel kafes
+teması". Tema başlangıç mantığını
 değiştirirsen `src/app/layout.tsx`'teki `THEME_INIT_SCRIPT` ile
 `ThemeProvider.tsx`'i BİRLİKTE değiştir.
 

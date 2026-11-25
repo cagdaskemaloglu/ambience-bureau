@@ -102,7 +102,7 @@ export function DropRow({
   const soldOut = typeof drop.plannedQuantity === 'number' && drop.plannedQuantity - drop.soldCount <= 0
 
   return (
-    <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-panel-edge dark:border-black">
+    <section id={dropSectionId(drop.dropNo)} className="border-b border-bureau-panel-edge dark:border-[rgb(var(--bureau-line-header))]">
       {/* Eski sistemdeki başlık satırı */}
       <div className="px-5 py-2 md:px-9">
         <h2 className="flex flex-wrap items-baseline gap-x-2.5 font-mono text-[11px] font-semibold uppercase tracking-wider text-bureau-fixed-black">

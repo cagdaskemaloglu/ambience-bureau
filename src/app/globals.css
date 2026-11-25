@@ -28,6 +28,7 @@
     --bureau-line-header: 47 93 138;   /* #2F5D8A — "Space Blue" — artık ışıkta da aynı */
     --bureau-line-dashed: 222 219 212; /* Drop isminin altındaki kesikli çizgi — ışıkta açık gri */
     --bureau-panel-edge: 0 0 0;        /* Drop panelinin kenarı/zemini — ışıkta siyah */
+    --bureau-wire: 47 93 138;          /* Tel kafes vurgu — ışıkta Space Blue */
   }
 
   /* KARANLIK MOD — <html> elemanına "dark" class'ı eklenince devreye
@@ -37,26 +38,38 @@
      artık açık ön plan/kenarlık rengi oluyor — böylece "bg-bureau-black
      text-bureau-white" gibi zaten var olan yüzlerce class, tek bir
      değişiklik yapmadan otomatik olarak doğru (ters) kontrastla çalışır. */
+  /* KARANLIK = TEL KAFES TEMASI (bkz. claude/DESIGN.md → "Tel kafes teması").
+     Zemin siyahtan uzay mavisine; çizgiler ve kenarlar mavi tel; metin
+     kırık beyaz; tek sıcak vurgu yine amber. Aydınlık tema "materyal"
+     görünümü olarak aynen kalır. */
   .dark {
-    --bureau-white: 13 13 13;
-    --bureau-black: 242 242 242;
-    --bureau-ink: 237 237 237;
-    --bureau-muted: 171 171 171;
-    --bureau-subtle: 122 122 122;
-    --bureau-rule: 42 42 42;
-    --bureau-surface: 22 22 22;
-    /* Marka rengi (amber) her iki modda da aynı — her iki arka planda da
-       yeterli kontrastı olan tek "sıcak" vurgu rengi zaten bu yüzden var. */
+    --bureau-white: 5 10 24;        /* #050A18 — gece mavisi zemin */
+    --bureau-black: 242 240 234;    /* #F2F0EA — kırık beyaz ön plan */
+    --bureau-ink: 236 238 244;
+    --bureau-muted: 164 178 204;    /* #A4B2CC — mavi-gri ikincil metin */
+    --bureau-subtle: 118 134 166;   /* #7686A6 */
+    --bureau-rule: 31 47 82;        /* #1F2F52 — tel çizgi */
+    --bureau-surface: 10 21 46;     /* #0A152E */
+    /* Marka rengi (amber) her iki modda da aynı. */
     --bureau-amber: 230 121 46;
     --bureau-amber-dim: 184 94 32;
 
-    /* Header altı/footer üstü DÜZ çizgi → Space Blue. Drop isminin
-       altındaki KESİKLİ çizgi → Space Gray. Drop panelinin kenarı/zemini
-       → sayfanın kendi koyu-mod arka planıyla (--bureau-white'ın burdaki
-       değeriyle) birebir aynı, panel sayfayla kaynaşsın diye. */
-    --bureau-line-header: 0 0 0;       /* KARANLIKTA da siyah kalır (Space Blue DEĞİL) */
-    --bureau-line-dashed: 83 81 80;    /* #535150 — "Space Gray" */
-    --bureau-panel-edge: 13 13 13;
+    /* Header altı/footer üstü çizgi ve drop paneli kenarı → mavi tel. */
+    --bureau-line-header: 31 58 102;   /* #1F3A66 */
+    --bureau-line-dashed: 47 72 120;   /* #2F4878 */
+    --bureau-panel-edge: 5 10 24;
+    /* Tel kafes vurgu rengi (3B çizimlerle aynı). */
+    --bureau-wire: 169 200 255;        /* #A9C8FF */
+  }
+
+  /* Tel kafes teması: sayfa zemini siyahtan uzay mavisine (sabit, kaymaz).
+     Opak bg-bureau-white yüzeyler gece mavisi kalır; saydam alanlarda
+     gradyan görünür. */
+  .dark body {
+    background:
+      radial-gradient(120% 60% at 50% 115%, rgb(16 48 110 / 0.55), transparent 70%),
+      linear-gradient(180deg, #000 0%, #030712 30%, #050a18 60%, #07122c 100%);
+    background-attachment: fixed;
   }
 
   html {
@@ -497,19 +510,27 @@
   to { transform: scaleX(1); }
 }
 
-/* Masthead tel kafes kutusu: siyahtan uzay mavisine zemin + ince ölçü ızgarası
-   + seyrek yıldız tozu. Tema değişse de bu kutu hep "gece". */
-.hero-wireframe {
+/* Masthead tel kafes kutusu: siyahtan uzay mavisine zemin + seyrek yıldız
+   tozu (ızgarayı 3B oda çizer; burada ikinci bir ızgara YOK). Tema değişse de bu kutu hep "gece". */
+.hero-wireframe,
+.wire-stage {
+  /* Aydınlık tema: kırık beyaz kâğıt, altta hafif Space Blue gölge. */
+  background:
+    radial-gradient(120% 70% at 50% 110%, rgb(47 93 138 / 0.14), transparent 70%),
+    linear-gradient(180deg, #f7f5f0 0%, #efece6 100%);
+}
+.dark .hero-wireframe,
+.dark .wire-stage {
   background:
     radial-gradient(1px 1px at 18% 22%, rgba(255, 255, 255, 0.55), transparent 60%),
     radial-gradient(1px 1px at 72% 14%, rgba(255, 255, 255, 0.4), transparent 60%),
     radial-gradient(1px 1px at 86% 64%, rgba(255, 255, 255, 0.45), transparent 60%),
     radial-gradient(1px 1px at 34% 78%, rgba(255, 255, 255, 0.35), transparent 60%),
     radial-gradient(1px 1px at 58% 46%, rgba(255, 255, 255, 0.3), transparent 60%),
-    linear-gradient(rgba(140, 180, 255, 0.07) 1px, transparent 1px) 0 0 / 28px 28px,
-    linear-gradient(90deg, rgba(140, 180, 255, 0.07) 1px, transparent 1px) 0 0 / 28px 28px,
     linear-gradient(180deg, #000 0%, #030712 30%, #0a1a3f 72%, #10306e 100%);
-  /* Kenarlarda sayfaya erir; üstte header'a yapışık kalır. */
+}
+/* Masthead: kenarlarda sayfaya erir; üstte header'a yapışık kalır. */
+.hero-wireframe {
   -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
   mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
 }

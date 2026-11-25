@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { getAllDropsWithProducts, getAllProducts, getHeroWireframe, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
+import { getAllDropsWithProducts, getAllProducts, getHeroWireframes, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
 import { withDemoBulletins, withDemoStanding } from '@/lib/bulletinDemo'
 import { getLocalizedValue } from '@/lib/sanity'
 import { DropRow } from '@/components/registry/DropRow'
@@ -54,7 +54,7 @@ export default async function HomePage({ params }: Props) {
     getPanelBulletins(),
     getAllProducts(),
     getModelStandingCards(),
-    getHeroWireframe().catch(() => null),
+    getHeroWireframes().catch(() => []),
   ])
   // Daimi Envanter = ürün belgeleri + Montajlı Modellerden otomatik kartlar.
   const standing = [...(standingDocs as ProductCard[]), ...modelCards]
@@ -112,8 +112,8 @@ export default async function HomePage({ params }: Props) {
   }
 
   return (
-    <div className="border-t border-bureau-line-header dark:border-black">
-      <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} wireframe={heroWireframe} />
+    <div className="border-t border-bureau-line-header dark:border-[rgb(var(--bureau-line-header))]">
+      <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} wireframes={heroWireframe} />
 
       {/* Telefonda Büro Bülteni burada (masaüstünde masthead'de). */}
       <div className="border-b border-bureau-rule px-5 py-6 md:hidden">

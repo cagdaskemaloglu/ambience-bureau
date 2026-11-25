@@ -31,6 +31,9 @@ const config: Config = {
           surface: 'rgb(var(--bureau-surface) / <alpha-value>)',
           amber:   'rgb(var(--bureau-amber) / <alpha-value>)', // the only warm accent — light itself
           'amber-dim': 'rgb(var(--bureau-amber-dim) / <alpha-value>)',
+          // Tel kafes vurgu rengi: karanlıkta #A9C8FF (3B çizimlerle aynı),
+          // aydınlıkta Space Blue. Karanlık tema = tel kafes teması.
+          wire:    'rgb(var(--bureau-wire) / <alpha-value>)',
         },
         // SABİT (tema DEĞİŞTİRMEZ) paleti — aynı hex değerler, ama CSS
         // değişkenine değil doğrudan sabit renge bağlı. Karanlık modda da

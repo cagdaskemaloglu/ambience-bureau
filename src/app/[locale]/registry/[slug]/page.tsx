@@ -7,9 +7,10 @@ import {
   getProductBySlug,
   getRelatedProducts,
   getAllProductSlugs,
+  getProductWireframe,
 } from '@/lib/queries'
 import { getLocalizedValue, urlFor, formatPrice, getPricingForLocale } from '@/lib/sanity'
-import { ProductGallery } from '@/components/product/ProductGallery'
+import { ProductViewer } from '@/components/product/ProductViewer'
 import { SpecTable } from '@/components/product/SpecTable'
 import { AddToCartButton } from '@/components/product/AddToCartButton'
 import { CustomizeButton } from '@/components/product/CustomizeButton'
@@ -77,7 +78,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function ProductDetailPage({ params }: Props) {
   const { locale, slug } = await params
-  const product = await getProductBySlug(slug)
+  const [product, wireframe] = await Promise.all([
+    getProductBySlug(slug),
+    getProductWireframe(slug).catch(() => null),
+  ])
 
   if (!product) notFound()
 
@@ -142,7 +146,7 @@ export default async function ProductDetailPage({ params }: Props) {
       <div className="grid grid-cols-1 gap-0 lg:grid-cols-2">
         {/* Left: Gallery */}
         <div className="border-b border-bureau-black p-9 lg:border-r lg:border-b-0">
-          <ProductGallery images={product.images} fallbackAlt={name} />
+          <ProductViewer images={product.images} fallbackAlt={name} wireframe={wireframe} />
         </div>
 
         {/* Right: Info + Form */}

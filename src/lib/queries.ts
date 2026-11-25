@@ -650,22 +650,15 @@ export interface HeroWireframeData {
   name: LocalizedString[]
   parts: Array<{ slotType: 'base' | 'body' | 'head'; url: string }>
 }
-export async function getHeroWireframe(): Promise<HeroWireframeData | null> {
-  const row = await sanityClient.fetch<{
-    slug: string
-    dropNo: string | null
-    name: LocalizedString[]
-    parts: Array<{ slotType: string; url: string | null } | null> | null
-  } | null>(
-    `*[_type == "product" && slug.current == $slug][0]{
-      "slug": slug.current,
-      "dropNo": drop->dropNo,
-      ${LOCALIZED_FIELD('name')},
-      "parts": configuratorParts[]{ slotType, "url": part->modelFile.asset->url }
-    }`,
-    { slug: HERO_WIREFRAME_PRODUCT_SLUG },
-    { next: { tags: ['products'] } }
-  )
+type WireframeRow = {
+  slug: string
+  dropNo: string | null
+  name: LocalizedString[]
+  parts: Array<{ slotType: string; url: string | null } | null> | null
+}
+
+/** Ürünün kayıtlı parça dizilimini taban → gövdeler → başlık sırasına koyar. */
+function toWireframe(row: WireframeRow | null): HeroWireframeData | null {
   if (!row) return null
   const order = { base: 0, body: 1, head: 2 } as const
   const parts = (row.parts ?? [])
@@ -674,4 +667,47 @@ export async function getHeroWireframe(): Promise<HeroWireframeData | null> {
     .sort((a, b) => order[a.slotType] - order[b.slotType] || a.i - b.i)
     .map(({ slotType, url }) => ({ slotType, url }))
   return parts.length > 0 ? { slug: row.slug, dropNo: row.dropNo, name: row.name, parts } : null
+}
+
+const WIREFRAME_PROJECTION = `
+  "slug": slug.current,
+  "dropNo": drop->dropNo,
+  name[]{ locale, value },
+  "parts": configuratorParts[]{ slotType, "url": part->modelFile.asset->url }
+`
+
+/**
+ * Ürün sayfasındaki Tel kafes | Materyal düğmesi için: parça dizilimi kayıtlı
+ * ve "üst üste" (stack) koleksiyondan bir ürünse dizilim, değilse null.
+ */
+export async function getProductWireframe(slug: string): Promise<HeroWireframeData | null> {
+  const row = await sanityClient.fetch<WireframeRow | null>(
+    `*[_type == "product" && slug.current == $slug && count(configuratorParts) > 0
+       && coalesce(configuratorCollection->layoutMode, "stack") == "stack"][0]{${WIREFRAME_PROJECTION}}`,
+    { slug },
+    { next: { tags: ['products'] } }
+  )
+  return toWireframe(row)
+}
+
+/**
+ * Tel kafes gösterimi için ürünler: önce HERO_WIREFRAME_PRODUCT_SLUG, sonra
+ * parça dizilimi kayıtlı diğer "üst üste" (stack) ürünler. Masthead bunları
+ * sırayla gösterir; bir sonraki arka planda yüklenir, hazır olunca girer.
+ */
+export async function getHeroWireframes(): Promise<HeroWireframeData[]> {
+  const rows = await sanityClient.fetch<WireframeRow[]>(
+    `*[_type == "product" && active != false && count(configuratorParts) > 0
+       && coalesce(configuratorCollection->layoutMode, "stack") == "stack"]
+      | order(drop->sortOrder asc, registryNo asc) {${WIREFRAME_PROJECTION}}`,
+    {},
+    { next: { tags: ['products'] } }
+  )
+  const list = (rows ?? []).flatMap((row) => {
+    const w = toWireframe(row)
+    return w ? [w] : []
+  })
+  const first = list.findIndex((x) => x.slug === HERO_WIREFRAME_PRODUCT_SLUG)
+  if (first > 0) list.unshift(...list.splice(first, 1))
+  return list.slice(0, 8)
 }
