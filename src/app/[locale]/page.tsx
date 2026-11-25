@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { getAllDropsWithProducts, getAllProducts, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
+import { getAllDropsWithProducts, getAllProducts, getHeroWireframe, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
 import { withDemoBulletins, withDemoStanding } from '@/lib/bulletinDemo'
 import { getLocalizedValue } from '@/lib/sanity'
 import { DropRow } from '@/components/registry/DropRow'
@@ -48,12 +48,13 @@ export default async function HomePage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: 'home' })
   const tr = locale === 'tr'
 
-  const [allDropsRaw, standingDocs, panelBulletins, allProductsRaw, modelCards] = await Promise.all([
+  const [allDropsRaw, standingDocs, panelBulletins, allProductsRaw, modelCards, heroWireframe] = await Promise.all([
     getAllDropsWithProducts(),
     getStandingInventory(),
     getPanelBulletins(),
     getAllProducts(),
     getModelStandingCards(),
+    getHeroWireframe().catch(() => null),
   ])
   // Daimi Envanter = ürün belgeleri + Montajlı Modellerden otomatik kartlar.
   const standing = [...(standingDocs as ProductCard[]), ...modelCards]
@@ -112,7 +113,7 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <div className="border-t border-bureau-line-header dark:border-black">
-      <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} />
+      <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} wireframe={heroWireframe} />
 
       {/* Telefonda Büro Bülteni burada (masaüstünde masthead'de). */}
       <div className="border-b border-bureau-rule px-5 py-6 md:hidden">
@@ -131,6 +132,10 @@ export default async function HomePage({ params }: Props) {
         <span id="daimi-envanter" aria-hidden="true" />
         <HomeIndex
           products={standingProducts}
+          dropProducts={[
+            ...(featureDrop?.products ?? []),
+            ...visibleDrops.filter((d) => d !== featureDrop).flatMap((d) => d.products),
+          ]}
           locale={locale}
           drops={{
             count: visibleDrops.length,

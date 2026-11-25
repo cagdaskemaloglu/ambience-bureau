@@ -64,15 +64,27 @@ Bütün ürünler iki rejimden birindedir (`product.saleMode`):
 Ziyaretçi TÜM ürünleri anasayfadan ayrılmadan keşfedebilmeli.
 
 1. **Masthead** (`<h1>`): "Işık, tahsis edilir." + bir cümlelik
-   açıklama. Sağda kaydırmalı **Büro Bülteni** paneli.
+   açıklama. Sağda kaydırmalı **Büro Bülteni** paneli. Ortada (yalnızca
+   ≥1024px) **tel kafes kutusu** (`HeroWireframe.tsx`): siyahtan uzay
+   mavisine zeminde, Extruded Conduit drop'unun `extruded-conduit-1.0`
+   ürününün kayıtlı dizilimi (taban → gövdeler → başlık) Sanity STL'lerinden
+   kenar + soluk üçgen ağı olarak çizilip yavaşça döner. Canvas sayfa
+   boşa çıkınca (requestIdleCallback) başlar, ~30 fps çizer, ekran
+   dışındayken durur; telefona three.js inmez. Ürün slug'ı
+   `queries.ts` → `HERO_WIREFRAME_PRODUCT_SLUG`.
    (Alternatif: 3D görüntüleyici görünümlü "sahne" anasayfası
    `deneme/sahne-hero` branch'inde duruyor.)
 2. **Tahsis dizini** (`HomeIndex.tsx`, bölüm başlığı YOK): tek liste —
    `A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt`. Satırlar
-   KAPALI başlar; tıklamak ya da harfe klavyeden basmak satırı açar/kapatır
-   (Drops → drop satırları, sınıf → ürün kartları). Sağdaki yapışkan dosya
-   kartı üzerine gelinen satırı önizler (sınıfta ilk 4 görsel, Drops'ta
-   canlı drop). `#drop-NNN` bağlantıları Drops'u açıp o drop'a kaydırır.
+   KAPALI başlar (Drops → drop satırları, sınıf → ürün kartları).
+   Harf tuşu: kapalıysa açar ve kaydırır; açık ama odak başka satırdaysa o
+   satıra GERİ döner; odak zaten oradaysa kapatır. Tıklama aç/kapat.
+   Masaüstünde masthead + dizin tam bir ekranı doldurur (alttaki §1 başlığı
+   ilk ekranda görünmez). Sağdaki yapışkan dosya kartı üzerine gelinen
+   satırın ürünlerini 3B vitrinde (coverflow) tek tek tanıtır: ortadaki
+   odakta, oklar, ← →, 3,2 sn'de bir otomatik ilerleme (hover/odakta durur,
+   hareketi azalt ayarında kapalı). `#drop-NNN` bağlantıları Drops'u açıp
+   o drop'a kaydırır.
 3. **§1 Tüm Kayıtlar** — bütün ürünler tek ızgarada; rejim (Tümü / Sınırlı /
    Daimi), sınıf çipleri ve fiyat sıralaması sayfa içinde, 12'şer kart.
 4. **§2 Özel Tahsis** — Custom Registry daveti.

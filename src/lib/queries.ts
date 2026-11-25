@@ -1,6 +1,6 @@
 import { resolveDropState } from '@/lib/dropSchedule'
 import { sanityClient } from './sanity'
-import type { LampModelDef, ProductCard } from '@/types'
+import type { LampModelDef, LocalizedString, ProductCard } from '@/types'
 
 // ── Fragment'lar (tekrar kullanılan GROQ parçaları) ───────
 
@@ -639,4 +639,39 @@ export async function getAllPostSlugs(): Promise<Array<{ slug: { current: string
     {},
     { next: { revalidate: 3600 } }
   )
+}
+// Anasayfa masthead'indeki 3B wireframe: Extruded Conduit drop'unun
+// (DROP-000) ilk yapılandırılabilir ürünü, kayıtlı parça dizilimiyle
+// (taban → gövdeler → başlık). Sadece STL/GLB adresleri ve sıra döner.
+export const HERO_WIREFRAME_PRODUCT_SLUG = 'extruded-conduit-1.0'
+export interface HeroWireframeData {
+  slug: string
+  dropNo: string | null
+  name: LocalizedString[]
+  parts: Array<{ slotType: 'base' | 'body' | 'head'; url: string }>
+}
+export async function getHeroWireframe(): Promise<HeroWireframeData | null> {
+  const row = await sanityClient.fetch<{
+    slug: string
+    dropNo: string | null
+    name: LocalizedString[]
+    parts: Array<{ slotType: string; url: string | null } | null> | null
+  } | null>(
+    `*[_type == "product" && slug.current == $slug][0]{
+      "slug": slug.current,
+      "dropNo": drop->dropNo,
+      ${LOCALIZED_FIELD('name')},
+      "parts": configuratorParts[]{ slotType, "url": part->modelFile.asset->url }
+    }`,
+    { slug: HERO_WIREFRAME_PRODUCT_SLUG },
+    { next: { tags: ['products'] } }
+  )
+  if (!row) return null
+  const order = { base: 0, body: 1, head: 2 } as const
+  const parts = (row.parts ?? [])
+    .filter((p): p is { slotType: 'base' | 'body' | 'head'; url: string } => !!p?.url && p.slotType in order)
+    .map((p, i) => ({ ...p, i }))
+    .sort((a, b) => order[a.slotType] - order[b.slotType] || a.i - b.i)
+    .map(({ slotType, url }) => ({ slotType, url }))
+  return parts.length > 0 ? { slug: row.slug, dropNo: row.dropNo, name: row.name, parts } : null
 }

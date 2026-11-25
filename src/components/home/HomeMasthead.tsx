@@ -1,6 +1,8 @@
 import { Link } from '@/i18n/navigation'
 import { BulletinPanel, type LiveRow } from './BulletinPanel'
 import type { Bulletin } from '@/types'
+import type { HeroWireframeData } from '@/lib/queries'
+import { HeroWireframe } from './HeroWireframe'
 
 export interface BulletinData {
   /** Yayındaki ilk drop (yoksa null). */
@@ -20,10 +22,13 @@ export function HomeMasthead({
   locale,
   bulletin,
   bulletins,
+  wireframe,
 }: {
   locale: string
   bulletin: BulletinData
   bulletins: Bulletin[]
+  /** Ortadaki 3B tel kafes (yoksa iki sütunlu eski düzen). */
+  wireframe?: HeroWireframeData | null
 }) {
   const tr = locale === 'tr'
   const intl = tr ? 'tr-TR' : 'en-US'
@@ -35,7 +40,9 @@ export function HomeMasthead({
   return (
     <section
       aria-labelledby="home-title"
-      className="grid items-center gap-5 border-b border-bureau-rule px-5 py-4 md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:px-9 md:py-4"
+      className={`grid items-center gap-5 border-b border-bureau-rule px-5 py-5 md:min-h-[300px] md:grid-cols-[minmax(0,1fr)_360px] md:gap-10 md:px-9 md:py-8 lg:min-h-[360px] ${
+        wireframe ? 'lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_340px] lg:gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_360px]' : ''
+      }`}
     >
       {/* Kompakt masthead: ziyaretçi ilk ekranda ürünleri de görebilsin
           diye başlık tek satır, bölüm butonları yapışkan çubukta (SectionNav). */}
@@ -57,12 +64,12 @@ export function HomeMasthead({
             </>
           )}
         </h1>
-        <p className="mt-2 max-w-[82ch] text-[13px] leading-relaxed text-bureau-muted md:text-[14px]">
+        <p className="mt-3 max-w-[82ch] text-[13px] leading-relaxed text-bureau-muted md:text-[14px]">
           {tr
             ? 'Ambience Bureau, akıllı ve standart aydınlatma nesneleri üretir. Koleksiyon parçaları numaralı drop’larla sınırlı sayıda tahsis edilir; lambader, sarkıt, aplik ve masa lambaları daimi envanterde sürekli satıştadır.'
             : 'Ambience Bureau makes smart and standard lighting objects. Collection pieces are allocated in numbered, limited drops; floor lamps, pendants, wall sconces and table lamps are held in standing inventory, always available.'}
         </p>
-        <div className="mt-2.5 flex flex-wrap items-center gap-x-5 gap-y-3">
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-3">
           <Link href="/custom-registry" className="btn-file btn-file-amber focus-bureau !py-2">
             <span>{tr ? 'Kendi lambanı tasarla' : 'Design your own lamp'}</span>
           </Link>
@@ -74,6 +81,8 @@ export function HomeMasthead({
           </a>
         </div>
       </div>
+
+      {wireframe && <HeroWireframe data={wireframe} locale={locale} />}
 
       {/* Büro Bülteni — masaüstünde masthead'de; telefonda §1'in altında
           (page.tsx), böylece telefonda da ürünler ilk ekrana yaklaşır. */}

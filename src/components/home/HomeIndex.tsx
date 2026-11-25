@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { LIGHT_CLASSES } from '@/lib/lightClasses'
 import { formatPrice, getLocalizedValue, getPricingForLocale, urlFor } from '@/lib/sanity'
 import { ProductCard } from '@/components/registry/ProductCard'
+import { Link } from '@/i18n/navigation'
 import type { ProductCard as ProductCardType, SanityImage } from '@/types'
 
 /** Klavye kısayolları: A = Drops; sınıflar kendi harfleriyle (lightClasses.ts → code: S D F G …). */
@@ -51,9 +52,12 @@ export function HomeIndex({
   locale,
   dropsContent,
   drops,
+  dropProducts,
 }: {
   products: ProductCardType[]
   locale: string
+  /** Drops satırının vitrininde dönecek drop ürünleri (canlı drop önce). */
+  dropProducts: ProductCardType[]
   /** Sunucuda çizilen drop satırları (DropRow / UpcomingDropRow). */
   dropsContent: ReactNode
   drops: DropsPreview
@@ -88,12 +92,12 @@ export function HomeIndex({
         desc: tr
           ? 'Numaralı ve sonlu drop’lar. Her adet bir seri numarası taşır; drop kapandığında aynı nesne bir daha üretilmez.'
           : 'Numbered, finite drops. Every unit carries a serial number; once a drop closes, the same object is never made again.',
-        products: [],
+        products: dropProducts,
         fromPrice: null,
       },
       ...classRows,
     ]
-  }, [products, locale, tr])
+  }, [products, dropProducts, locale, tr])
 
   const [open, setOpen] = useState<Set<string>>(() => new Set())
   const [active, setActive] = useState<string>(DROPS_ID)
@@ -102,23 +106,65 @@ export function HomeIndex({
   // değiştirmesin diye fare üzerine gelmeyi kısa süre yok say.
   const ignoreHoverUntil = useRef(0)
   const activeRow = rows.find((r) => r.id === active) ?? rows[0]
+  // Klavyeyle en son gidilen (odaktaki) satır: aynı harfe tekrar basmak
+  // önce o satıra GERİ DÖNER, zaten oradaysan kapatır.
+  const focusedRow = useRef<string | null>(null)
+  const openRef = useRef(open)
+  openRef.current = open
 
-  const toggle = useCallback((id: string, opts?: { scroll?: boolean; forceOpen?: boolean }) => {
-    setActive(id)
-    setOpen((prev) => {
-      const next = new Set(prev)
-      if (next.has(id) && !opts?.forceOpen) next.delete(id)
-      else next.add(id)
-      return next
+  const scrollToRow = useCallback((id: string) => {
+    ignoreHoverUntil.current = performance.now() + 900
+    requestAnimationFrame(() => {
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      rowRefs.current[id]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
     })
-    if (opts?.scroll) {
-      ignoreHoverUntil.current = performance.now() + 900
-      requestAnimationFrame(() => {
-        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-        rowRefs.current[id]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
-      })
-    }
   }, [])
+
+  /**
+   * Harf tuşu:
+   *  1) satır kapalıysa → aç ve oraya kaydır
+   *  2) açık ama odak başka satırdaysa → o satıra geri dön (kapatma)
+   *  3) açık ve odak zaten bu satırdaysa → kapat
+   */
+  const navigateKey = useCallback(
+    (id: string) => {
+      setActive(id)
+      const isOpen = openRef.current.has(id)
+      if (!isOpen) {
+        setOpen((prev) => new Set(prev).add(id))
+        focusedRow.current = id
+        scrollToRow(id)
+      } else if (focusedRow.current !== id) {
+        focusedRow.current = id
+        scrollToRow(id)
+      } else {
+        setOpen((prev) => {
+          const next = new Set(prev)
+          next.delete(id)
+          return next
+        })
+        focusedRow.current = null
+        scrollToRow(id)
+      }
+    },
+    [scrollToRow]
+  )
+
+  const toggle = useCallback(
+    (id: string, opts?: { scroll?: boolean; forceOpen?: boolean }) => {
+      setActive(id)
+      const willOpen = !openRef.current.has(id) || !!opts?.forceOpen
+      setOpen((prev) => {
+        const next = new Set(prev)
+        if (willOpen) next.add(id)
+        else next.delete(id)
+        return next
+      })
+      focusedRow.current = willOpen ? id : null
+      if (opts?.scroll) scrollToRow(id)
+    },
+    [scrollToRow]
+  )
 
   // Klavye: A/S/D/F/G… — yazı alanlarında ve kısayol tuşlarıyla birlikte çalışmaz.
   useEffect(() => {
@@ -131,11 +177,29 @@ export function HomeIndex({
       const row = rows.find((r) => r.key === k)
       if (!row) return
       e.preventDefault()
-      toggle(row.id, { scroll: true })
+      navigateKey(row.id)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [rows, toggle])
+  }, [rows, navigateKey])
+
+  // Masaüstünde dizin ilk ekranın altına kadar uzar (masthead + dizin tam
+  // bir ekran): tam ekranda aşağıdaki "Tüm Kayıtlar" başlığı görünmez.
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [minH, setMinH] = useState<number | null>(null)
+  useEffect(() => {
+    const measure = () => {
+      const el = gridRef.current
+      const main = document.getElementById('main-content')
+      if (!el || !main || window.innerWidth < 768) return setMinH(null)
+      const top = el.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop
+      const h = main.clientHeight - top
+      setMinH(h > 320 ? Math.floor(h) : null)
+    }
+    measure()
+    window.addEventListener('resize', measure)
+    return () => window.removeEventListener('resize', measure)
+  }, [])
 
   // Bülten bağlantıları: #drop-NNN → Drops'u aç ve o drop'a kaydır.
   useEffect(() => {
@@ -155,9 +219,13 @@ export function HomeIndex({
   }, [toggle])
 
   return (
-    <div className="grid border-b border-bureau-rule md:grid-cols-[minmax(0,1fr)_minmax(300px,400px)]">
-      {/* Dizin */}
-      <ul className="min-w-0 md:border-r md:border-bureau-rule">
+    <div
+      ref={gridRef}
+      style={minH ? { minHeight: minH } : undefined}
+      className="grid border-b border-bureau-rule md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)]"
+    >
+      {/* Dizin — satırlar boş yüksekliği eşit paylaşır */}
+      <ul className="flex min-w-0 flex-col md:border-r md:border-bureau-rule">
         {rows.map((r) => {
           const isOpen = open.has(r.id)
           const isActive = r.id === activeRow?.id
@@ -169,7 +237,7 @@ export function HomeIndex({
               ref={(el) => {
                 rowRefs.current[r.id] = el
               }}
-              className="scroll-mt-2 border-b border-bureau-rule last:border-b-0"
+              className="flex flex-1 scroll-mt-2 flex-col border-b border-bureau-rule last:border-b-0"
             >
               <button
                 type="button"
@@ -181,7 +249,7 @@ export function HomeIndex({
                 aria-expanded={isOpen}
                 aria-controls={panelId}
                 aria-keyshortcuts={r.key}
-                className="focus-bureau group relative isolate flex w-full items-center gap-4 overflow-hidden px-5 py-4 text-left md:gap-6 md:px-9 md:py-5"
+                className={`focus-bureau group relative isolate flex w-full items-center gap-4 overflow-hidden px-5 py-4 text-left md:gap-6 md:px-9 md:py-5 ${isOpen ? '' : 'flex-1'}`}
               >
                 {/* Çekmece dolgusu — aktif (önizlenen) satırda soldan taşar */}
                 <span
@@ -197,7 +265,7 @@ export function HomeIndex({
                 >
                   {/* Harf = klavye kısayolu */}
                   <kbd
-                    className={`inline-flex h-9 w-9 flex-shrink-0 items-center justify-center border font-mono text-[18px] font-semibold md:h-11 md:w-11 md:text-[22px] ${
+                    className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center border font-mono text-[15px] font-semibold md:h-9 md:w-9 md:text-[17px] ${
                       isActive || isOpen
                         ? 'border-bureau-amber text-bureau-amber'
                         : 'border-bureau-rule text-bureau-subtle max-md:group-hover:text-bureau-amber'
@@ -206,7 +274,7 @@ export function HomeIndex({
                     {r.key}
                   </kbd>
                   <span
-                    className={`flex-1 text-[22px] font-semibold tracking-[-0.02em] md:text-[34px] ${
+                    className={`flex-1 text-[18px] font-semibold tracking-[-0.02em] md:text-[24px] ${
                       isActive ? 'md:text-bureau-white' : 'text-bureau-black'
                     } max-md:group-hover:text-bureau-white`}
                   >
@@ -274,14 +342,10 @@ export function HomeIndex({
                 </span>
               </div>
 
-              {activeRow.id === DROPS_ID ? (
-                <DropsPreviewMedia drops={drops} tr={tr} />
-              ) : (
-                <ClassPreviewGrid row={activeRow} locale={locale} />
-              )}
+              <Coverflow row={activeRow} locale={locale} />
 
               <div className="space-y-3 border-t border-bureau-black px-4 py-4">
-                <p className="text-[13px] leading-relaxed text-bureau-muted">{activeRow.desc}</p>
+                <p className="line-clamp-2 text-[13px] leading-relaxed text-bureau-muted">{activeRow.desc}</p>
                 <div className="flex items-end justify-between gap-4">
                   <p className="font-mono text-[12px] tabular-nums text-bureau-black">
                     {activeRow.id === DROPS_ID
@@ -315,13 +379,43 @@ export function HomeIndex({
   )
 }
 
-/** Sınıf önizlemesi: o sınıftaki ilk 4 ürünün görselleri (yoksa damgalı bekleyen dosya). */
-function ClassPreviewGrid({ row, locale }: { row: Row; locale: string }) {
+/** Kart vitrininde gösterilecek ürünün bağlantısı (model kartı → konfigüratör). */
+function productHref(p: ProductCardType): string {
+  if (p.modelLink) {
+    return `/custom-registry?collection=${encodeURIComponent(p.modelLink.collectionKey)}&model=${encodeURIComponent(p.modelLink.modelId)}`
+  }
+  return `/registry/${p.slug.current}`
+}
+
+const AUTO_ADVANCE_MS = 3200
+
+/**
+ * 3B vitrin (coverflow): satırın ürünleri sırayla tanıtılır. Ortadaki kart
+ * odakta; yanlardakiler perspektifle geride ve eğik. Oklar / yandaki karta
+ * tıklama / ← → tuşları (kart odaktayken) ile gezilir; kendiliğinden ilerler,
+ * üzerine gelince ya da odaklanınca durur. Hareketi azalt ayarında
+ * otomatik ilerleme kapalıdır.
+ */
+function Coverflow({ row, locale }: { row: Row; locale: string }) {
   const tr = locale === 'tr'
-  const withImg = row.products.filter((p) => p.image?.asset?.url).slice(0, 4)
-  if (withImg.length === 0) {
+  const intl = tr ? 'tr-TR' : 'en-US'
+  const items = row.products
+  const n = items.length
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+
+  useEffect(() => {
+    if (n < 2 || paused) return
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const t = setInterval(() => setIndex((i) => (i + 1) % n), AUTO_ADVANCE_MS)
+    return () => clearInterval(t)
+  }, [n, paused])
+
+  const go = (d: number) => setIndex((i) => (((i + d) % n) + n) % n)
+
+  if (n === 0) {
     return (
-      <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden bg-bureau-surface">
+      <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-bureau-surface">
         <span aria-hidden="true" className="absolute select-none font-mono text-[160px] font-semibold leading-none text-bureau-rule">
           {row.key}
         </span>
@@ -331,52 +425,127 @@ function ClassPreviewGrid({ row, locale }: { row: Row; locale: string }) {
       </div>
     )
   }
-  return (
-    <div className={`grid aspect-[4/3] gap-px bg-bureau-rule ${withImg.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-      {withImg.map((p, i) => {
-        const name = getLocalizedValue(p.name, locale, '') ?? ''
-        const span = withImg.length === 3 && i === 0 ? 'row-span-2' : ''
-        return (
-          <div key={p._id} className={`relative overflow-hidden bg-bureau-surface ${span}`}>
-            <Image
-              src={urlFor(p.image!).width(440).height(440).fit('crop').url()}
-              alt={p.image?.alt ?? name}
-              fill
-              sizes="200px"
-              className="object-cover"
-            />
-            <span className="absolute bottom-1.5 left-1.5 max-w-[90%] truncate bg-bureau-black/80 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-bureau-white">
-              {name}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
 
-function DropsPreviewMedia({ drops, tr }: { drops: DropsPreview; tr: boolean }) {
-  const f = drops.feature
-  if (!f) {
-    return (
-      <div className="flex aspect-[4/3] items-center justify-center bg-bureau-surface font-mono text-[11px] uppercase tracking-wide text-bureau-muted">
-        {tr ? 'Kayıtlı drop yok' : 'No drops on record'}
-      </div>
-    )
-  }
+  const current = items[Math.min(index, n - 1)]
+  const curName = getLocalizedValue(current.name, locale, '') ?? ''
+  const pr = getPricingForLocale(current, locale)
+
   return (
-    <div className="relative aspect-[4/3] overflow-hidden bg-bureau-surface">
-      {f.image?.asset?.url ? (
-        <Image src={urlFor(f.image).width(880).height(660).fit('crop').url()} alt={f.name} fill sizes="400px" className="object-cover" />
-      ) : (
-        <span aria-hidden="true" className="absolute inset-0 flex select-none items-center justify-center font-mono text-[120px] font-semibold leading-none text-bureau-rule">
-          A
+    <div
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocusCapture={() => setPaused(true)}
+      onBlurCapture={() => setPaused(false)}
+      onKeyDown={(e) => {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault()
+          go(1)
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault()
+          go(-1)
+        }
+      }}
+      role="region"
+      aria-roledescription={tr ? 'vitrin' : 'carousel'}
+      aria-label={row.title}
+    >
+      <div className="relative h-[320px] overflow-hidden bg-bureau-surface [perspective:1100px]">
+        {items.map((p, k) => {
+          let d = k - index
+          if (d > n / 2) d -= n
+          if (d < -n / 2) d += n
+          const ad = Math.abs(d)
+          const visible = ad <= 2
+          const name = getLocalizedValue(p.name, locale, '') ?? ''
+          const card = (
+            <div className="relative h-full w-full overflow-hidden border border-bureau-black bg-bureau-white shadow-[0_12px_30px_rgba(0,0,0,0.35)]">
+              {p.image?.asset?.url ? (
+                <Image
+                  src={urlFor(p.image).width(420).height(560).fit('crop').url()}
+                  alt={d === 0 ? (p.image.alt ?? name) : ''}
+                  fill
+                  sizes="220px"
+                  className="object-cover"
+                />
+              ) : (
+                <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center font-mono text-[64px] font-semibold text-bureau-rule">
+                  {row.key}
+                </span>
+              )}
+            </div>
+          )
+          return (
+            <div
+              key={p._id}
+              aria-hidden={d !== 0}
+              className="absolute left-1/2 top-1/2 h-[82%] aspect-[3/4] transition-[transform,opacity] duration-500 ease-[cubic-bezier(0.2,0.7,0.1,1)] motion-reduce:transition-none"
+              style={{
+                transform: `translate(-50%, -50%) translateX(${d * 62}%) translateZ(${-ad * 140}px) rotateY(${-d * 38}deg)`,
+                opacity: !visible ? 0 : ad === 2 ? 0.35 : ad === 1 ? 0.8 : 1,
+                zIndex: 10 - ad,
+                pointerEvents: visible ? 'auto' : 'none',
+              }}
+            >
+              {d === 0 ? (
+                <Link href={productHref(p)} className="focus-bureau block h-full w-full" aria-label={name}>
+                  {card}
+                </Link>
+              ) : (
+                <button type="button" tabIndex={-1} onClick={() => go(d)} className="block h-full w-full" aria-label={name}>
+                  {card}
+                </button>
+              )}
+            </div>
+          )
+        })}
+
+        {n > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={() => go(-1)}
+              aria-label={tr ? 'Önceki' : 'Previous'}
+              className="focus-bureau absolute left-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center border border-bureau-black bg-bureau-white/90 font-mono text-[18px] text-bureau-black transition-colors hover:bg-bureau-black hover:text-bureau-white"
+            >
+              ‹
+            </button>
+            <button
+              type="button"
+              onClick={() => go(1)}
+              aria-label={tr ? 'Sonraki' : 'Next'}
+              className="focus-bureau absolute right-2 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center border border-bureau-black bg-bureau-white/90 font-mono text-[18px] text-bureau-black transition-colors hover:bg-bureau-black hover:text-bureau-white"
+            >
+              ›
+            </button>
+          </>
+        )}
+        {/* İlerleme çizgisi — otomatik ilerleme sayacı */}
+        {n > 1 && !paused && (
+          <span
+            key={index}
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 z-20 h-[2px] w-full origin-left bg-bureau-amber motion-reduce:hidden"
+            style={{ animation: `coverflow-progress ${AUTO_ADVANCE_MS}ms linear forwards` }}
+          />
+        )}
+      </div>
+
+      {/* Odaktaki ürün */}
+      <div className="flex items-baseline justify-between gap-3 border-t border-bureau-black px-4 py-2.5" aria-live="polite">
+        <Link href={productHref(current)} className="focus-bureau min-w-0 truncate text-[14px] font-semibold text-bureau-black no-underline hover:text-bureau-amber">
+          {curName}
+        </Link>
+        <span className="flex flex-shrink-0 items-baseline gap-2 font-mono text-[11px] tabular-nums">
+          <span className="text-bureau-black">
+            {current.modelLink ? (tr ? '' : 'from ') : ''}
+            {formatPrice(pr.discounted ?? pr.original, pr.currency, intl)}
+            {current.modelLink && tr ? "'den" : ''}
+          </span>
+          <span className="text-bureau-muted">
+            {String(index + 1).padStart(2, '0')}/{String(n).padStart(2, '0')}
+          </span>
         </span>
-      )}
-      <span className="absolute bottom-2 left-2 bg-bureau-black/80 px-2 py-1 font-mono text-[10px] uppercase tracking-wider text-bureau-white">
-        DROP-{f.dropNo} · {f.name}
-        {f.live ? (tr ? ' · Canlı' : ' · Live') : tr ? ' · Yakında' : ' · Soon'}
-      </span>
+      </div>
     </div>
   )
 }
