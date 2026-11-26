@@ -28,7 +28,16 @@ export function CustomRegistryClient({
   presetStatus,
   showTutorial = false,
   captureMode = false,
+  embedded = false,
+  onClose,
 }: {
+  /**
+   * Anasayfanın ilk ekranına gömülü açılış (HeroStudio). Mantık aynı; yalnızca
+   * yerleşim: panel yarı saydam, "Koleksiyonu değiştir" yerine vitrine dönüş.
+   */
+  embedded?: boolean
+  /** embedded: konfigüratörü kapatıp vitrine döner. */
+  onClose?: () => void
   collections: Collection[]
   initialCollectionKey?: string
   /** Montajlı model koleksiyonunda açılışta seçilecek model (Daimi Envanter kartından gelir). */
@@ -283,6 +292,15 @@ export function CustomRegistryClient({
     return () => clearTimeout(timeout)
   }, [saveSuccess])
 
+  // Gömülüyken "Koleksiyonu değiştir" konfigüratörü kapatır (seçim anasayfada).
+  const changeCollection = () => {
+    clearCollection()
+    if (embedded) onClose?.()
+  }
+  const changeLabel = embedded
+    ? locale === 'tr' ? 'Vitrine dön' : 'Back to showcase'
+    : locale === 'tr' ? 'Koleksiyonu Değiştir' : 'Change Collection'
+
   // Capture modu: tüm hook'lar çağrıldıktan SONRA erken dönüş — sadece
   // 3D canvas'ı tam ekran render eder, hiçbir yan panel/tutorial/fiyat
   // çubuğu yok (bkz. scripts/generate-spin-frames.ts).
@@ -303,7 +321,11 @@ export function CustomRegistryClient({
         <div className="flex min-h-0 flex-1 border-r border-bureau-black">
           <ConfiguratorCanvas onScreenshotReady={handleScreenshotReady} />
         </div>
-        <div className="flex w-[460px] flex-shrink-0 flex-col overflow-hidden">
+        <div
+          className={`flex flex-shrink-0 flex-col overflow-hidden ${
+            embedded ? 'w-[400px] bg-bureau-white/90 backdrop-blur-[6px]' : 'w-[460px]'
+          }`}
+        >
           <div className="flex-1 overflow-y-auto p-4" id="tutorial-scope">
             {!collectionKey ? (
               <div>
@@ -325,8 +347,8 @@ export function CustomRegistryClient({
               </div>
             ) : (
               <div className="space-y-5">
-                <button onClick={clearCollection} className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted hover:text-bureau-amber">
-                  ← {locale === 'tr' ? 'Koleksiyonu Değiştir' : 'Change Collection'}
+                <button onClick={changeCollection} className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-muted hover:text-bureau-amber">
+                  ← {changeLabel}
                 </button>
                 <ControlPanel />
               </div>
@@ -391,7 +413,8 @@ export function CustomRegistryClient({
                 </div>
               ) : (
                 <MobileControlPanel
-                  onClearCollection={clearCollection}
+                  onClearCollection={changeCollection}
+                  clearLabel={embedded ? (locale === 'tr' ? 'Vitrin' : 'Showcase') : undefined}
                   onRegister={handleRegisterDesign}
                   isSaving={isSaving}
                   saveError={saveError}

@@ -11,14 +11,11 @@ import { getLocalizedValue } from '@/lib/sanity'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import { HeaderStickman } from './HeaderStickman'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
-import { scrollToSection } from '@/lib/useActiveSection'
 import type { Collection } from '@/types'
 
-// "Özel Tahsis": koleksiyon seçimi anasayfanın ilk ekranında ("Işık,
-// tahsis edilir." bloğunun yerinde) açılır — ayrı bir seçim sayfası yok.
-// Header'da anasayfa bölüm linkleri (§1 Dizin, §2 Kayıtlar) KALDIRILDI:
-// dizin menüsü zaten ilk ekranın altında.
-const CUSTOM_PICKER_ID = 'ozel-tahsis'
+// Header sade: anasayfa bölüm linkleri, Özel Tahsis düğmesi ve Kontrol
+// Protokolü linki KALDIRILDI (menü ilk ekranın altında; Özel Tahsis ilk
+// ekrandaki "Kendi lambanı tasarla"da; Protokol footer'da rozetlerin üstünde).
 
 const NAV_ITEMS = [
   { href: '/control-protocol' as const, labelKey: 'controlProtocol', isCTA: false },
@@ -42,13 +39,10 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   const [mounted, setMounted] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [desktopDropdownOpen, setDesktopDropdownOpen] = useState(false)
-  const [mobileSubOpen, setMobileSubOpen] = useState(false)
   const [accountDropdownOpen, setAccountDropdownOpen] = useState(false)
   const [accountMobileSubOpen, setAccountMobileSubOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
   const [user, setUser] = useState<any>(null)
-  const dropdownRef = useRef<HTMLDivElement>(null)
   const accountDropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -75,19 +69,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
     document.body.style.overflow = menuOpen ? 'hidden' : ''
     return () => { document.body.style.overflow = '' }
   }, [menuOpen])
-
-  // Dropdown dışına tıklanınca kapat
-  useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDesktopDropdownOpen(false)
-      }
-    }
-    if (desktopDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-      return () => document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [desktopDropdownOpen])
 
   // Sicilim dropdown dışına tıklanınca kapat
   useEffect(() => {
@@ -126,23 +107,14 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
   const isHome = pathname === '/'
-  // Anasayfada: sayfa içi kaydır. Başka sayfada: Link anasayfanın bölümüne gider.
-  const onSectionClick = (id: string) => (e: React.MouseEvent) => {
-    if (!isHome || e.metaKey || e.ctrlKey || e.shiftKey) return
-    e.preventDefault()
-    scrollToSection(id)
-  }
-
-  function goToCollection(key: string) {
-    router.push(`/custom-registry?collection=${key}`)
-    setDesktopDropdownOpen(false)
-    setMenuOpen(false)
-    setMobileSubOpen(false)
-  }
-
   return (
     <>
-      <header className="relative z-40 flex-shrink-0 border-b border-bureau-fixed-black bg-bureau-white dark:border-[rgb(var(--bureau-line-header))]">
+      <header
+        className={`relative z-40 flex-shrink-0 border-b bg-bureau-white ${
+          // Anasayfada header 3B sahnenin parçası gibi: çizgi yok, zemin sahneyle aynı.
+          isHome ? 'home-header border-transparent' : 'border-bureau-fixed-black dark:border-[rgb(var(--bureau-line-header))]'
+        }`}
+      >
         <div className="relative z-10 flex items-center justify-between px-5 py-4 sm:px-10 sm:pb-5 sm:pt-7 sm:items-start">
 
           {/* Brand — şimdilik sadece metin, logo görseli kullanılmıyor */}
@@ -162,86 +134,13 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
           {/* Desktop nav */}
           <nav className="hidden min-w-0 items-center gap-4 mt-1 lg:flex min-[1800px]:gap-8">
-            {/* Custom Registry — link + dropdown trigger birlikte */}
-            <div ref={dropdownRef} className="relative flex items-stretch">
-              <div
-                className={`
-                  flex items-center border border-bureau-black
-                  font-nav text-[12px] tracking-wider uppercase
-                  transition-colors duration-150
-                  ${isActive('/custom-registry')
-                    ? 'bg-bureau-black text-bureau-white'
-                    : 'bg-bureau-white text-bureau-black'}
-                `}
-              >
-                <Link
-                  href={{ pathname: '/', hash: CUSTOM_PICKER_ID }}
-                  onClick={onSectionClick(CUSTOM_PICKER_ID)}
-                  className={`flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 no-underline transition-colors font-semibold ${
-                    isActive('/custom-registry') ? '' : 'hover:bg-bureau-black hover:text-bureau-white'
-                  }`}
-                >
-                  <span className="h-[5px] w-[5px] rounded-full bg-bureau-amber flex-shrink-0" />
-                  {t('customRegistry')}
-                </Link>
-
-                {collections.length > 0 && (
-                  <button
-                    onClick={() => setDesktopDropdownOpen((v) => !v)}
-                    aria-label={locale === 'tr' ? 'Koleksiyonları göster' : 'Show collections'}
-                    aria-expanded={desktopDropdownOpen}
-                    className={`flex h-full items-center border-l px-2 transition-colors ${
-                      isActive('/custom-registry')
-                        ? 'border-bureau-white/30 hover:bg-bureau-white/10'
-                        : 'border-bureau-black hover:bg-bureau-black hover:text-bureau-white'
-                    }`}
-                  >
-                    <svg
-                      width="9"
-                      height="6"
-                      viewBox="0 0 9 6"
-                      fill="none"
-                      className={`transition-transform duration-150 ${desktopDropdownOpen ? 'rotate-180' : ''}`}
-                    >
-                      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.3" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-
-              {/* Dropdown panel */}
-              {desktopDropdownOpen && collections.length > 0 && (
-                <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-[260px] border border-bureau-black bg-bureau-white shadow-lg">
-                  <div className="border-b border-bureau-rule px-3.5 py-2">
-                    <span className="font-nav text-[9.5px] uppercase tracking-widest text-bureau-muted">
-                      {locale === 'tr' ? 'Koleksiyonlar' : 'Collections'}
-                    </span>
-                  </div>
-                  <div className="max-h-[320px] overflow-y-auto py-1">
-                    {collections.map((collection) => {
-                      const key = collection.key.current
-                      const name = getLocalizedValue(collection.name, locale, '—')
-                      return (
-                        <button
-                          key={collection._id}
-                          onClick={() => goToCollection(key)}
-                          className="block w-full px-3.5 py-2 text-left font-nav text-[12px] uppercase tracking-wide text-bureau-black transition-colors hover:bg-bureau-surface hover:text-bureau-amber"
-                        >
-                          {name}
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-
             {NAV_ITEMS.map(({ href, labelKey }) => {
               // Büro ve Arşiv linkleri menüden KALDIRILDI (artık Footer'da).
               // Ancak HeaderStickman animasyonu bu iki yazının konumunu
               // referans alıyor (lambalar/masa) — bu yüzden aynı yerde,
               // GÖRÜNMEZ birer yer tutucu bırakıyoruz.
+              // Kontrol Protokolü linki footer'a taşındı (rozetlerin üstünde).
+              if (href === '/control-protocol') return null
               if (href === '/bureau' || href === '/archive') {
                 return (
                   <span
@@ -418,55 +317,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
           {/* Nav links */}
           <nav className="flex flex-col overflow-y-auto flex-1">
-            {/* Custom Registry */}
-            <div className="border-b border-bureau-rule">
-              <div className="flex items-stretch">
-                <Link
-                  href={{ pathname: '/', hash: CUSTOM_PICKER_ID }}
-                  onClick={(e) => {
-                    setMenuOpen(false)
-                    onSectionClick(CUSTOM_PICKER_ID)(e)
-                  }}
-                  className={`flex flex-1 items-center gap-3 px-5 py-5 font-nav text-[12px] font-semibold tracking-wider uppercase no-underline ${
-                    isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'
-                  }`}
-                >
-                  <span className="h-[5px] w-[5px] rounded-full bg-bureau-amber flex-shrink-0" />
-                  {t('customRegistry')}
-                </Link>
-                {collections.length > 0 && (
-                  <button
-                    onClick={() => setMobileSubOpen((v) => !v)}
-                    aria-label={locale === 'tr' ? 'Koleksiyonları göster' : 'Show collections'}
-                    className="flex w-12 items-center justify-center border-l border-bureau-rule"
-                  >
-                    <svg width="11" height="7" viewBox="0 0 9 6" fill="none"
-                      className={`transition-transform duration-150 ${mobileSubOpen ? 'rotate-180' : ''}`}
-                    >
-                      <path d="M1 1L4.5 5L8 1" stroke="currentColor" strokeWidth="1.3" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-              {mobileSubOpen && collections.length > 0 && (
-                <div className="bg-bureau-surface">
-                  {collections.map((collection) => {
-                    const key = collection.key.current
-                    const name = getLocalizedValue(collection.name, locale, '—')
-                    return (
-                      <button
-                        key={collection._id}
-                        onClick={() => goToCollection(key)}
-                        className="block w-full border-t border-bureau-rule px-8 py-3.5 text-left font-nav text-[11.5px] uppercase tracking-wide text-bureau-black hover:text-bureau-amber"
-                      >
-                        {name}
-                      </button>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-
             {/* Auth links */}
             {user ? (
               <div className="border-b border-bureau-rule">
@@ -532,7 +382,7 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             )}
 
 
-            {NAV_ITEMS.map(({ href, labelKey }) => (
+            {NAV_ITEMS.filter(({ href }) => href !== '/control-protocol').map(({ href, labelKey }) => (
               <Link
                 key={href}
                 href={href}

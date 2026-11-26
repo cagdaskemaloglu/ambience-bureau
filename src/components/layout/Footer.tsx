@@ -24,7 +24,15 @@ export function Footer({ className }: { className?: string }) {
         {/* Orta: App Store + Play Store — artık yan yana (önceden alt alta),
             sol (marka) ve sağ (logo+linkler) bloklarının arasında, görsel
             olarak ortada. */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col items-center gap-2">
+          {/* Kontrol Protokolü — header'dan buraya taşındı (uygulama rozetlerinin üstü). */}
+          <Link
+            href="/control-protocol"
+            className="focus-bureau py-0.5 font-mono text-[10px] uppercase tracking-widest text-bureau-black no-underline hover:text-bureau-amber"
+          >
+            {tr ? 'Kontrol Protokolü' : 'Control Protocol'} →
+          </Link>
+          <div className="flex items-center gap-2">
           <a
             href={APP_STORE_URL}
             target="_blank"
@@ -46,6 +54,7 @@ export function Footer({ className }: { className?: string }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/badges/google-play.svg" alt="Get it on Google Play" width={121} height={36} className="h-9 w-auto" />
           </button>
+          </div>
         </div>
 
         {/* Sağ: linkler (2x2 — dikey yüksekliği yarıya indirir) */}

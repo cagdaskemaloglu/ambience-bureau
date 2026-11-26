@@ -22,7 +22,19 @@ const FADE_MS = 450
  * Yalnızca lg (≥1024px) ekranlarda görünür; ekran dışındayken çizim ve
  * sıra durur; "hareketi azalt" açıksa ilk üründe kalır.
  */
-export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; locale: string }) {
+export function HeroWireframe({
+  items,
+  locale,
+  focusCollection = null,
+  active = true,
+}: {
+  items: HeroWireframeData[]
+  locale: string
+  /** Seçilen Özel Tahsis koleksiyonu: sahne o koleksiyonun bir nesnesine geçer, sıra durur. */
+  focusCollection?: string | null
+  /** false: üstte gömülü konfigüratör açık — sahne çizimi durur (GPU'yu boşalt). */
+  active?: boolean
+}) {
   const tr = locale === 'tr'
   const { theme } = useTheme()
   const boxRef = useRef<HTMLDivElement>(null)
@@ -43,7 +55,7 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
   const [fading, setFading] = useState(false)
   const shownAt = useRef(0)
   const onPreloaded = useCallback(() => setNextReady(true), [])
-  const rotating = items.length > 1 && animate
+  const rotating = items.length > 1 && animate && !focusCollection
   const nextIdx = (idx + 1) % items.length
 
   useEffect(() => {
@@ -69,6 +81,13 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
       window.clearTimeout(swap)
     }
   }, [rotating, ready, nextReady, visible, nextIdx])
+
+  // Koleksiyon seçildi: tel kafes o koleksiyonun ilk nesnesine geçer.
+  useEffect(() => {
+    if (!focusCollection) return
+    const i = items.findIndex((x) => x.collectionKey === focusCollection)
+    if (i >= 0) setIdx(i)
+  }, [focusCollection, items])
 
   const data = items[idx]
 
@@ -119,7 +138,7 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
               item={data}
               tone={theme === 'dark' ? 'night' : 'paper'}
               preloadUrls={rotating && ready ? items[nextIdx].parts.map((p) => p.url) : undefined}
-              running={visible}
+              running={visible && active}
               animate={animate}
               onReady={onReady}
               onPreloaded={onPreloaded}
@@ -129,8 +148,13 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
       </div>
       <div aria-hidden="true" className="hero-vignette pointer-events-none absolute inset-0" />
 
-      {/* Çizim masası künyesi — sahnenin ortasında, modelin üstünde/altında */}
-      <div className="pointer-events-none absolute left-1/2 top-0 flex w-[min(560px,38%)] -translate-x-1/2 items-center justify-between gap-3 whitespace-nowrap py-4 font-mono text-[9.5px] uppercase tracking-widest text-bureau-wire/80">
+      {!ready && enabled && (
+        <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bureau-wire/60">
+          {tr ? 'Model çiziliyor…' : 'Drafting model…'}
+        </span>
+      )}
+      {/* Çizim masası künyesi — sahnenin altında (üst kenar sahneye kaldı) */}
+      <div className="pointer-events-none absolute bottom-[38px] left-1/2 flex w-[min(560px,38%)] -translate-x-1/2 items-center justify-between gap-3 whitespace-nowrap font-mono text-[9.5px] uppercase tracking-widest text-bureau-wire/80">
         <span style={labelFade}>{tr ? 'Tel kafes' : 'Wireframe'}{data.tag ? ` · ${tr ? data.tag : data.tag.replace('SINIF', 'CLASS')}` : ''}</span>
         <span className="hidden tabular-nums xl:inline" style={labelFade}>
           {data.kind === 'placed'
@@ -143,11 +167,6 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
           {items.length > 1 ? ` · ${String(idx + 1).padStart(2, '0')}/${String(items.length).padStart(2, '0')}` : ''}
         </span>
       </div>
-      {!ready && enabled && (
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bureau-wire/60">
-          {tr ? 'Model çiziliyor…' : 'Drafting model…'}
-        </span>
-      )}
       <div className="absolute bottom-0 left-1/2 z-20 flex w-[min(560px,38%)] -translate-x-1/2 items-end justify-between gap-3 whitespace-nowrap py-4" style={labelFade}>
         <span className="truncate font-mono text-[10px] uppercase tracking-wider text-bureau-black/85">{name}</span>
         <Link

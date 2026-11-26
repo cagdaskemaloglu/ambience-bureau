@@ -34,6 +34,19 @@ export function CustomizeButtonMini({
     e.stopPropagation()
 
     if (!isConfigurable) return
+    // Anasayfadaysak konfigüratör AYNI SAYFADA, ilk ekranın içinde açılır
+    // (HomeIndex 'bureau:open-studio' olayını dinler ve preventDefault eder).
+    if (href) {
+      const q = new URLSearchParams(href.split('?')[1] ?? '')
+      const collection = q.get('collection')
+      if (collection) {
+        const ev = new CustomEvent('bureau:open-studio', {
+          detail: { collection, model: q.get('model') ?? undefined },
+          cancelable: true,
+        })
+        if (!window.dispatchEvent(ev)) return
+      }
+    }
     router.push(href ?? `/custom-registry?preset=${slug}`)
   }
 

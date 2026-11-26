@@ -8,16 +8,23 @@ import type { Collection } from '@/types'
 /**
  * Özel Tahsis — koleksiyon seçimi, anasayfanın ilk ekranında ("Işık,
  * tahsis edilir." bloğunun YERİNDE). 3B görüntüleyici arkada yerinde
- * kalır; seçilen koleksiyon konfigüratörü doğrudan o koleksiyonla açar.
+ * kalır; seçilen koleksiyon konfigüratörü AYNI SAYFADA, ilk ekranın içinde
+ * açar (HeroStudio). Yeni sekmede açılırsa /custom-registry sayfası çalışır.
  */
 export function HeroCollectionPicker({
   collections,
   locale,
   onBack,
+  onPick,
+  onIntent,
 }: {
   collections: Collection[]
   locale: string
   onBack: () => void
+  /** Koleksiyon seçildi: konfigüratör aynı sayfada, ilk ekranda açılır. */
+  onPick?: (key: string) => void
+  /** Seçim niyeti (üzerine gelme/odak): konfigüratör kodu önceden indirilir. */
+  onIntent?: () => void
 }) {
   const tr = locale === 'tr'
   return (
@@ -54,6 +61,13 @@ export function HeroCollectionPicker({
             <li key={c._id}>
               <Link
                 href={`/custom-registry?collection=${encodeURIComponent(key)}`}
+                onMouseEnter={onIntent}
+                onFocus={onIntent}
+                onClick={(e) => {
+                  if (!onPick || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
+                  e.preventDefault()
+                  onPick(key)
+                }}
                 className="focus-bureau group flex items-center gap-3 border border-bureau-rule bg-bureau-white/70 p-2 no-underline backdrop-blur-[3px] transition-colors hover:border-bureau-amber"
               >
                 <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden bg-bureau-surface">

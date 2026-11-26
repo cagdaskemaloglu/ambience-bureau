@@ -1,6 +1,10 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { Suspense } from 'react'
+import { createPortal } from 'react-dom'
+import dynamic from 'next/dynamic'
+import { useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import { LIGHT_CLASSES } from '@/lib/lightClasses'
 import { formatPrice, getLocalizedValue, getPricingForLocale, urlFor } from '@/lib/sanity'
@@ -8,6 +12,35 @@ import { ProductCard } from '@/components/registry/ProductCard'
 import { Link } from '@/i18n/navigation'
 import type { Collection, ProductCard as ProductCardType, SanityImage } from '@/types'
 import { HeroCollectionPicker } from './HeroCollectionPicker'
+import { HeroWireframe } from './HeroWireframe'
+import type { HeroWireframeData } from '@/lib/queries'
+
+// Gömülü konfigüratör: ilk açılış paketine GİRMEZ; koleksiyon seçilince (ya da
+// seçim niyeti görülünce önceden) indirilir.
+const loadStudio = () => import('./HeroStudio')
+const HeroStudio = dynamic(loadStudio, { ssr: false, loading: () => null })
+let studioPreloaded = false
+
+/**
+ * Adres çubuğu ↔ stüdyo senkronu. Next.js `history.pushState`/geri tuşunu
+ * kendi router'ıyla takip eder; `useSearchParams` bu yüzden tek doğru kaynak:
+ * adreste `?collection=` YOKSA stüdyo açık kalamaz. (Statik çizimde
+ * `useSearchParams` Suspense ister — ayrı bileşen bu yüzden.)
+ */
+function StudioUrlSync({ onChange }: { onChange: (collection: string | null, model?: string) => void }) {
+  const sp = useSearchParams()
+  const collection = sp.get('collection')
+  const model = sp.get('model') ?? undefined
+  useEffect(() => {
+    onChange(collection, model)
+  }, [collection, model, onChange])
+  return null
+}
+function preloadStudio() {
+  if (studioPreloaded) return
+  studioPreloaded = true
+  void loadStudio()
+}
 
 const DROPS_ID = 'drops'
 
@@ -61,7 +94,7 @@ export function HomeIndex({
   dropProducts,
   intro,
   side,
-  background,
+  wireframes,
   registerProducts,
   registerContent,
   collections,
@@ -75,8 +108,8 @@ export function HomeIndex({
   intro: ReactNode
   /** İlk ekranın sağı (üst): Büro Bülteni. */
   side: ReactNode
-  /** İlk ekranın tamamına yayılan arka plan (3B tel kafes sahnesi). */
-  background?: ReactNode
+  /** İlk ekranın tamamına yayılan 3B tel kafes sahnesinin nesneleri. */
+  wireframes?: HeroWireframeData[]
   products: ProductCardType[]
   locale: string
   /** Drops satırının vitrininde dönecek drop ürünleri (canlı drop önce). */
@@ -132,6 +165,68 @@ export function HomeIndex({
   const [selected, setSelected] = useState<string | null>(null)
   // Özel Tahsis: ilk ekranın solunda tanıtım yerine koleksiyon seçimi.
   const [picking, setPicking] = useState(false)
+  // Gömülü konfigüratör (Özel Tahsis stüdyosu) — ilk ekranın içinde açılır.
+  const [studio, setStudio] = useState<{ collection: string; model?: string } | null>(null)
+  const [isDesktop, setIsDesktop] = useState(true)
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const sync = () => setIsDesktop(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
+
+  // Adres ↔ stüdyo: ?collection=…(&model=…) stüdyoyu açar; adreste yoksa
+  // kapalıdır. Koleksiyon listesinden açıldıysa geri tuşu listeye döner.
+  const syncFromUrl = useCallback((collection: string | null, model?: string) => {
+    if (collection) {
+      setStudio((prev) => (prev?.collection === collection && prev?.model === model ? prev : { collection, model }))
+    } else {
+      setStudio(null)
+      // Koleksiyon listesi adreste #ozel-tahsis varken açık; geri gelinince kapanır.
+      setPicking(window.location.hash === `#${CUSTOM_PICKER_ID}`)
+    }
+  }, [])
+  // Yedek: bazı tarayıcı geri hareketlerinde (bfcache vb.) doğrudan popstate.
+  useEffect(() => {
+    const onPop = () => {
+      const q = new URLSearchParams(window.location.search)
+      syncFromUrl(q.get('collection'), q.get('model') ?? undefined)
+    }
+    window.addEventListener('popstate', onPop)
+    window.addEventListener('pageshow', onPop)
+    return () => {
+      window.removeEventListener('popstate', onPop)
+      window.removeEventListener('pageshow', onPop)
+    }
+  }, [syncFromUrl])
+
+  const openStudio = useCallback((collection: string, model?: string) => {
+    preloadStudio()
+    setPicking(false)
+    setStudio({ collection, model })
+    const q = new URLSearchParams({ collection, ...(model ? { model } : {}) })
+    history.pushState({ studio: true }, '', `${window.location.pathname}?${q.toString()}`)
+  }, [])
+
+  // Kartlardaki "Özelleştir" (model kartları): sayfadan ayrılmadan stüdyoyu aç.
+  useEffect(() => {
+    const onOpen = (e: Event) => {
+      const d = (e as CustomEvent<{ collection: string; model?: string }>).detail
+      if (!d?.collection) return
+      e.preventDefault()
+      openStudio(d.collection, d.model)
+      heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+    window.addEventListener('bureau:open-studio', onOpen)
+    return () => window.removeEventListener('bureau:open-studio', onOpen)
+  }, [openStudio])
+
+  const closeStudio = useCallback(() => {
+    setStudio(null)
+    if ((history.state as { studio?: boolean } | null)?.studio) history.back()
+    else history.replaceState(null, '', window.location.pathname)
+  }, [])
   const [active, setActive] = useState<string>(DROPS_ID)
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({})
   // Açınca sayfa kayar; imlecin altına gelen satır kartı değiştirmesin
@@ -203,6 +298,7 @@ export function HomeIndex({
       const h = decodeURIComponent(window.location.hash.slice(1))
       if (h === CUSTOM_PICKER_ID) {
         setPicking(true)
+        preloadStudio()
         heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       } else if (h === REGISTER_ID) {
         toggle(REGISTER_ID, { forceOpen: true })
@@ -242,14 +338,41 @@ export function HomeIndex({
         style={minH ? { minHeight: minH } : undefined}
         className="home-hero relative isolate flex flex-col overflow-hidden"
       >
-        {background}
-        <div className="pointer-events-none relative z-10 grid flex-1 gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] md:px-9 md:py-8 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)_minmax(300px,380px)]">
+        <Suspense fallback={null}>
+          <StudioUrlSync onChange={syncFromUrl} />
+        </Suspense>
+        {wireframes && wireframes.length > 0 && (
+          <HeroWireframe
+            items={wireframes}
+            locale={locale}
+            focusCollection={studio?.collection ?? null}
+            active={!studio}
+          />
+        )}
+
+        {/* GÖMÜLÜ KONFİGÜRATÖR (masaüstü): ilk ekranın içinde, sahnenin yerine. */}
+        {studio && isDesktop && (
+          <div className="animate-drawer-in absolute inset-0 z-20 flex">
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bureau-wire/70">
+              {tr ? 'Stüdyo hazırlanıyor…' : 'Preparing studio…'}
+            </span>
+            <div className="relative flex min-h-0 flex-1">
+              <HeroStudio collections={collections} collectionKey={studio.collection} modelId={studio.model} onClose={closeStudio} />
+            </div>
+          </div>
+        )}
+
+        <div
+          aria-hidden={studio && isDesktop ? true : undefined}
+          className={`pointer-events-none relative z-10 grid ${studio && isDesktop ? 'invisible' : ''} flex-1 gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] md:px-9 md:py-8 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)_minmax(300px,380px)]`}>
           {/* Sol: künye + başlık + açıklama + eylemler */}
           <div className="pointer-events-auto flex min-w-0 flex-col justify-center">
             {picking ? (
               <HeroCollectionPicker
                 collections={collections}
                 locale={locale}
+                onPick={(key) => openStudio(key)}
+                onIntent={preloadStudio}
                 onBack={() => {
                   setPicking(false)
                   // Aynı bağlantıya yeniden basılınca tekrar açılabilsin.
@@ -307,6 +430,30 @@ export function HomeIndex({
           </div>
         </div>
       </section>
+
+      {/* GÖMÜLÜ KONFİGÜRATÖR (telefon/tablet): aynı sayfada tam ekran katman. */}
+      {studio &&
+        !isDesktop &&
+        createPortal(
+          <div className="fixed inset-0 z-[70] flex flex-col bg-bureau-white" role="dialog" aria-modal="true" aria-label={tr ? 'Özel Tahsis' : 'Custom Allocation'}>
+            <div className="flex flex-shrink-0 items-center justify-between border-b border-bureau-rule px-4 py-3">
+              <span className="font-mono text-[10.5px] uppercase tracking-widest text-bureau-muted">
+                {tr ? 'Özel Tahsis' : 'Custom Allocation'}
+              </span>
+              <button
+                type="button"
+                onClick={closeStudio}
+                className="focus-bureau min-h-[40px] px-2 font-mono text-[11px] uppercase tracking-widest text-bureau-black"
+              >
+                {tr ? 'Kapat' : 'Close'} ✕
+              </button>
+            </div>
+            <div className="flex min-h-0 flex-1 flex-col">
+              <HeroStudio collections={collections} collectionKey={studio.collection} modelId={studio.model} onClose={closeStudio} />
+            </div>
+          </div>,
+          document.body
+        )}
 
       {/* Dizin menüsü — ilk ekranın altında YATAY şerit; aşağı kayınca
           header'ın hemen altında SABİT kalır (sticky). Satıra tıklamak

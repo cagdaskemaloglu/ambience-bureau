@@ -666,11 +666,14 @@ export interface HeroWireframeData {
   name: LocalizedString[]
   /** stack: parçalar üst üste istiflenir; placed: Blender konumunda durur */
   kind: 'stack' | 'placed'
+  /** Konfigüratör koleksiyonu — anasayfada koleksiyon seçilince sahne buna geçer */
+  collectionKey: string | null
   /** placed + tavandan asılı (sarkıt) */
   hanging?: boolean
   parts: HeroWireframePart[]
 }
 type WireframeRow = {
+  collectionKey?: string | null
   slug: string
   dropNo: string | null
   name: LocalizedString[]
@@ -694,6 +697,7 @@ function toWireframe(row: WireframeRow | null): HeroWireframeData | null {
         tag: row.dropNo ? `DROP-${row.dropNo}` : '',
         name: row.name,
         kind: 'stack',
+        collectionKey: row.collectionKey ?? null,
         parts: parts.map((p) => ({ ...p, glow: p.slotType === 'head' })),
       }
     : null
@@ -754,6 +758,7 @@ async function getModelWireframes(): Promise<HeroWireframeData[]> {
         tag: `SINIF ${code} · MODEL`,
         name: r.name,
         kind: 'placed' as const,
+        collectionKey: r.collectionKey,
         hanging: !!r.hang,
         parts,
       },
@@ -763,6 +768,7 @@ async function getModelWireframes(): Promise<HeroWireframeData[]> {
 
 const WIREFRAME_PROJECTION = `
   "slug": slug.current,
+  "collectionKey": configuratorCollection->key.current,
   "dropNo": drop->dropNo,
   name[]{ locale, value },
   "parts": configuratorParts[]{ slotType, "url": part->modelFile.asset->url }

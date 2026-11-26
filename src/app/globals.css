@@ -534,12 +534,12 @@
    bu koyu kenarlarda okunur kalır. */
 .hero-vignette {
   background:
-    radial-gradient(ellipse 34% 62% at 50% 52%, transparent 0%, transparent 45%, rgb(var(--bureau-white) / 0.82) 82%, rgb(var(--bureau-white)) 100%),
+    radial-gradient(ellipse 36% 78% at 50% 44%, transparent 0%, transparent 45%, rgb(var(--bureau-white) / 0.82) 82%, rgb(var(--bureau-white)) 100%),
     linear-gradient(90deg, rgb(var(--bureau-white)) 0%, transparent 30%, transparent 70%, rgb(var(--bureau-white)) 100%);
 }
 .dark .hero-vignette {
   background:
-    radial-gradient(ellipse 34% 62% at 50% 52%, transparent 0%, transparent 45%, rgb(0 0 0 / 0.82) 82%, #000 100%),
+    radial-gradient(ellipse 36% 78% at 50% 44%, transparent 0%, transparent 45%, rgb(0 0 0 / 0.82) 82%, #000 100%),
     linear-gradient(90deg, #000 0%, transparent 30%, transparent 70%, #000 100%);
 }
 .dark .home-hero { background: #000; }
@@ -552,3 +552,7 @@
 }
 .beam-trail { animation: beam-up 650ms ease-out forwards; }
 @media (prefers-reduced-motion: reduce) { .beam-trail { animation: none; opacity: 0; } }
+
+/* Anasayfada header 3B sahnenin parçası gibi: alt çizgi yok, zemin sahnenin
+   üst kenarıyla aynı (karanlıkta siyah, aydınlıkta kâğıt). */
+.dark .home-header { background: #000; }

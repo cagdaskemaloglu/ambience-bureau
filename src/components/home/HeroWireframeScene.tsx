@@ -349,9 +349,17 @@ function Model({ item, animate }: { item: SceneItem; animate: boolean }) {
   // Oda (zemin + duvar [+ tavan]) dahil tüm sahneyi kutuya sığdır ve ortala.
   const { size, camera } = useThree()
   const b = useMemo(() => projectedBounds(roomH, R, lampBase, lampTop, !!hanging), [roomH, R, lampBase, lampTop, hanging])
-  const zoom = Math.min((size.height * 0.86) / (b.maxY - b.minY), (size.width * 1.1) / (b.maxX - b.minX))
+  // Sahne header'a kadar uzanır: üstte yalnızca küçük bir pay, altta künye
+  // satırları için yer. Yatayda kenarlar maskeyle eridiği için biraz taşabilir.
+  const PAD_TOP = 10
+  const PAD_BOTTOM = 64
+  const zoom = Math.min(
+    Math.max(1, size.height - PAD_TOP - PAD_BOTTOM) / (b.maxY - b.minY),
+    (size.width * 1.1) / (b.maxX - b.minX)
+  )
   const cx = (b.minX + b.maxX) / 2
-  const cy = (b.minY + b.maxY) / 2
+  // Odanın en üst noktası ekranın üstünden PAD_TOP aşağıda dursun.
+  const cy = b.maxY - (size.height / 2 - PAD_TOP) / zoom
   const ortho = camera as THREE.OrthographicCamera
   if (ortho.zoom !== zoom) {
     ortho.zoom = zoom

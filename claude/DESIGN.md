@@ -124,15 +124,26 @@ Ziyaretçi TÜM ürünleri anasayfadan ayrılmadan keşfedebilmeli.
 3. Eski §1 Tüm Kayıtlar / §2 Özel Tahsis / §3 Kontrol Protokolü bantları
    anasayfadan KALDIRILDI (Tüm Kayıtlar menüde; Özel Tahsis header
    düğmesinde; Kontrol Protokolü kendi sayfasında).
-   Header'da anasayfa bölüm linkleri YOK (§1 Dizin / §2 Kayıtlar kaldırıldı;
-   menü ilk ekranın altında).
-4. **Özel Tahsis (koleksiyon seçimi)** ilk ekranda, "Işık, tahsis edilir."
-   bloğunun YERİNDE açılır (`HeroCollectionPicker.tsx`); 3B görüntüleyici
-   yerinde kalır. Tetikleyenler: "Kendi lambanı tasarla", header'daki
-   "Özel Tahsis" ve `#ozel-tahsis`. Koleksiyon seçilince konfigüratör
-   `/custom-registry?collection=…` ile doğrudan açılır; koleksiyonsuz
-   `/custom-registry` anasayfadaki seçime (`/{locale}#ozel-tahsis`)
-   yönlendirilir. "← Geri" tanıtıma döner.
+   Header sade: logo + giriş/kayıt/sepet. Anasayfa bölüm linkleri, Özel
+   Tahsis düğmesi ve Kontrol Protokolü linki KALDIRILDI (Protokol footer'da
+   App Store/Google Play rozetlerinin üstünde). Anasayfada header 3B sahnenin
+   parçası gibi görünür (`.home-header`: alt çizgi yok, zemin sahnenin üst
+   kenarıyla aynı — karanlıkta siyah).
+4. **Özel Tahsis — AYNI SAYFADA.** Koleksiyon seçimi ilk ekranda,
+   "Işık, tahsis edilir." bloğunun YERİNDE açılır (`HeroCollectionPicker`;
+   tetikleyenler: "Kendi lambanı tasarla", `#ozel-tahsis`). Koleksiyon
+   seçilince konfigüratör sayfadan ayrılmadan açılır (`HeroStudio` →
+   `CustomRegistryClient embedded`): masaüstünde ilk ekranın içinde (header,
+   menü ve footer yerinde), telefonda aynı sayfada tam ekran katman. Tel
+   kafes sahnesi önce seçilen koleksiyonun nesnesine geçer, stüdyo açıkken
+   çizimi durur. Adres `?collection=…(&model=…)` olur; geri tuşu ve "Vitrine
+   dön" vitrine döndürür; bu adres doğrudan açılınca da stüdyo açılır.
+   Anasayfadaki model kartlarının "Özelleştir"i de stüdyoyu yerinde açar
+   (`bureau:open-studio` olayı). **Hız:** konfigüratör kodu ilk açılış
+   paketine GİRMEZ (`next/dynamic`); seçici açılınca/üzerine gelinince
+   önceden indirilir. `/custom-registry` sayfası doğrudan bağlantılar,
+   `?preset=` ve `?capture=1` için durur; koleksiyonsuz açılırsa anasayfaya
+   (`#ozel-tahsis`) yönlenir.
 
 ## Büro Bülteni (duyuru paneli)
 

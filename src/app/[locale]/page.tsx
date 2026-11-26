@@ -6,7 +6,6 @@ import { getLocalizedValue } from '@/lib/sanity'
 import { DropRow } from '@/components/registry/DropRow'
 import { UpcomingDropRow } from '@/components/registry/UpcomingDropRow'
 import { MastheadIntro, buildLiveRows, type BulletinData } from '@/components/home/HomeMasthead'
-import { HeroWireframe } from '@/components/home/HeroWireframe'
 import { BulletinPanel } from '@/components/home/BulletinPanel'
 import { HomeIndex } from '@/components/home/HomeIndex'
 import { RegisterSection } from '@/components/home/RegisterSection'
@@ -111,7 +110,7 @@ export default async function HomePage({ params }: Props) {
   }
 
   return (
-    <div className="border-t border-bureau-line-header dark:border-[rgb(var(--bureau-line-header))]">
+    <div>
       {/* İlk ekran (tek sayfalık "header") + açılan dizin panelleri: HomeIndex.
           3B tel kafes sahnesi ilk ekranın tamamına yayılır; dizin menüsü
           (A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt) içindedir. */}
@@ -128,7 +127,7 @@ export default async function HomePage({ params }: Props) {
               bulletins={bulletins}
             />
           }
-          background={heroWireframe.length > 0 ? <HeroWireframe items={heroWireframe} locale={locale} /> : undefined}
+          wireframes={heroWireframe}
           products={standingProducts}
           dropProducts={[
             ...(featureDrop?.products ?? []),

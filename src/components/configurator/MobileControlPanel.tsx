@@ -25,6 +25,7 @@ type Tab = 'base' | 'body' | 'head'
  */
 export function MobileControlPanel({
   onClearCollection,
+  clearLabel,
   onRegister,
   isSaving,
   saveError,
@@ -32,6 +33,8 @@ export function MobileControlPanel({
   onGoCart,
 }: {
   onClearCollection: () => void
+  /** Geri düğmesinin etiketi (gömülü stüdyoda "Vitrin"). */
+  clearLabel?: string
   onRegister: () => void
   isSaving: boolean
   saveError: string | null
@@ -90,7 +93,7 @@ export function MobileControlPanel({
           onClick={onClearCollection}
           className="font-mono text-[9.5px] uppercase tracking-wide text-bureau-muted hover:text-bureau-amber"
         >
-          ← {locale === 'tr' ? 'Koleksiyon' : 'Collection'}
+          ← {clearLabel ?? (locale === 'tr' ? 'Koleksiyon' : 'Collection')}
         </button>
       </div>
 
