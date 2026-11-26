@@ -1,4 +1,5 @@
 import { resolveDropState } from '@/lib/dropSchedule'
+import { getLightClass } from '@/lib/lightClasses'
 import { sanityClient } from './sanity'
 import type { LampModelDef, LocalizedString, ProductCard } from '@/types'
 
@@ -644,11 +645,30 @@ export async function getAllPostSlugs(): Promise<Array<{ slug: { current: string
 // (DROP-000) ilk yapılandırılabilir ürünü, kayıtlı parça dizilimiyle
 // (taban → gövdeler → başlık). Sadece STL/GLB adresleri ve sıra döner.
 export const HERO_WIREFRAME_PRODUCT_SLUG = 'extruded-conduit-1.0'
+export type HeroWireframePart = {
+  /** stack: taban/gövde/başlık; placed: 'part' (Blender konumundaki parça) */
+  slotType: 'base' | 'body' | 'head' | 'part'
+  url: string
+  /** placed: Sanity'deki konum (mm) ve rotasyon (derece) düzeltmesi */
+  offset?: [number, number, number]
+  rot?: [number, number, number]
+  /** Işık veren / başlık parçası (amber çizilir) */
+  glow?: boolean
+}
 export interface HeroWireframeData {
+  /** Benzersiz kimlik (ürün slug'ı ya da "model:<id>") */
   slug: string
+  /** "Kaydı aç" bağlantısı: ürün sayfası ya da modelin konfigüratörü */
+  href: string
   dropNo: string | null
+  /** Künye etiketi: "DROP-000" ya da "SINIF G · MODEL" */
+  tag: string
   name: LocalizedString[]
-  parts: Array<{ slotType: 'base' | 'body' | 'head'; url: string }>
+  /** stack: parçalar üst üste istiflenir; placed: Blender konumunda durur */
+  kind: 'stack' | 'placed'
+  /** placed + tavandan asılı (sarkıt) */
+  hanging?: boolean
+  parts: HeroWireframePart[]
 }
 type WireframeRow = {
   slug: string
@@ -666,7 +686,79 @@ function toWireframe(row: WireframeRow | null): HeroWireframeData | null {
     .map((p, i) => ({ ...p, i }))
     .sort((a, b) => order[a.slotType] - order[b.slotType] || a.i - b.i)
     .map(({ slotType, url }) => ({ slotType, url }))
-  return parts.length > 0 ? { slug: row.slug, dropNo: row.dropNo, name: row.name, parts } : null
+  return parts.length > 0
+    ? {
+        slug: row.slug,
+        href: `/registry/${row.slug}`,
+        dropNo: row.dropNo,
+        tag: row.dropNo ? `DROP-${row.dropNo}` : '',
+        name: row.name,
+        kind: 'stack',
+        parts: parts.map((p) => ({ ...p, glow: p.slotType === 'head' })),
+      }
+    : null
+}
+
+/**
+ * Montajlı Modeller (sarkıt, masa lambası…): parçalar Blender konumunda,
+ * Sanity'deki ofset/rotasyon düzeltmesiyle; sabit parçalar (kablo vb.) dahil.
+ */
+async function getModelWireframes(): Promise<HeroWireframeData[]> {
+  type Row = {
+    modelId: string
+    name: LocalizedString[]
+    collectionKey: string | null
+    hang: boolean | null
+    cls: string | null
+    parts: Array<{
+      id: string | null
+      emitsLight: boolean | null
+      offsetMm: { x?: number; y?: number; z?: number } | null
+      rotationDeg: { x?: number; y?: number; z?: number } | null
+      url: string | null
+    } | null> | null
+  }
+  const rows = await sanityClient.fetch<Row[]>(
+    `*[_type == "lampModel" && active != false && count(parts) > 0] | order(collection->sortOrder asc, sortOrder asc) {
+      "modelId": key.current,
+      ${LOCALIZED_FIELD('name')},
+      "collectionKey": collection->key.current,
+      "hang": collection->hangFromCeiling,
+      "cls": collection->productClass,
+      "parts": parts[]->{ "id": partId.current, emitsLight, offsetMm, rotationDeg, "url": modelFile.asset->url }
+    }`,
+    {},
+    { next: { tags: ['products', 'configurator-collections'] } }
+  )
+  return (rows ?? []).flatMap((r) => {
+    const parts = (r.parts ?? []).flatMap((p) =>
+      p?.url
+        ? [
+            {
+              slotType: 'part' as const,
+              url: p.url,
+              offset: [p.offsetMm?.x ?? 0, p.offsetMm?.y ?? 0, p.offsetMm?.z ?? 0] as [number, number, number],
+              rot: [p.rotationDeg?.x ?? 0, p.rotationDeg?.y ?? 0, p.rotationDeg?.z ?? 0] as [number, number, number],
+              glow: !!p.emitsLight || /head|baslik|başlık|diffus|shade/i.test(p.id ?? ''),
+            },
+          ]
+        : []
+    )
+    if (!r.modelId || !r.collectionKey || parts.length === 0) return []
+    const code = getLightClass(r.cls ?? 'pendant')?.code ?? '—'
+    return [
+      {
+        slug: `model:${r.modelId}`,
+        href: `/custom-registry?collection=${encodeURIComponent(r.collectionKey)}&model=${encodeURIComponent(r.modelId)}`,
+        dropNo: null,
+        tag: `SINIF ${code} · MODEL`,
+        name: r.name,
+        kind: 'placed' as const,
+        hanging: !!r.hang,
+        parts,
+      },
+    ]
+  })
 }
 
 const WIREFRAME_PROJECTION = `
@@ -709,5 +801,12 @@ export async function getHeroWireframes(): Promise<HeroWireframeData[]> {
   })
   const first = list.findIndex((x) => x.slug === HERO_WIREFRAME_PRODUCT_SLUG)
   if (first > 0) list.unshift(...list.splice(first, 1))
-  return list.slice(0, 8)
+  // Drop ürünleri ve Montajlı Modeller sırayla karışık: drop, model, drop…
+  const models = await getModelWireframes().catch(() => [])
+  const mixed: HeroWireframeData[] = []
+  for (let i = 0; i < Math.max(list.length, models.length); i++) {
+    if (list[i]) mixed.push(list[i])
+    if (models[i]) mixed.push(models[i])
+  }
+  return mixed.slice(0, 40)
 }

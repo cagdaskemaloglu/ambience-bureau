@@ -6,10 +6,10 @@ import { Footer } from './Footer'
 // Footer'ın GÖRÜNMEYECEĞİ sayfalar — tam ekran/tool tarzı deneyim istenen yerler
 const HIDE_FOOTER_PATHS = ['/custom-registry']
 
-export function ConditionalFooter() {
+export function ConditionalFooter({ className }: { className?: string }) {
   const pathname = usePathname()
   const shouldHide = HIDE_FOOTER_PATHS.some((path) => pathname.startsWith(path))
 
   if (shouldHide) return null
-  return <Footer />
+  return <Footer className={className} />
 }

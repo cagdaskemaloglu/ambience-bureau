@@ -529,8 +529,26 @@
     radial-gradient(1px 1px at 58% 46%, rgba(255, 255, 255, 0.3), transparent 60%),
     linear-gradient(180deg, #000 0%, #030712 30%, #0a1a3f 72%, #10306e 100%);
 }
-/* Masthead: kenarlarda sayfaya erir; üstte header'a yapışık kalır. */
-.hero-wireframe {
-  -webkit-mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
-  mask-image: linear-gradient(90deg, transparent 0%, #000 16%, #000 84%, transparent 100%);
+/* İlk ekran vinyeti: sahne ortada, kenarlara doğru zemin rengine erir.
+   Karanlıkta (tel kafes teması) uçlar iyice SİYAH. Metin ve paneller
+   bu koyu kenarlarda okunur kalır. */
+.hero-vignette {
+  background:
+    radial-gradient(ellipse 34% 62% at 50% 52%, transparent 0%, transparent 45%, rgb(var(--bureau-white) / 0.82) 82%, rgb(var(--bureau-white)) 100%),
+    linear-gradient(90deg, rgb(var(--bureau-white)) 0%, transparent 30%, transparent 70%, rgb(var(--bureau-white)) 100%);
 }
+.dark .hero-vignette {
+  background:
+    radial-gradient(ellipse 34% 62% at 50% 52%, transparent 0%, transparent 45%, rgb(0 0 0 / 0.82) 82%, #000 100%),
+    linear-gradient(90deg, #000 0%, transparent 30%, transparent 70%, #000 100%);
+}
+.dark .home-hero { background: #000; }
+
+/* "Header'a ışınla" izi: footer'dan header'a doğru yukarı akan amber ışın. */
+@keyframes beam-up {
+  0% { transform: scaleY(0); transform-origin: bottom; opacity: 1; }
+  60% { transform: scaleY(1); transform-origin: bottom; opacity: 1; }
+  100% { transform: scaleY(1); opacity: 0; }
+}
+.beam-trail { animation: beam-up 650ms ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .beam-trail { animation: none; opacity: 0; } }

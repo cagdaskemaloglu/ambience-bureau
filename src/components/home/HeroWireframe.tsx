@@ -32,6 +32,13 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
   const [ready, setReady] = useState(false)
   const onReady = useCallback(() => setReady(true), [])
   const [idx, setIdx] = useState(0)
+  // ?wf=<slug|model:id> → görüntüleyici o nesneyle başlar (paylaşılabilir bağlantı).
+  useEffect(() => {
+    const wf = new URLSearchParams(window.location.search).get('wf')
+    if (!wf) return
+    const i = items.findIndex((x) => x.slug === wf || x.slug === `model:${wf}`)
+    if (i > 0) setIdx(i)
+  }, [items])
   const [nextReady, setNextReady] = useState(false)
   const [fading, setFading] = useState(false)
   const shownAt = useRef(0)
@@ -102,17 +109,14 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
   const labelFade = { opacity: fading ? 0 : 1, transition: `opacity ${FADE_MS}ms ease-out` }
 
   return (
-    <div
-      ref={boxRef}
-      className="relative hidden min-h-[300px] self-stretch lg:-my-8 lg:block"
-    >
-      {/* Çerçevesiz: zemin header'ın hemen altından başlar, kenarlara doğru
-          maskeyle sayfaya erir — kutu değil, header'ın uzantısı gibi. */}
+    <div ref={boxRef} className="absolute inset-0 hidden lg:block">
+      {/* İlk ekranın TAMAMINA yayılan sahne: header'ın hemen altından başlar,
+          kenarlara doğru iyice siyaha erir (vinyet), metin ve paneller üstünde. */}
       <div className="hero-wireframe absolute inset-0">
         {enabled && (
           <div className="absolute inset-0 transition-opacity ease-out" style={{ opacity: fading ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}>
             <Scene
-              parts={data.parts}
+              item={data}
               tone={theme === 'dark' ? 'night' : 'paper'}
               preloadUrls={rotating && ready ? items[nextIdx].parts.map((p) => p.url) : undefined}
               running={visible}
@@ -123,12 +127,19 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
           </div>
         )}
       </div>
+      <div aria-hidden="true" className="hero-vignette pointer-events-none absolute inset-0" />
 
-      {/* Çizim masası künyesi */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between gap-3 whitespace-nowrap px-[9%] py-3 font-mono text-[9.5px] uppercase tracking-widest text-bureau-wire/80">
-        <span style={labelFade}>{tr ? 'Tel kafes' : 'Wireframe'}{data.dropNo ? ` · DROP-${data.dropNo}` : ''}</span>
+      {/* Çizim masası künyesi — sahnenin ortasında, modelin üstünde/altında */}
+      <div className="pointer-events-none absolute left-1/2 top-0 flex w-[min(560px,38%)] -translate-x-1/2 items-center justify-between gap-3 whitespace-nowrap py-4 font-mono text-[9.5px] uppercase tracking-widest text-bureau-wire/80">
+        <span style={labelFade}>{tr ? 'Tel kafes' : 'Wireframe'}{data.tag ? ` · ${tr ? data.tag : data.tag.replace('SINIF', 'CLASS')}` : ''}</span>
         <span className="hidden tabular-nums xl:inline" style={labelFade}>
-          {tr ? `${baseN} taban · ${bodyN} gövde · ${headN} başlık` : `${baseN} base · ${bodyN} body · ${headN} head`}
+          {data.kind === 'placed'
+            ? tr
+              ? `${data.parts.length} parça${data.hanging ? ' · tavandan' : ''}`
+              : `${data.parts.length} part${data.parts.length === 1 ? '' : 's'}${data.hanging ? ' · ceiling' : ''}`
+            : tr
+              ? `${baseN} taban · ${bodyN} gövde · ${headN} başlık`
+              : `${baseN} base · ${bodyN} body · ${headN} head`}
           {items.length > 1 ? ` · ${String(idx + 1).padStart(2, '0')}/${String(items.length).padStart(2, '0')}` : ''}
         </span>
       </div>
@@ -137,13 +148,13 @@ export function HeroWireframe({ items, locale }: { items: HeroWireframeData[]; l
           {tr ? 'Model çiziliyor…' : 'Drafting model…'}
         </span>
       )}
-      <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 whitespace-nowrap px-[9%] py-3" style={labelFade}>
+      <div className="absolute bottom-0 left-1/2 z-20 flex w-[min(560px,38%)] -translate-x-1/2 items-end justify-between gap-3 whitespace-nowrap py-4" style={labelFade}>
         <span className="truncate font-mono text-[10px] uppercase tracking-wider text-bureau-black/85">{name}</span>
         <Link
-          href={`/registry/${data.slug}`}
+          href={data.href}
           className="focus-bureau flex-shrink-0 font-mono text-[10px] uppercase tracking-wider text-bureau-amber no-underline hover:underline"
         >
-          {tr ? 'Kaydı aç →' : 'Open record →'}
+          {data.kind === 'placed' ? (tr ? 'Tasarla →' : 'Design →') : tr ? 'Kaydı aç →' : 'Open record →'}
         </Link>
       </div>
     </div>

@@ -4,6 +4,7 @@ import { NextIntlClientProvider, hasLocale } from 'next-intl'
 import { getMessages, getTranslations } from 'next-intl/server'
 import { routing } from '@/i18n/routing'
 import { Header } from '@/components/layout/Header'
+import { BackToHeader } from '@/components/layout/BackToHeader'
 import { ConditionalFooter } from '@/components/layout/ConditionalFooter'
 import { getAllLampCollections } from '@/lib/queries'
 import { CartDrawer } from '@/components/cart/CartDrawer'
@@ -58,12 +59,18 @@ export default async function LocaleLayout({ children, params }: Props) {
           {locale === 'tr' ? 'İçeriğe geç' : 'Skip to content'}
         </a>
         <Header collections={collections} />
-        {/* Footer artık içerikle birlikte kayıyor (önceden ekranın altına
-            sabitti, mobilde tamamen gizliydi ve drop kartlarını kesiyordu). */}
-        <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto focus:outline-none">
-          {children}
-          <ConditionalFooter />
-        </main>
+        {/* Çerçeve: header ve footer SABİT, içerik aralarında kayar (md+).
+            Telefonda footer içerikle birlikte kayar — sabit footer orada
+            drop kartlarını kesiyordu. "Header'a ışınla" oku footer'ın hemen
+            üstünde, içerik aşağı kayınca belirir. */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <main id="main-content" tabIndex={-1} className="flex min-h-0 flex-1 flex-col overflow-y-auto focus:outline-none">
+            {children}
+            <ConditionalFooter className="md:hidden" />
+          </main>
+          <BackToHeader />
+        </div>
+        <ConditionalFooter className="hidden md:block" />
         <CartDrawer />
       </div>
     </NextIntlClientProvider>

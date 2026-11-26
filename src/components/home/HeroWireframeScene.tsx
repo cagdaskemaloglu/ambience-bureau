@@ -28,13 +28,25 @@ const TONES = {
 const ToneCtx = createContext<(typeof TONES)[WireTone]>(TONES.night)
 
 type Part = HeroWireframeData['parts'][number]
+/** Sahnenin çizdiği nesne: parçalar + yerleşim biçimi. */
+export type SceneItem = { parts: Part[]; kind?: HeroWireframeData['kind']; hanging?: boolean }
 
 const TILT: [number, number, number] = [0.38, -0.62, 0]
 
 /** Odanın ölçüleri (lamba yüksekliğine oranlı, ızgara adımına yuvarlanmış). */
-function roomDims(height: number, step = Math.max(8, Math.round(height / 14))) {
-  const snap = (v: number) => Math.round(v / step) * step
-  return { step, half: snap(height * 0.55), wallZ: -snap(height * 0.38), front: snap(height * 0.24), wallH: snap(height * 1.08) }
+function roomDims(height: number, R = 0) {
+  // Oda hem lambanın yüksekliğine hem de taban izine (R: eksenden en uzak
+  // yatay nokta) göre büyür — geniş/kollu masa lambaları odadan taşmasın.
+  const size = Math.max(height, R * 2)
+  const step = Math.max(4, Math.round(size / 14))
+  const snap = (v: number) => Math.max(step, Math.round(v / step) * step)
+  return {
+    step,
+    half: snap(Math.max(height * 0.55, R * 1.5)),
+    wallZ: -snap(Math.max(height * 0.38, R * 1.35)),
+    front: snap(Math.max(height * 0.24, R * 1.25)),
+    wallH: snap(Math.max(height * 1.08, R * 1.2)),
+  }
 }
 
 /**
@@ -42,13 +54,17 @@ function roomDims(height: number, step = Math.max(8, Math.round(height / 14))) {
  * kutusu — kadraj tüm odayı içine alacak şekilde hesaplanır; duvar üstten
  * kesilip "ikinci bir ızgara" gibi görünmez.
  */
-function projectedBounds(height: number) {
-  const { half, wallZ, front, wallH } = roomDims(height)
+function projectedBounds(height: number, R: number, lampBase: number, lampTop: number, ceiling: boolean) {
+  const { half, wallZ, front, wallH } = roomDims(height, R)
   const e = new THREE.Euler(...TILT)
-  const pts = [
+  const raw: number[][] = [
     [-half, 0, wallZ], [half, 0, wallZ], [-half, 0, front], [half, 0, front],
-    [-half, wallH, wallZ], [half, wallH, wallZ], [0, height, 0],
-  ].map(([x, y, z]) => new THREE.Vector3(x, y, z).applyEuler(e))
+    [-half, wallH, wallZ], [half, wallH, wallZ], [0, lampTop, 0],
+  ]
+  if (ceiling) raw.push([-half, wallH, front], [half, wallH, front])
+  // Lambanın kendisi (dönerken kapladığı silindirin köşeleri) de kadrajda.
+  for (const y of [lampBase, lampTop]) raw.push([-R, y, -R], [R, y, -R], [-R, y, R], [R, y, R])
+  const pts = raw.map(([x, y, z]) => new THREE.Vector3(x, y, z).applyEuler(e))
   const xs = pts.map((p) => p.x)
   const ys = pts.map((p) => p.y)
   return { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) }
@@ -76,17 +92,17 @@ function Lines({ geometry, color, opacity }: { geometry: THREE.BufferGeometry; c
   )
 }
 
-function Room({ height, radius }: { height: number; radius: number }) {
+function Room({ height, radius, hanging, lampTop }: { height: number; radius: number; hanging?: boolean; lampTop: number }) {
   const tone = useContext(ToneCtx)
   const geo = useMemo(() => {
-    const step = Math.max(8, Math.round(height / 14))
-    const { half, wallZ, front, wallH } = roomDims(height, step)
+    const { step, half, wallZ, front, wallH } = roomDims(height, radius)
 
     const floor = gridGeometry(-half, half, wallZ, front, step, (u, v) => [u, 0, v])
     const wall = gridGeometry(-half, half, 0, wallH, step, (u, v) => [u, v, wallZ])
 
     // Priz: duvarda, lambanın sağında, alçakta.
-    const sx = Math.round(half * 0.55)
+    // Priz lambanın taban izinin dışında kalsın.
+    const sx = Math.round(Math.min(half * 0.9, Math.max(half * 0.55, radius * 1.25)))
     const sy = step * 1.2
     const plateW = step * 1.1
     const plate = new THREE.EdgesGeometry(new THREE.BoxGeometry(plateW, plateW, 1.5))
@@ -116,17 +132,35 @@ function Room({ height, radius }: { height: number; radius: number }) {
       -half, 0, wallZ, half, 0, wallZ,
       -half, wallH, wallZ, half, wallH, wallZ,
     ], 3))
-    return { floor, wall, plate, plug, cable, edges }
-  }, [height, radius, tone])
+    // Sarkıt: tavan ızgarası, tavan göbeği ve lambaya inen kordon.
+    let ceiling: THREE.BufferGeometry | null = null
+    let rose: THREE.BufferGeometry | null = null
+    let cord: THREE.BufferGeometry | null = null
+    if (hanging) {
+      ceiling = gridGeometry(-half, half, wallZ, front, step, (u, v) => [u, wallH, v])
+      rose = new THREE.EdgesGeometry(new THREE.CylinderGeometry(step * 0.45, step * 0.45, step * 0.18, 20))
+      rose.translate(0, wallH - step * 0.09, 0)
+      cord = new THREE.BufferGeometry()
+      cord.setAttribute('position', new THREE.Float32BufferAttribute([0, wallH - step * 0.18, 0, 0, lampTop, 0], 3))
+    }
+    return { floor, wall, plate, plug, cable, edges, ceiling, rose, cord }
+  }, [height, radius, tone, hanging, lampTop])
 
   return (
     <group>
       <Lines geometry={geo.floor} color="room" opacity={0.2} />
       <Lines geometry={geo.wall} color="room" opacity={0.15} />
       <Lines geometry={geo.edges} color="room" opacity={0.5} />
-      <Lines geometry={geo.plate} color="edge" opacity={0.8} />
-      <Lines geometry={geo.plug} color="edge" opacity={0.9} />
-      <primitive object={geo.cable} />
+      {geo.ceiling && <Lines geometry={geo.ceiling} color="room" opacity={0.1} />}
+      {geo.rose && <Lines geometry={geo.rose} color="edge" opacity={0.8} />}
+      {geo.cord && <Lines geometry={geo.cord} color="edge" opacity={0.85} />}
+      {!hanging && (
+        <>
+          <Lines geometry={geo.plate} color="edge" opacity={0.8} />
+          <Lines geometry={geo.plug} color="edge" opacity={0.9} />
+          <primitive object={geo.cable} />
+        </>
+      )}
     </group>
   )
 }
@@ -188,9 +222,19 @@ const MERIDIANS = [0, 45, 90, 135].map((deg) => [Math.cos((deg * Math.PI) / 180)
 
 type PartDraw = { rings: THREE.BufferGeometry; meridians: THREE.BufferGeometry; height: number; radius: number }
 
-function buildPart(src: THREE.BufferGeometry, ringStep: number): PartDraw {
-  const g = src.clone().toNonIndexed()
-  g.center()
+/**
+ * Bir parçanın halka + meridyen çizimi. `centered`: geometri tamamen
+ * merkezlenir (üst üste istif). Aksi halde (Blender konumu) yalnızca
+ * yatayda kendi ekseninde merkezlenir, yükseklik korunur.
+ */
+function buildPart(g0: THREE.BufferGeometry, ringStep: number, centered = true): PartDraw & { cx: number; cz: number; minY: number } {
+  const g = g0.index ? g0.toNonIndexed() : g0.clone()
+  g.computeBoundingBox()
+  const b0 = g.boundingBox!
+  const cx = (b0.min.x + b0.max.x) / 2
+  const cz = (b0.min.z + b0.max.z) / 2
+  const cy = (b0.min.y + b0.max.y) / 2
+  g.translate(-cx, centered ? -cy : 0, -cz)
   g.computeBoundingBox()
   const b = g.boundingBox!
   const pos = g.attributes.position.array
@@ -207,54 +251,104 @@ function buildPart(src: THREE.BufferGeometry, ringStep: number): PartDraw {
   const meridians = new THREE.BufferGeometry()
   meridians.setAttribute('position', new THREE.Float32BufferAttribute(mer, 3))
   g.dispose()
-  return { rings, meridians, height: h, radius: Math.max(b.max.x - b.min.x, b.max.z - b.min.z) / 2 }
+  return {
+    rings,
+    meridians,
+    height: h,
+    radius: Math.max(b.max.x - b.min.x, b.max.z - b.min.z) / 2,
+    cx,
+    cz,
+    minY: b.min.y,
+  }
 }
 
-function Model({ parts, animate }: { parts: Part[]; animate: boolean }) {
+type DrawItem = { key: string; glow: boolean; d: PartDraw; pos: [number, number, number] }
+
+/** Sarkıtın kordon uzunluğu (lamba yüksekliğine oranla) ve oda yüksekliği çarpanı. */
+const HANG_CORD = 0.35
+const HANG_ROOM = 2.3
+
+function Model({ item, animate }: { item: SceneItem; animate: boolean }) {
+  const { parts, kind, hanging } = item
   const urls = useMemo(() => Array.from(new Set(parts.map((p) => p.url))), [parts])
   const loaded = useLoader(STLLoader, urls)
 
-  // Halka aralığı tüm lamba için ortak: toplam yüksekliğe göre (~15 halka).
-  const totalH = useMemo(() => {
-    const hs = new Map<string, number>()
-    urls.forEach((u, i) => {
-      loaded[i].computeBoundingBox()
-      const bb = loaded[i].boundingBox!
-      hs.set(u, bb.max.y - bb.min.y)
-    })
-    return parts.reduce((sum, p) => sum + (hs.get(p.url) ?? 0), 0)
-  }, [parts, urls, loaded])
-
-  const byUrl = useMemo(() => {
-    const step = Math.max(1, totalH / 15)
-    const map = new Map<string, PartDraw>()
-    urls.forEach((url, i) => map.set(url, buildPart(loaded[i], step)))
-    return map
-  }, [urls, loaded, totalH])
-
   const layout = useMemo(() => {
-    let y = 0
-    let radius = 0
-    const items = parts.map((p, i) => {
-      const d = byUrl.get(p.url)!
-      const pos = y + d.height / 2
-      y += d.height
-      radius = Math.max(radius, d.radius)
-      return { key: `${i}-${p.slotType}`, part: p, d, y: pos }
+    const geoOf = (url: string) => loaded[urls.indexOf(url)]
+
+    if (kind !== 'placed') {
+      // ÜST ÜSTE: taban → gövdeler → başlık, her parça merkezlenip istiflenir.
+      const totalH = parts.reduce((sum, p) => {
+        const g = geoOf(p.url)
+        g.computeBoundingBox()
+        return sum + (g.boundingBox!.max.y - g.boundingBox!.min.y)
+      }, 0)
+      const step = Math.max(1, totalH / 15)
+      const cache = new Map<string, PartDraw>()
+      let y = 0
+      let radius = 0
+      const items: DrawItem[] = parts.map((p, i) => {
+        let d = cache.get(p.url)
+        if (!d) {
+          d = buildPart(geoOf(p.url), step, true)
+          cache.set(p.url, d)
+        }
+        const pos: [number, number, number] = [0, y + d.height / 2, 0]
+        y += d.height
+        radius = Math.max(radius, d.radius)
+        return { key: `${i}-${p.slotType}`, glow: !!p.glow || p.slotType === 'head', d, pos }
+      })
+      return { items, H: y, radius }
+    }
+
+    // BLENDER KONUMU: parçalar Sanity'deki rotasyon + ofsetle yerleşir.
+    const placed = parts.map((p) => {
+      const g = geoOf(p.url).clone()
+      const r = p.rot ?? [0, 0, 0]
+      if (r[0] || r[1] || r[2]) {
+        g.applyMatrix4(new THREE.Matrix4().makeRotationFromEuler(new THREE.Euler(
+          THREE.MathUtils.degToRad(r[0]), THREE.MathUtils.degToRad(r[1]), THREE.MathUtils.degToRad(r[2])
+        )))
+      }
+      const o = p.offset ?? [0, 0, 0]
+      if (o[0] || o[1] || o[2]) g.translate(o[0], o[1], o[2])
+      g.computeBoundingBox()
+      return { p, g, b: g.boundingBox!.clone() }
     })
-    return { items, length: y, radius }
-  }, [parts, byUrl])
+    const all = new THREE.Box3()
+    placed.forEach(({ b }) => all.union(b))
+    const H = all.max.y - all.min.y
+    const gcx = (all.min.x + all.max.x) / 2
+    const gcz = (all.min.z + all.max.z) / 2
+    const step = Math.max(1, H / 15)
+    let radius = 0
+    const items: DrawItem[] = placed.map(({ p, g }, i) => {
+      const d = buildPart(g, step, false)
+      g.dispose()
+      radius = Math.max(radius, Math.max(Math.abs(d.cx - gcx), Math.abs(d.cz - gcz)) + d.radius)
+      // Lambanın tabanı y = 0'da (sarkıtta aşağıda yukarı kaydırılır).
+      return { key: `${i}-part`, glow: !!p.glow, d, pos: [d.cx - gcx, -all.min.y, d.cz - gcz] }
+    })
+    return { items, H, radius }
+  }, [parts, kind, urls, loaded])
 
   const spin = useRef<THREE.Group>(null)
   useFrame((_, delta) => {
     if (animate && spin.current) spin.current.rotation.y += delta * 0.25
   })
 
-  // Oda (zemin + duvar) dahil tüm sahneyi kutuya sığdır ve ortala. Yatayda
-  // kenarlar maskeyle eridiği için genişlik biraz taşabilir.
-  const H = layout.length
+  // Oda: ayaklı lambada lamba boyunda; sarkıtta daha yüksek, lamba tavandan
+  // kısa bir kordonla sarkar.
+  const H = layout.H
+  const roomH = hanging ? H * HANG_ROOM : H
+  const R = layout.radius
+  const wallH = roomDims(roomH, R).wallH
+  const lampBase = hanging ? Math.max(0, wallH - H * (1 + HANG_CORD)) : 0
+  const lampTop = lampBase + H
+
+  // Oda (zemin + duvar [+ tavan]) dahil tüm sahneyi kutuya sığdır ve ortala.
   const { size, camera } = useThree()
-  const b = useMemo(() => projectedBounds(H), [H])
+  const b = useMemo(() => projectedBounds(roomH, R, lampBase, lampTop, !!hanging), [roomH, R, lampBase, lampTop, hanging])
   const zoom = Math.min((size.height * 0.86) / (b.maxY - b.minY), (size.width * 1.1) / (b.maxX - b.minX))
   const cx = (b.minX + b.maxX) / 2
   const cy = (b.minY + b.maxY) / 2
@@ -268,17 +362,14 @@ function Model({ parts, animate }: { parts: Part[]; animate: boolean }) {
     // Hafif yukarıdan, köşeden bakış (aksonometrik çizim).
     <group position={[-cx, -cy, 0]}>
       <group rotation={TILT}>
-        <Room height={H} radius={layout.radius} />
-        <group ref={spin}>
-          {layout.items.map(({ key, part, d, y }) => {
-            const head = part.slotType === 'head'
-            return (
-              <group key={key} position={[0, y, 0]}>
-                <Lines geometry={d.rings} color={head ? 'head' : 'edge'} opacity={head ? 0.85 : 0.6} />
-                <Lines geometry={d.meridians} color={head ? 'head' : 'edge'} opacity={head ? 0.7 : 0.45} />
-              </group>
-            )
-          })}
+        <Room height={roomH} radius={layout.radius} hanging={hanging} lampTop={lampTop} />
+        <group ref={spin} position={[0, lampBase, 0]}>
+          {layout.items.map(({ key, glow, d, pos }) => (
+            <group key={key} position={pos}>
+              <Lines geometry={d.rings} color={glow ? 'head' : 'edge'} opacity={glow ? 0.85 : 0.6} />
+              <Lines geometry={d.meridians} color={glow ? 'head' : 'edge'} opacity={glow ? 0.7 : 0.45} />
+            </group>
+          ))}
         </group>
       </group>
     </group>
@@ -312,7 +403,7 @@ function Loaded({ onLoaded }: { onLoaded?: () => void }) {
 }
 
 export default function HeroWireframeScene({
-  parts,
+  item,
   tone = 'night',
   preloadUrls,
   running,
@@ -320,7 +411,7 @@ export default function HeroWireframeScene({
   onReady,
   onPreloaded,
 }: {
-  parts: Part[]
+  item: SceneItem
   /** Çizim tonu: karanlık temada "night", aydınlıkta "paper". */
   tone?: WireTone
   /** Sıradaki ürünün dosyaları: arka planda indirilir, sahneye girmez. */
@@ -344,7 +435,7 @@ export default function HeroWireframeScene({
       <ToneCtx.Provider value={TONES[tone]}>
       {running && animate && <Ticker />}
       <Suspense fallback={null}>
-        <Model parts={parts} animate={animate} />
+        <Model item={item} animate={animate} />
         <Loaded onLoaded={onReady} />
       </Suspense>
       {preloadUrls && preloadUrls.length > 0 && (

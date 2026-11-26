@@ -1,3 +1,4 @@
+import { redirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
 import { getAllLampCollections, getLampPartsByCollection, getProductBySlug } from '@/lib/queries'
@@ -82,6 +83,12 @@ export default async function CustomRegistryPage({
   const { locale } = await params
   const { collection, model, preset, capture } = await searchParams
   const isCaptureMode = capture === '1'
+  // Koleksiyon seçimi artık anasayfanın ilk ekranında yapılır (header'daki
+  // 3B görüntüleyici yerinde kalır). Koleksiyonsuz/presetsiz gelen ziyaretçi
+  // oraya yönlendirilir.
+  if (!collection && !preset && !isCaptureMode) {
+    redirect(`/${locale}#ozel-tahsis`)
+  }
   const realCollections = await getAllLampCollections()
   // SADECE local demo modunda: "Blender konumu" yerleşimini denemek için
   // örnek sarkıt / masa lambası koleksiyonları (bkz. lib/bulletinDemo.ts).

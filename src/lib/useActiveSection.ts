@@ -50,8 +50,16 @@ export function useActiveSection(ids: string[], enabled: boolean): string | null
   return active
 }
 
-/** Bölüme yumuşak kaydır (hareketi azalt ayarına saygılı). */
+/**
+ * Anasayfa bölümüne git. Anasayfa artık header + footer + TEK seçim
+ * alanından oluşuyor; "Tüm Kayıtlar" gibi bölümler ancak seçilince DOM'a
+ * girer. Bu yüzden hash'i güncelleyip `hashchange` yayınlıyoruz:
+ * HomeIndex ilgili satırı seçip oraya kaydırır. Öğe zaten varsa ayrıca
+ * yumuşak kaydırılır (hareketi azalt ayarına saygılı).
+ */
 export function scrollToSection(id: string) {
+  if (window.location.hash !== `#${id}`) history.replaceState(null, '', `#${id}`)
+  window.dispatchEvent(new HashChangeEvent('hashchange'))
   const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   document.getElementById(id)?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
 }

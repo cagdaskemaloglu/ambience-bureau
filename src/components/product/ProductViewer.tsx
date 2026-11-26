@@ -77,7 +77,7 @@ export function ProductViewer({
       {active === 'wire' ? (
         <div className="wire-stage relative aspect-square overflow-hidden border border-bureau-black">
           <div className="absolute inset-0">
-            <Scene parts={wireframe.parts} tone={theme === 'dark' ? 'night' : 'paper'} running animate={animate} onReady={onReady} />
+            <Scene item={wireframe} tone={theme === 'dark' ? 'night' : 'paper'} running animate={animate} onReady={onReady} />
           </div>
           {!ready && (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bureau-wire/70">

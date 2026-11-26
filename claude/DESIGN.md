@@ -52,8 +52,8 @@ Bütün ürünler iki rejimden birindedir (`product.saleMode`):
   | G | `pendant` | Sarkıt | Pendant |
   | H | `strip` | Şerit | Strip |
 
-  Harfler sol el ana sırasıdır (A = Drops): anasayfa dizininde klavye
-  kısayolu olarak da çalışır.
+  Harfler sınıf kodudur (kartlardaki "Sınıf S" gibi); anasayfada klavye
+  kısayolu DEĞİLDİR (kaldırıldı).
 
 - Stok: `stockQuantity` boşsa "siparişe üretim" (sınırsız), `0` ise
   "stok tükendi", >0 ise adet. Ödeme onayında stok düşer.
@@ -83,43 +83,56 @@ Tel kafes ↔ Materyal fikrinin site karşılığıdır.
 
 Ziyaretçi TÜM ürünleri anasayfadan ayrılmadan keşfedebilmeli.
 
-1. **Masthead** (`<h1>`): "Işık, tahsis edilir." + bir cümlelik
-   açıklama. Sağda kaydırmalı **Büro Bülteni** paneli. Ortada (yalnızca
-   ≥1024px) **tel kafes sahnesi** (`HeroWireframe.tsx`): çerçevesiz,
-   header'ın hemen altına yapışık, kenarlarda maskeyle sayfaya erir;
-   siyahtan uzay mavisine zeminde ürünün kayıtlı dizilimi (taban →
-   gövdeler → başlık) Sanity STL'lerinden DİK istiflenir. Üçgen ağı
-   ÇİZİLMEZ: her parça yatay kesitlerle (halkalar, lamba boyunca ~15) ve
-   dönmeyen bir dış hatla (yarıçap profilinden silüet) çizilir — organik
-   formlarda da temiz teknik çizim gibi okunur. Kutunun CSS zemininde
-   ızgara YOK (ızgarayı 3B oda çizer). Etrafında tel kafes oda: zemin ve duvar
-   ızgarası, duvarda priz, tabandan prize kablo ve fiş. Lamba kendi
-   ekseninde döner, oda sabittir; kadraj odanın tamamını sığdırır.
-   Ürünler SIRAYLA gösterilir (`queries.ts` → `getHeroWireframes`: önce
-   `HERO_WIREFRAME_PRODUCT_SLUG`, sonra parça dizilimi kayıtlı diğer
-   "stack" ürünler, en çok 8). Gösterilen ürün yüklenince sıradakinin
-   STL'leri arka planda iner; hazır olunca ve en az 12 sn geçince yumuşak
-   geçişle o girer.
-   Canvas sayfa boşa çıkınca (requestIdleCallback) başlar, ~30 fps çizer,
-   ekran dışındayken durur; telefona three.js inmez.
-   (Alternatif: 3D görüntüleyici görünümlü "sahne" anasayfası
-   `deneme/sahne-hero` branch'inde duruyor.)
-2. **Tahsis dizini** (`HomeIndex.tsx`, bölüm başlığı YOK): tek liste —
-   `A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt`. Satırlar
-   KAPALI başlar (Drops → drop satırları, sınıf → ürün kartları).
-   Harf tuşu: kapalıysa açar ve kaydırır; açık ama odak başka satırdaysa o
-   satıra GERİ döner; odak zaten oradaysa kapatır. Tıklama aç/kapat.
-   Masaüstünde masthead + dizin tam bir ekranı doldurur (alttaki §1 başlığı
-   ilk ekranda görünmez). Sağdaki yapışkan dosya kartı üzerine gelinen
-   satırın ürünlerini 3B vitrinde (coverflow) tek tek tanıtır: ortadaki
-   odakta, oklar, ← →, 3,2 sn'de bir otomatik ilerleme (hover/odakta durur,
-   hareketi azalt ayarında kapalı). `#drop-NNN` bağlantıları Drops'u açıp
-   o drop'a kaydırır.
-3. **§1 Tüm Kayıtlar** — bütün ürünler tek ızgarada; rejim (Tümü / Sınırlı /
-   Daimi), sınıf çipleri ve fiyat sıralaması sayfa içinde, 12'şer kart.
-4. **§2 Özel Tahsis** — Custom Registry daveti.
-5. **§3 Kontrol Protokolü** — mobil uygulama.
-   Header'daki bölüm linkleri: §1 Dizin, §2 Kayıtlar.
+1. **İlk ekran = tek sayfalık "header"** (`HomeIndex.tsx`, `<h1>` dahil):
+   header'ın altından ekranın sonuna kadar (masaüstü). 3B tel kafes sahnesi
+   (`HeroWireframe.tsx`) ilk ekranın TAMAMINA yayılır; kenarlara doğru
+   vinyetle siyaha erir (`.hero-vignette`; aydınlık temada kâğıda).
+   Sahne nesneleri SIRAYLA gösterir (`queries.ts` → `getHeroWireframes`:
+   önce `HERO_WIREFRAME_PRODUCT_SLUG`, sonra drop ("stack") ürünleri ile
+   Montajlı Modeller (`lampModel`) karışık, en çok 40); gösterilen yüklenince
+   sıradaki arka planda iner, ≥12 sn sonra yumuşak geçişle girer. Çizim:
+   yatay halkalar + meridyen kesitleri (üçgen ağı yok). Montajlı modeller
+   Blender konumunda + Sanity ofset/rotasyonuyla; masa lambaları zemine
+   oturur, sarkıtlar (`hangFromCeiling`) tavan ızgarası ve göbeğinden
+   kordonla sarkar (priz/kablo yok). Oda lambanın yüksekliği VE taban izine
+   göre büyür. `?wf=<ürün-slug|model-id>` sahneyi o nesneyle başlatır.
+   Solda künye + başlık + açıklama + eylemler (`MastheadIntro`); sağda Büro
+   Bülteni ve üzerine gelinen satırın önizleme kartı (3B vitrin). Dizin
+   menüsü ilk ekranın ALTINDA tam genişlikte YATAY bir şerit. Satır
+   içerikleri (drop'lar, ürün kartları) ilk ekranın altında panel olarak
+   açılır.
+   **Çerçeve (md+):** header ve footer SABİT, içerik aralarında kayar
+   (`[locale]/layout.tsx`); telefonda footer içerikle kayar. İçerik aşağı
+   kayınca footer'ın üstünde **"Header'a ışınla"** oku (`BackToHeader.tsx`)
+   belirir: anında en üste ışınlar, kısa bir amber ışın izi bırakır.
+2. **Dizin menüsü** (ilk ekranın altındaki yatay şerit; aşağı kayınca
+   header'ın altında SABİT/sticky kalır, telefonda tek satır ve yana kayar):
+   `Drops · Lambader · Aplik · Masa Lambası · Sarkıt · Tüm Kayıtlar`.
+   Harf kısayolu YOK. Anasayfa = header + footer + aralarında TEK seçim
+   alanı (`#secim-alani`): bir kalem seçilince içeriği ilk ekranın altında
+   gösterilir ve öncekinin YERİNE geçer; seçili kaleme ya da "Kapat ✕"a
+   tıklamak alanı kapatıp ilk ekrana döner. Drops → drop satırları, sınıf →
+   ürün kartları, Tüm Kayıtlar → `RegisterSection` (rejim/sınıf/fiyat
+   süzgeçleri). Seçim alanı en az (görünür alan − menü) yüksekliğindedir:
+   içerik kısa olsa da menü en üste oturur. Önizleme kartı SABİT
+   yükseklikte (boş kategoride de aynı), menüde gezinirken yerleşim
+   zıplamaz; üzerine gelinen kalemin ürünlerini 3B
+   vitrinde (coverflow) tanıtır: oklar, ← →, 3,2 sn'de bir otomatik
+   ilerleme (hover/odakta durur, hareketi azalt ayarında kapalı).
+   `#drop-NNN` Drops'u açıp o drop'a, `#tum-kayitlar` Tüm Kayıtlar'ı açar
+   (header linkleri ve `requestRegisterFilter` hash + `hashchange` ile).
+3. Eski §1 Tüm Kayıtlar / §2 Özel Tahsis / §3 Kontrol Protokolü bantları
+   anasayfadan KALDIRILDI (Tüm Kayıtlar menüde; Özel Tahsis header
+   düğmesinde; Kontrol Protokolü kendi sayfasında).
+   Header'da anasayfa bölüm linkleri YOK (§1 Dizin / §2 Kayıtlar kaldırıldı;
+   menü ilk ekranın altında).
+4. **Özel Tahsis (koleksiyon seçimi)** ilk ekranda, "Işık, tahsis edilir."
+   bloğunun YERİNDE açılır (`HeroCollectionPicker.tsx`); 3B görüntüleyici
+   yerinde kalır. Tetikleyenler: "Kendi lambanı tasarla", header'daki
+   "Özel Tahsis" ve `#ozel-tahsis`. Koleksiyon seçilince konfigüratör
+   `/custom-registry?collection=…` ile doğrudan açılır; koleksiyonsuz
+   `/custom-registry` anasayfadaki seçime (`/{locale}#ozel-tahsis`)
+   yönlendirilir. "← Geri" tanıtıma döner.
 
 ## Büro Bülteni (duyuru paneli)
 

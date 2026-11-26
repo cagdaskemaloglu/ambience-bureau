@@ -1,18 +1,16 @@
 import type { Metadata } from 'next'
 import { getTranslations } from 'next-intl/server'
-import { getAllDropsWithProducts, getAllProducts, getHeroWireframes, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
+import { getAllDropsWithProducts, getAllLampCollections, getAllProducts, getHeroWireframes, getModelStandingCards, getPanelBulletins, getStandingInventory } from '@/lib/queries'
 import { withDemoBulletins, withDemoStanding } from '@/lib/bulletinDemo'
 import { getLocalizedValue } from '@/lib/sanity'
 import { DropRow } from '@/components/registry/DropRow'
 import { UpcomingDropRow } from '@/components/registry/UpcomingDropRow'
-import { HomeMasthead, buildLiveRows, type BulletinData } from '@/components/home/HomeMasthead'
+import { MastheadIntro, buildLiveRows, type BulletinData } from '@/components/home/HomeMasthead'
+import { HeroWireframe } from '@/components/home/HeroWireframe'
 import { BulletinPanel } from '@/components/home/BulletinPanel'
-import { SectionHeading } from '@/components/home/SectionHeading'
-import { HomeIndex, HOME_INDEX_ID } from '@/components/home/HomeIndex'
-import { CustomAllocationBand, ControlProtocolBand } from '@/components/home/HomeBands'
+import { HomeIndex } from '@/components/home/HomeIndex'
 import { RegisterSection } from '@/components/home/RegisterSection'
-import { REGISTER_SECTION_ID } from '@/lib/registerFilter'
-import type { Bulletin, DropWithProducts, ProductCard } from '@/types'
+import type { Bulletin, Collection, DropWithProducts, ProductCard } from '@/types'
 
 type Props = {
   params: Promise<{ locale: string }>
@@ -48,13 +46,14 @@ export default async function HomePage({ params }: Props) {
   const t = await getTranslations({ locale, namespace: 'home' })
   const tr = locale === 'tr'
 
-  const [allDropsRaw, standingDocs, panelBulletins, allProductsRaw, modelCards, heroWireframe] = await Promise.all([
+  const [allDropsRaw, standingDocs, panelBulletins, allProductsRaw, modelCards, heroWireframe, lampCollections] = await Promise.all([
     getAllDropsWithProducts(),
     getStandingInventory(),
     getPanelBulletins(),
     getAllProducts(),
     getModelStandingCards(),
     getHeroWireframes().catch(() => []),
+    getAllLampCollections().catch(() => []) as Promise<Collection[]>,
   ])
   // Daimi Envanter = ürün belgeleri + Montajlı Modellerden otomatik kartlar.
   const standing = [...(standingDocs as ProductCard[]), ...modelCards]
@@ -113,24 +112,23 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <div className="border-t border-bureau-line-header dark:border-[rgb(var(--bureau-line-header))]">
-      <HomeMasthead locale={locale} bulletin={bulletin} bulletins={bulletins} wireframes={heroWireframe} />
-
-      {/* Telefonda Büro Bülteni burada (masaüstünde masthead'de). */}
-      <div className="border-b border-bureau-rule px-5 py-6 md:hidden">
-        <BulletinPanel
-          locale={locale}
-          today={new Date().toLocaleDateString(tr ? 'tr-TR' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
-          liveRows={buildLiveRows(locale, bulletin)}
-          bulletins={bulletins}
-        />
-      </div>
-
-      {/* Tahsis dizini: A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt
-          (bölüm başlığı yok; satırlar kapalı başlar, harfler klavye kısayolu). */}
-      <section id={HOME_INDEX_ID} aria-label={tr ? 'Tahsis dizini' : 'Allocation index'} className="scroll-mt-2">
-        {/* Eski bağlantılar (#daimi-envanter) için takma ad */}
-        <span id="daimi-envanter" aria-hidden="true" />
+      {/* İlk ekran (tek sayfalık "header") + açılan dizin panelleri: HomeIndex.
+          3B tel kafes sahnesi ilk ekranın tamamına yayılır; dizin menüsü
+          (A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt) içindedir. */}
         <HomeIndex
+          intro={<MastheadIntro locale={locale} />}
+          registerProducts={registerProducts}
+          collections={lampCollections}
+          registerContent={<RegisterSection products={registerProducts} locale={locale} />}
+          side={
+            <BulletinPanel
+              locale={locale}
+              today={new Date().toLocaleDateString(tr ? 'tr-TR' : 'en-US', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              liveRows={buildLiveRows(locale, bulletin)}
+              bulletins={bulletins}
+            />
+          }
+          background={heroWireframe.length > 0 ? <HeroWireframe items={heroWireframe} locale={locale} /> : undefined}
           products={standingProducts}
           dropProducts={[
             ...(featureDrop?.products ?? []),
@@ -185,35 +183,7 @@ export default async function HomePage({ params }: Props) {
             )
           }
         />
-      </section>
 
-      {/* §1 Tüm Kayıtlar — tüm ürünler, sayfadan ayrılmadan */}
-      <section aria-label={tr ? 'Tüm Kayıtlar' : 'Full Register'}>
-        <SectionHeading
-          id={REGISTER_SECTION_ID}
-          number="1"
-          title={tr ? 'Tüm Kayıtlar' : 'Full Register'}
-          lede={
-            tr
-              ? 'Sicildeki bütün nesneler tek dosyada: drop parçaları ve daimi envanter. Rejime, sınıfa ve fiyata göre süzün.'
-              : 'Every object on the register in one file: drop pieces and standing inventory. Filter by regime, class and price.'
-          }
-          meta={tr ? `${registerProducts.length} kayıt` : `${registerProducts.length} records`}
-        />
-        <RegisterSection products={registerProducts} locale={locale} />
-      </section>
-
-      {/* §2 Özel Tahsis */}
-      <section aria-label={tr ? 'Özel Tahsis' : 'Custom Allocation'}>
-        <SectionHeading id="ozel-tahsis" number="2" title={tr ? 'Özel Tahsis' : 'Custom Allocation'} />
-        <CustomAllocationBand locale={locale} />
-      </section>
-
-      {/* §3 Kontrol Protokolü */}
-      <section aria-label={tr ? 'Kontrol Protokolü' : 'Control Protocol'} className="pb-6">
-        <SectionHeading id="kontrol-protokolu" number="3" title={tr ? 'Kontrol Protokolü' : 'Control Protocol'} />
-        <ControlProtocolBand locale={locale} />
-      </section>
     </div>
   )
 }

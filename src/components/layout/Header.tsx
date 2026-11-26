@@ -11,18 +11,14 @@ import { getLocalizedValue } from '@/lib/sanity'
 import { getCurrentUser, signOut } from '@/lib/supabase/auth'
 import { HeaderStickman } from './HeaderStickman'
 import { ThemeToggle } from '@/components/theme/ThemeToggle'
-import { useActiveSection, scrollToSection } from '@/lib/useActiveSection'
+import { scrollToSection } from '@/lib/useActiveSection'
 import type { Collection } from '@/types'
 
-// Anasayfa bölümleri — header'da TEK menü (eskiden header altında ayrı bir
-// §1–§5 çubuğu da vardı). Anasayfada sayfa içi kaydırır, diğer sayfalarda
-// anasayfanın ilgili bölümüne gider. "Envanter" linkinin yerini §3 aldı.
-const HOME_SECTIONS = [
-  // short*: 1800px altındaki masaüstü genişliklerinde header taşmasın diye.
-  // Tahsis dizini: Drops + sınıflar (A/S/D/F/G) — bkz. components/home/HomeIndex.tsx
-  { id: 'tahsis-dizini', n: '1', tr: 'Tahsis Dizini', en: 'Allocation Index', shortTr: 'Dizin', shortEn: 'Index' },
-  { id: 'tum-kayitlar', n: '2', tr: 'Tüm Kayıtlar', en: 'Full Register', shortTr: 'Kayıtlar', shortEn: 'Register' },
-] as const
+// "Özel Tahsis": koleksiyon seçimi anasayfanın ilk ekranında ("Işık,
+// tahsis edilir." bloğunun yerinde) açılır — ayrı bir seçim sayfası yok.
+// Header'da anasayfa bölüm linkleri (§1 Dizin, §2 Kayıtlar) KALDIRILDI:
+// dizin menüsü zaten ilk ekranın altında.
+const CUSTOM_PICKER_ID = 'ozel-tahsis'
 
 const NAV_ITEMS = [
   { href: '/control-protocol' as const, labelKey: 'controlProtocol', isCTA: false },
@@ -130,7 +126,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/')
   const isHome = pathname === '/'
-  const activeSection = useActiveSection(HOME_SECTIONS.map((s) => s.id), isHome)
   // Anasayfada: sayfa içi kaydır. Başka sayfada: Link anasayfanın bölümüne gider.
   const onSectionClick = (id: string) => (e: React.MouseEvent) => {
     if (!isHome || e.metaKey || e.ctrlKey || e.shiftKey) return
@@ -180,7 +175,8 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
                 `}
               >
                 <Link
-                  href="/custom-registry"
+                  href={{ pathname: '/', hash: CUSTOM_PICKER_ID }}
+                  onClick={onSectionClick(CUSTOM_PICKER_ID)}
                   className={`flex items-center gap-2 whitespace-nowrap px-3.5 py-1.5 no-underline transition-colors font-semibold ${
                     isActive('/custom-registry') ? '' : 'hover:bg-bureau-black hover:text-bureau-white'
                   }`}
@@ -240,24 +236,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               )}
             </div>
 
-            {HOME_SECTIONS.map((sec) => {
-              const on = isHome && activeSection === sec.id
-              return (
-                <Link
-                  key={sec.id}
-                  href={{ pathname: '/', hash: sec.id }}
-                  onClick={onSectionClick(sec.id)}
-                  aria-current={on ? 'location' : undefined}
-                  className={`nav-underline focus-bureau whitespace-nowrap py-2 font-nav text-[12px] uppercase tracking-wider no-underline transition-opacity duration-150 ${
-                    on ? 'font-bold text-bureau-black' : 'font-semibold text-bureau-black opacity-70 hover:opacity-100'
-                  }`}
-                >
-                  <span className="text-bureau-amber">§{sec.n}</span>{' '}
-                  <span className="min-[1800px]:hidden">{locale === 'tr' ? sec.shortTr : sec.shortEn}</span>
-                  <span className="hidden min-[1800px]:inline">{locale === 'tr' ? sec.tr : sec.en}</span>
-                </Link>
-              )
-            })}
 
             {NAV_ITEMS.map(({ href, labelKey }) => {
               // Büro ve Arşiv linkleri menüden KALDIRILDI (artık Footer'da).
@@ -444,8 +422,11 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
             <div className="border-b border-bureau-rule">
               <div className="flex items-stretch">
                 <Link
-                  href="/custom-registry"
-                  onClick={() => setMenuOpen(false)}
+                  href={{ pathname: '/', hash: CUSTOM_PICKER_ID }}
+                  onClick={(e) => {
+                    setMenuOpen(false)
+                    onSectionClick(CUSTOM_PICKER_ID)(e)
+                  }}
                   className={`flex flex-1 items-center gap-3 px-5 py-5 font-nav text-[12px] font-semibold tracking-wider uppercase no-underline ${
                     isActive('/custom-registry') ? 'text-bureau-amber' : 'text-bureau-black'
                   }`}
@@ -550,19 +531,6 @@ export function Header({ collections = [] }: { collections?: Collection[] }) {
               </>
             )}
 
-            {HOME_SECTIONS.map((sec) => (
-              <Link
-                key={sec.id}
-                href={{ pathname: '/', hash: sec.id }}
-                onClick={(e) => {
-                  setMenuOpen(false)
-                  onSectionClick(sec.id)(e)
-                }}
-                className="block px-5 py-5 font-nav text-[12px] font-semibold uppercase tracking-wider text-bureau-black no-underline"
-              >
-                <span className="text-bureau-amber">§{sec.n}</span> {locale === 'tr' ? sec.tr : sec.en}
-              </Link>
-            ))}
 
             {NAV_ITEMS.map(({ href, labelKey }) => (
               <Link

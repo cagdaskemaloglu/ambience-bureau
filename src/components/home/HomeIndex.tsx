@@ -6,13 +6,18 @@ import { LIGHT_CLASSES } from '@/lib/lightClasses'
 import { formatPrice, getLocalizedValue, getPricingForLocale, urlFor } from '@/lib/sanity'
 import { ProductCard } from '@/components/registry/ProductCard'
 import { Link } from '@/i18n/navigation'
-import type { ProductCard as ProductCardType, SanityImage } from '@/types'
+import type { Collection, ProductCard as ProductCardType, SanityImage } from '@/types'
+import { HeroCollectionPicker } from './HeroCollectionPicker'
 
-/** Klavye kısayolları: A = Drops; sınıflar kendi harfleriyle (lightClasses.ts → code: S D F G …). */
-const DROPS_KEY = 'A'
 const DROPS_ID = 'drops'
 
 export const HOME_INDEX_ID = 'tahsis-dizini'
+/** Menüdeki "Tüm Kayıtlar" satırı (RegisterSection'ı seçim alanında gösterir). */
+const REGISTER_ID = 'tum-kayitlar'
+/** İlk ekranın altındaki TEK seçim alanı. */
+const SELECTION_ID = 'secim-alani'
+/** "Kendi lambanı tasarla" / header "Özel Tahsis" → ilk ekranda koleksiyon seçimi. */
+const CUSTOM_PICKER_ID = 'ozel-tahsis'
 
 export type DropsPreview = {
   /** Kayıtlı (görünen) drop sayısı */
@@ -30,7 +35,6 @@ export type DropsPreview = {
 
 type Row = {
   id: string
-  key: string
   title: string
   desc: string
   products: ProductCardType[]
@@ -40,8 +44,10 @@ type Row = {
 /**
  * Anasayfa tahsis dizini — Drops ve Daimi Envanter sınıfları TEK listede:
  * A Drops · S Lambader · D Aplik · F Masa Lambası · G Sarkıt.
- *  - Tüm satırlar KAPALI başlar; satıra tıklamak ya da baştaki harfe
- *    klavyeden basmak o satırı açar/kapatır (birden fazla açık olabilir).
+ *  - Menü ilk ekranın altında yatay bir şerittir. Anasayfa = header +
+ *    footer + aralarında TEK seçim alanı: bir satıra tıklamak içeriğini
+ *    ilk ekranın altındaki tek alanda gösterir (öncekinin YERİNE geçer);
+ *    seçili satıra tekrar tıklamak alanı kapatır.
  *  - Sağdaki dosya kartı (md+) üzerine gelinen/odaklanılan satırın
  *    ürünlerini önizler; kart satır açılınca da görünür kalır (sticky).
  *  - "#drop-NNN" / "#daimi-envanter" bağlantıları (bülten paneli) Drops
@@ -53,7 +59,24 @@ export function HomeIndex({
   dropsContent,
   drops,
   dropProducts,
+  intro,
+  side,
+  background,
+  registerProducts,
+  registerContent,
+  collections,
 }: {
+  /** Özel Tahsis koleksiyonları — ilk ekranda tanıtım bloğunun yerinde seçilir. */
+  collections: Collection[]
+  /** "Tüm Kayıtlar" satırının vitrin ürünleri ve içeriği (RegisterSection). */
+  registerProducts: ProductCardType[]
+  registerContent: ReactNode
+  /** İlk ekranın solu: FORM 001 künyesi, başlık, açıklama, eylemler. */
+  intro: ReactNode
+  /** İlk ekranın sağı (üst): Büro Bülteni. */
+  side: ReactNode
+  /** İlk ekranın tamamına yayılan arka plan (3B tel kafes sahnesi). */
+  background?: ReactNode
   products: ProductCardType[]
   locale: string
   /** Drops satırının vitrininde dönecek drop ürünleri (canlı drop önce). */
@@ -77,7 +100,6 @@ export function HomeIndex({
       }
       return {
         id: cls.value,
-        key: cls.code,
         title: tr ? cls.tr : cls.en,
         desc: tr ? cls.descTr : cls.descEn,
         products: list,
@@ -87,7 +109,6 @@ export function HomeIndex({
     return [
       {
         id: DROPS_ID,
-        key: DROPS_KEY,
         title: 'Drops',
         desc: tr
           ? 'Numaralı ve sonlu drop’lar. Her adet bir seri numarası taşır; drop kapandığında aynı nesne bir daha üretilmez.'
@@ -96,105 +117,80 @@ export function HomeIndex({
         fromPrice: null,
       },
       ...classRows,
+      {
+        id: REGISTER_ID,
+        title: tr ? 'Tüm Kayıtlar' : 'Full Register',
+        desc: tr
+          ? 'Sicildeki bütün nesneler tek dosyada: drop parçaları ve daimi envanter. Rejime, sınıfa ve fiyata göre süzün.'
+          : 'Every object on the register in one file: drop pieces and standing inventory. Filter by regime, class and price.',
+        products: registerProducts,
+        fromPrice: null,
+      },
     ]
-  }, [products, dropProducts, locale, tr])
+  }, [products, dropProducts, registerProducts, locale, tr])
 
-  const [open, setOpen] = useState<Set<string>>(() => new Set())
+  const [selected, setSelected] = useState<string | null>(null)
+  // Özel Tahsis: ilk ekranın solunda tanıtım yerine koleksiyon seçimi.
+  const [picking, setPicking] = useState(false)
   const [active, setActive] = useState<string>(DROPS_ID)
   const rowRefs = useRef<Record<string, HTMLLIElement | null>>({})
-  // Klavyeyle açınca sayfa kayar; imlecin altına gelen satır kartı
-  // değiştirmesin diye fare üzerine gelmeyi kısa süre yok say.
+  // Açınca sayfa kayar; imlecin altına gelen satır kartı değiştirmesin
+  // diye fare üzerine gelmeyi kısa süre yok say.
   const ignoreHoverUntil = useRef(0)
   const activeRow = rows.find((r) => r.id === active) ?? rows[0]
-  // Klavyeyle en son gidilen (odaktaki) satır: aynı harfe tekrar basmak
-  // önce o satıra GERİ DÖNER, zaten oradaysan kapatır.
-  const focusedRow = useRef<string | null>(null)
-  const openRef = useRef(open)
-  openRef.current = open
+  const selectedRef = useRef(selected)
+  selectedRef.current = selected
 
-  const scrollToRow = useCallback((id: string) => {
+  // Seçim alanı ilk ekranın ALTINDA; kapanınca ilk ekrana dönülür.
+  const panelRef = useRef<HTMLElement>(null)
+  const heroRef = useRef<HTMLElement>(null)
+  const navRef = useRef<HTMLElement>(null)
+  const scrollToRow = useCallback((closing = false) => {
     ignoreHoverUntil.current = performance.now() + 900
-    requestAnimationFrame(() => {
-      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-      rowRefs.current[id]?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
-    })
+    // Panel bir sonraki çizimde oluşur: iki kare bekle.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+        const target = closing ? heroRef.current : panelRef.current
+        target?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' })
+      })
+    )
   }, [])
 
-  /**
-   * Harf tuşu:
-   *  1) satır kapalıysa → aç ve oraya kaydır
-   *  2) açık ama odak başka satırdaysa → o satıra geri dön (kapatma)
-   *  3) açık ve odak zaten bu satırdaysa → kapat
-   */
-  const navigateKey = useCallback(
-    (id: string) => {
-      setActive(id)
-      const isOpen = openRef.current.has(id)
-      if (!isOpen) {
-        setOpen((prev) => new Set(prev).add(id))
-        focusedRow.current = id
-        scrollToRow(id)
-      } else if (focusedRow.current !== id) {
-        focusedRow.current = id
-        scrollToRow(id)
-      } else {
-        setOpen((prev) => {
-          const next = new Set(prev)
-          next.delete(id)
-          return next
-        })
-        focusedRow.current = null
-        scrollToRow(id)
-      }
-    },
-    [scrollToRow]
-  )
-
   const toggle = useCallback(
-    (id: string, opts?: { scroll?: boolean; forceOpen?: boolean }) => {
+    (id: string, opts?: { forceOpen?: boolean; noScroll?: boolean }) => {
       setActive(id)
-      const willOpen = !openRef.current.has(id) || !!opts?.forceOpen
-      setOpen((prev) => {
-        const next = new Set(prev)
-        if (willOpen) next.add(id)
-        else next.delete(id)
-        return next
-      })
-      focusedRow.current = willOpen ? id : null
-      if (opts?.scroll) scrollToRow(id)
+      const willOpen = selectedRef.current !== id || !!opts?.forceOpen
+      setSelected(willOpen ? id : null)
+      // Telefonda menü yana kayan tek satır: seçilen kalemi görünür yap.
+      const li = rowRefs.current[id]
+      const ul = li?.parentElement
+      if (li && ul && ul.scrollWidth > ul.clientWidth) {
+        ul.scrollTo({ left: li.offsetLeft - (ul.clientWidth - li.offsetWidth) / 2, behavior: 'smooth' })
+      }
+      if (!opts?.noScroll) scrollToRow(!willOpen)
     },
     [scrollToRow]
   )
 
-  // Klavye: A/S/D/F/G… — yazı alanlarında ve kısayol tuşlarıyla birlikte çalışmaz.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.altKey || e.repeat) return
-      const t = e.target as HTMLElement | null
-      if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return
-      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return
-      const k = e.key.toLocaleUpperCase('en-US')
-      const row = rows.find((r) => r.key === k)
-      if (!row) return
-      e.preventDefault()
-      navigateKey(row.id)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [rows, navigateKey])
-
-  // Masaüstünde dizin ilk ekranın altına kadar uzar (masthead + dizin tam
-  // bir ekran): tam ekranda aşağıdaki "Tüm Kayıtlar" başlığı görünmez.
-  const gridRef = useRef<HTMLDivElement>(null)
+  // Masaüstünde ilk ekran (3B sahne + metin + menü + bülten) tam bir ekran:
+  // header'ın altından ekranın sonuna kadar.
   const [minH, setMinH] = useState<number | null>(null)
+  const [navH, setNavH] = useState(60)
+  const [viewH, setViewH] = useState<number | null>(null)
   useEffect(() => {
     const measure = () => {
-      const el = gridRef.current
+      if (navRef.current) setNavH(navRef.current.offsetHeight)
+      const el = heroRef.current
       const main = document.getElementById('main-content')
+      // Seçim alanı en az (görünür alan − menü) yüksekliğinde: içerik kısa
+      // olsa da menü en üste oturabilsin.
+      if (main) setViewH(main.clientHeight - (navRef.current?.offsetHeight ?? 0))
       if (!el || !main || window.innerWidth < 768) return setMinH(null)
       const top = el.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop
-      const h = main.clientHeight - top
-      setMinH(h > 320 ? Math.floor(h) : null)
+      // İlk ekran + menü şeridi birlikte header ile footer arasını doldurur.
+      const h = main.clientHeight - top - (navRef.current?.offsetHeight ?? 0)
+      setMinH(h > 360 ? Math.floor(h) : null)
     }
     measure()
     window.addEventListener('resize', measure)
@@ -205,12 +201,17 @@ export function HomeIndex({
   useEffect(() => {
     const handle = () => {
       const h = decodeURIComponent(window.location.hash.slice(1))
-      if (h.startsWith('drop-')) {
-        toggle(DROPS_ID, { forceOpen: true })
+      if (h === CUSTOM_PICKER_ID) {
+        setPicking(true)
+        heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else if (h === REGISTER_ID) {
+        toggle(REGISTER_ID, { forceOpen: true })
+      } else if (h.startsWith('drop-')) {
+        toggle(DROPS_ID, { forceOpen: true, noScroll: true })
         // Drop satırları açıldıktan sonra kaydır.
         setTimeout(() => document.getElementById(h)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60)
       } else if (h === 'daimi-envanter' || h === HOME_INDEX_ID) {
-        document.getElementById(HOME_INDEX_ID)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     }
     handle()
@@ -218,136 +219,69 @@ export function HomeIndex({
     return () => window.removeEventListener('hashchange', handle)
   }, [toggle])
 
+  const countLabel = (r: Row) => {
+    const count = r.id === DROPS_ID ? drops.count : r.products.length
+    return count > 0
+      ? r.id === DROPS_ID
+        ? `${pad(count)} drop`
+        : `${pad(count)} ${tr ? 'kayıt' : count === 1 ? 'record' : 'records'}`
+      : tr
+        ? 'Kayıt açılıyor'
+        : 'Opening'
+  }
+  const selectedRow = rows.find((r) => r.id === selected) ?? null
+
   return (
-    <div
-      ref={gridRef}
-      style={minH ? { minHeight: minH } : undefined}
-      className="grid border-b border-bureau-rule md:grid-cols-[minmax(0,1fr)_minmax(320px,440px)]"
-    >
-      {/* Dizin — satırlar boş yüksekliği eşit paylaşır */}
-      <ul className="flex min-w-0 flex-col md:border-r md:border-bureau-rule">
-        {rows.map((r) => {
-          const isOpen = open.has(r.id)
-          const isActive = r.id === activeRow?.id
-          const count = r.id === DROPS_ID ? drops.count : r.products.length
-          const panelId = `index-panel-${r.id}`
-          return (
-            <li
-              key={r.id}
-              ref={(el) => {
-                rowRefs.current[r.id] = el
-              }}
-              className="flex flex-1 scroll-mt-2 flex-col border-b border-bureau-rule last:border-b-0"
-            >
-              <button
-                type="button"
-                onClick={() => toggle(r.id)}
-                onMouseEnter={() => {
-                  if (performance.now() > ignoreHoverUntil.current) setActive(r.id)
+    <>
+      {/* İLK EKRAN — site tek sayfalık bir "header": 3B sahne tüm alana yayılır
+          (kenarlarda siyaha erir), solda künye + başlık + küçük dizin menüsü,
+          sağda Büro Bülteni ve önizleme kartı. */}
+      <section
+        ref={heroRef}
+        aria-labelledby="home-title"
+        style={minH ? { minHeight: minH } : undefined}
+        className="home-hero relative isolate flex flex-col overflow-hidden"
+      >
+        {background}
+        <div className="pointer-events-none relative z-10 grid flex-1 gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] md:px-9 md:py-8 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)_minmax(300px,380px)]">
+          {/* Sol: künye + başlık + açıklama + eylemler */}
+          <div className="pointer-events-auto flex min-w-0 flex-col justify-center">
+            {picking ? (
+              <HeroCollectionPicker
+                collections={collections}
+                locale={locale}
+                onBack={() => {
+                  setPicking(false)
+                  // Aynı bağlantıya yeniden basılınca tekrar açılabilsin.
+                  if (window.location.hash === `#${CUSTOM_PICKER_ID}`) {
+                    history.replaceState(null, '', window.location.pathname + window.location.search)
+                  }
                 }}
-                onFocus={() => setActive(r.id)}
-                aria-expanded={isOpen}
-                aria-controls={panelId}
-                aria-keyshortcuts={r.key}
-                className={`focus-bureau group relative isolate flex w-full items-center gap-4 overflow-hidden px-5 py-4 text-left md:gap-6 md:px-9 md:py-5 ${isOpen ? '' : 'flex-1'}`}
+              />
+            ) : (
+              intro
+            )}
+          </div>
+
+          {/* Orta: 3B sahne (arka planda) için boş alan */}
+          <div aria-hidden="true" className="hidden lg:block" />
+
+          {/* Sağ: Büro Bülteni + önizleme kartı */}
+          <div className="pointer-events-auto flex min-w-0 flex-col gap-6">
+            <div>{side}</div>
+            {activeRow && (
+              <article
+                key={activeRow.id}
+                aria-live="polite"
+                className="animate-drawer-in hidden border border-bureau-black bg-bureau-white md:block"
               >
-                {/* Çekmece dolgusu — aktif (önizlenen) satırda soldan taşar */}
-                <span
-                  aria-hidden="true"
-                  className={`absolute inset-0 -z-10 origin-left scale-x-0 bg-bureau-black transition-transform duration-300 ease-[cubic-bezier(0.2,0.7,0.1,1)] motion-reduce:transition-none max-md:group-hover:scale-x-100 ${
-                    isActive ? 'md:scale-x-100' : ''
-                  }`}
-                />
-                <span
-                  className={`flex w-full items-center gap-4 transition-transform duration-300 ease-[cubic-bezier(0.2,0.7,0.1,1)] motion-reduce:transition-none md:gap-6 ${
-                    isActive ? 'md:translate-x-2' : ''
-                  }`}
-                >
-                  {/* Harf = klavye kısayolu */}
-                  <kbd
-                    className={`inline-flex h-8 w-8 flex-shrink-0 items-center justify-center border font-mono text-[15px] font-semibold md:h-9 md:w-9 md:text-[17px] ${
-                      isActive || isOpen
-                        ? 'border-bureau-amber text-bureau-amber'
-                        : 'border-bureau-rule text-bureau-subtle max-md:group-hover:text-bureau-amber'
-                    }`}
-                  >
-                    {r.key}
-                  </kbd>
-                  <span
-                    className={`flex-1 text-[18px] font-semibold tracking-[-0.02em] md:text-[24px] ${
-                      isActive ? 'md:text-bureau-white' : 'text-bureau-black'
-                    } max-md:group-hover:text-bureau-white`}
-                  >
-                    {r.title}
-                  </span>
-                  <span
-                    className={`hidden font-mono text-[11px] uppercase tabular-nums tracking-wider sm:block ${
-                      isActive ? 'md:text-bureau-white/70' : 'text-bureau-muted'
-                    }`}
-                  >
-                    {count > 0
-                      ? r.id === DROPS_ID
-                        ? `${pad(count)} drop`
-                        : `${pad(count)} ${tr ? 'kayıt' : count === 1 ? 'record' : 'records'}`
-                      : tr
-                        ? 'Kayıt açılıyor'
-                        : 'Opening'}
-                  </span>
-                  <span
-                    aria-hidden="true"
-                    className={`font-mono text-[16px] transition-transform duration-200 ${isOpen ? 'rotate-90' : ''} ${
-                      isActive || isOpen ? 'md:text-bureau-amber' : 'text-bureau-subtle'
-                    } max-md:group-hover:text-bureau-amber`}
-                  >
-                    →
-                  </span>
-                </span>
-              </button>
-
-              {isOpen && (
-                <div id={panelId} className="animate-drawer-in border-t border-bureau-rule">
-                  {r.id === DROPS_ID ? (
-                    dropsContent
-                  ) : r.products.length > 0 ? (
-                    <div className="product-file-grid p-4 md:p-6">
-                      {r.products.map((p) => (
-                        <ProductCard key={p._id} product={p} />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="px-5 py-8 text-center font-mono text-[11px] uppercase tracking-wide text-bureau-muted md:px-9">
-                      {tr ? 'Bu sınıfta kayıt açılıyor.' : 'Registration for this class is opening.'}
-                    </p>
-                  )}
+                <div className="flex items-center justify-between border-b border-bureau-black px-3.5 py-2 font-mono text-[10px] uppercase tracking-widest">
+                  <span className="text-bureau-black">{activeRow.title}</span>
+                  <span className="tabular-nums text-bureau-muted">{countLabel(activeRow)}</span>
                 </div>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-
-      {/* Dosya kartı — önizlenen satır (sadece md+) */}
-      {activeRow && (
-        <div className="hidden md:block">
-          <div className="sticky top-0 p-6 lg:p-9" aria-live="polite">
-            <article key={activeRow.id} className="animate-drawer-in border border-bureau-black bg-bureau-white">
-              <div className="flex items-center justify-between border-b border-bureau-black px-4 py-2.5 font-mono text-[10.5px] uppercase tracking-widest">
-                <span className="text-bureau-black">
-                  [{activeRow.key}] {activeRow.title}
-                </span>
-                <span className="tabular-nums text-bureau-muted">
-                  {activeRow.id === DROPS_ID
-                    ? `${pad(drops.count)} drop`
-                    : `${pad(activeRow.products.length)} ${tr ? 'kayıt' : 'rec.'}`}
-                </span>
-              </div>
-
-              <Coverflow row={activeRow} locale={locale} />
-
-              <div className="space-y-3 border-t border-bureau-black px-4 py-4">
-                <p className="line-clamp-2 text-[13px] leading-relaxed text-bureau-muted">{activeRow.desc}</p>
-                <div className="flex items-end justify-between gap-4">
-                  <p className="font-mono text-[12px] tabular-nums text-bureau-black">
+                <Coverflow row={activeRow} locale={locale} height={230} />
+                <div className="flex h-[52px] items-center justify-between gap-3 border-t border-bureau-black px-3.5">
+                  <p className="min-w-0 truncate font-mono text-[11px] tabular-nums text-bureau-black">
                     {activeRow.id === DROPS_ID
                       ? drops.feature
                         ? drops.feature.live && drops.feature.planned !== null
@@ -362,20 +296,123 @@ export function HomeIndex({
                   </p>
                   <button
                     type="button"
-                    onClick={() => toggle(activeRow.id, { scroll: true, forceOpen: true })}
-                    className="btn-file focus-bureau !px-3 !py-2"
+                    onClick={() => toggle(activeRow.id, { forceOpen: true })}
+                    className="btn-file focus-bureau !px-3 !py-1.5"
                   >
-                    <span>
-                      {tr ? 'Aç' : 'Open'} <kbd className="ml-1 font-mono opacity-70">{activeRow.key}</kbd>
-                    </span>
+                    <span>{tr ? 'Aç ↓' : 'Open ↓'}</span>
                   </button>
                 </div>
-              </div>
-            </article>
+              </article>
+            )}
           </div>
         </div>
+      </section>
+
+      {/* Dizin menüsü — ilk ekranın altında YATAY şerit; aşağı kayınca
+          header'ın hemen altında SABİT kalır (sticky). Satıra tıklamak
+          içeriğini alttaki tek seçim alanında gösterir. Telefonda tek
+          satır, yana kaydırılır (sabitken ekranı kaplamasın). */}
+      <nav
+        id={HOME_INDEX_ID}
+        aria-label={tr ? 'Tahsis dizini' : 'Allocation index'}
+        ref={navRef}
+        className="sticky top-0 z-30 border-y border-bureau-rule bg-bureau-white/85 backdrop-blur-[6px]"
+      >
+        <span id="daimi-envanter" aria-hidden="true" />
+        <ul className="flex overflow-x-auto lg:grid lg:grid-cols-6 lg:overflow-visible">
+          {rows.map((r) => {
+            const isOpen = selected === r.id
+            const isActive = r.id === activeRow?.id
+            return (
+              <li
+                key={r.id}
+                ref={(el) => {
+                  rowRefs.current[r.id] = el
+                }}
+                className="min-w-[160px] flex-shrink-0 border-r border-bureau-rule last:border-r-0 lg:min-w-0"
+              >
+                <button
+                  type="button"
+                  onClick={() => toggle(r.id)}
+                  onMouseEnter={() => {
+                    if (performance.now() > ignoreHoverUntil.current) setActive(r.id)
+                  }}
+                  onFocus={() => setActive(r.id)}
+                  aria-expanded={isOpen}
+                  aria-controls={SELECTION_ID}
+                  className="focus-bureau group relative flex min-h-[52px] w-full items-center gap-3 px-5 py-2.5 text-left md:px-6"
+                >
+                  {/* Etkin/açık satır: üstte amber çizgi */}
+                  <span
+                    aria-hidden="true"
+                    className={`absolute inset-x-0 top-0 h-[2px] origin-left bg-bureau-amber transition-transform duration-300 ${
+                      isOpen || isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                    } ${isOpen ? '' : 'opacity-60'}`}
+                  />
+                  <span className="flex min-w-0 flex-1 flex-col">
+                    <span className={`truncate text-[15px] font-semibold tracking-[-0.01em] ${isOpen ? 'text-bureau-amber' : 'text-bureau-black'}`}>
+                      {r.title}
+                    </span>
+                    <span className="font-mono text-[9.5px] uppercase tabular-nums tracking-wider text-bureau-muted">
+                      {countLabel(r)}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={`font-mono text-[13px] transition-transform duration-200 ${isOpen ? 'rotate-90 text-bureau-amber' : isActive ? 'text-bureau-amber' : 'text-bureau-subtle'}`}
+                  >
+                    →
+                  </span>
+                </button>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+
+      {/* İLK EKRANIN ALTI — TEK seçim alanı: seçilen kategori burada. */}
+      {selectedRow && (
+        <section
+          key={selectedRow.id}
+          id={SELECTION_ID}
+          ref={panelRef}
+          aria-label={selectedRow.title}
+          style={{ scrollMarginTop: navH, minHeight: viewH ?? undefined }}
+          className="animate-drawer-in border-b border-bureau-rule"
+        >
+          {selectedRow.id === REGISTER_ID && <span id={REGISTER_ID} aria-hidden="true" />}
+          <div className="flex items-center gap-4 border-b border-bureau-rule px-5 py-3 md:px-9">
+            <span aria-hidden="true" className="h-5 w-[3px] bg-bureau-amber" />
+            <h2 className="flex-1 text-[20px] font-semibold tracking-[-0.02em] text-bureau-black">{selectedRow.title}</h2>
+            <span className="hidden font-mono text-[10px] uppercase tabular-nums tracking-wider text-bureau-muted sm:inline">
+              {countLabel(selectedRow)}
+            </span>
+            <button
+              type="button"
+              onClick={() => toggle(selectedRow.id)}
+              className="focus-bureau min-h-[36px] px-2 font-mono text-[10.5px] uppercase tracking-widest text-bureau-muted hover:text-bureau-amber"
+            >
+              {tr ? 'Kapat' : 'Close'} ✕
+            </button>
+          </div>
+          {selectedRow.id === DROPS_ID ? (
+            dropsContent
+          ) : selectedRow.id === REGISTER_ID ? (
+            registerContent
+          ) : selectedRow.products.length > 0 ? (
+            <div className="product-file-grid p-4 md:p-6">
+              {selectedRow.products.map((p) => (
+                <ProductCard key={p._id} product={p} />
+              ))}
+            </div>
+          ) : (
+            <p className="px-5 py-8 text-center font-mono text-[11px] uppercase tracking-wide text-bureau-muted md:px-9">
+              {tr ? 'Bu sınıfta kayıt açılıyor.' : 'Registration for this class is opening.'}
+            </p>
+          )}
+        </section>
       )}
-    </div>
+    </>
   )
 }
 
@@ -396,7 +433,7 @@ const AUTO_ADVANCE_MS = 3200
  * üzerine gelince ya da odaklanınca durur. Hareketi azalt ayarında
  * otomatik ilerleme kapalıdır.
  */
-function Coverflow({ row, locale }: { row: Row; locale: string }) {
+function Coverflow({ row, locale, height = 320 }: { row: Row; locale: string; height?: number }) {
   const tr = locale === 'tr'
   const intl = tr ? 'tr-TR' : 'en-US'
   const items = row.products
@@ -414,14 +451,19 @@ function Coverflow({ row, locale }: { row: Row; locale: string }) {
   const go = (d: number) => setIndex((i) => (((i + d) % n) + n) % n)
 
   if (n === 0) {
+    // Dolu vitrinle AYNI yükseklik: sahne + 44px'lik odak satırı. Menüde
+    // gezinirken kartın boyu değişip yerleşim zıplamasın.
     return (
-      <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-bureau-surface">
-        <span aria-hidden="true" className="absolute select-none font-mono text-[160px] font-semibold leading-none text-bureau-rule">
-          {row.key}
-        </span>
-        <span className="relative -rotate-6 border-2 border-bureau-amber px-4 py-2 font-mono text-[13px] font-semibold uppercase tracking-widest text-bureau-amber">
-          {tr ? 'Kayıt açılıyor' : 'Registration opening'}
-        </span>
+      <div>
+        <div className="relative flex items-center justify-center overflow-hidden bg-bureau-surface" style={{ height }}>
+          <span className="relative -rotate-6 border-2 border-bureau-amber px-4 py-2 font-mono text-[13px] font-semibold uppercase tracking-widest text-bureau-amber">
+            {tr ? 'Kayıt açılıyor' : 'Registration opening'}
+          </span>
+        </div>
+        <div className="flex h-11 items-center justify-between gap-3 border-t border-bureau-black px-4">
+          <span className="text-[14px] font-semibold text-bureau-subtle">—</span>
+          <span className="font-mono text-[11px] tabular-nums text-bureau-muted">00/00</span>
+        </div>
       </div>
     )
   }
@@ -449,7 +491,7 @@ function Coverflow({ row, locale }: { row: Row; locale: string }) {
       aria-roledescription={tr ? 'vitrin' : 'carousel'}
       aria-label={row.title}
     >
-      <div className="relative h-[320px] overflow-hidden bg-bureau-surface [perspective:1100px]">
+      <div className="relative overflow-hidden bg-bureau-surface [perspective:1100px]" style={{ height }}>
         {items.map((p, k) => {
           let d = k - index
           if (d > n / 2) d -= n
@@ -468,8 +510,8 @@ function Coverflow({ row, locale }: { row: Row; locale: string }) {
                   className="object-cover"
                 />
               ) : (
-                <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center font-mono text-[64px] font-semibold text-bureau-rule">
-                  {row.key}
+                <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center font-mono text-[11px] uppercase tracking-widest text-bureau-subtle">
+                  {tr ? 'Görsel yok' : 'No image'}
                 </span>
               )}
             </div>
@@ -531,7 +573,7 @@ function Coverflow({ row, locale }: { row: Row; locale: string }) {
       </div>
 
       {/* Odaktaki ürün */}
-      <div className="flex items-baseline justify-between gap-3 border-t border-bureau-black px-4 py-2.5" aria-live="polite">
+      <div className="flex h-11 items-center justify-between gap-3 border-t border-bureau-black px-4" aria-live="polite">
         <Link href={productHref(current)} className="focus-bureau min-w-0 truncate text-[14px] font-semibold text-bureau-black no-underline hover:text-bureau-amber">
           {curName}
         </Link>

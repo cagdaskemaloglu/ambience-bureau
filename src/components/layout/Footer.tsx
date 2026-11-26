@@ -5,12 +5,12 @@ import { Link } from '@/i18n/navigation'
 
 const APP_STORE_URL = 'https://apps.apple.com/tr/app/ambience-bureau/id6794577754'
 
-export function Footer() {
+export function Footer({ className }: { className?: string }) {
   const locale = useLocale()
   const tr = locale === 'tr'
 
   return (
-    <footer className="mt-auto border-t border-bureau-line-header dark:border-[rgb(var(--bureau-line-header))]">
+    <footer className={`mt-auto flex-shrink-0 bg-bureau-white ${className ?? ''} border-t border-bureau-line-header dark:border-[rgb(var(--bureau-line-header))]`}>
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-5 px-5 py-6 sm:px-10 sm:py-4">
         {/* Sol: telif + marka */}
         <span className="flex flex-wrap items-baseline gap-x-1.5 font-mono text-[10px] tracking-widest text-bureau-subtle uppercase">
