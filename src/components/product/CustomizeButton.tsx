@@ -4,6 +4,7 @@ import { useTranslations } from 'next-intl'
 import { Link } from '@/i18n/navigation'
 
 /**
+ * Anasayfadaki 3B görüntüleyicide (ilk ekran) bu ürünün kombinasyonuyla açılır.
  * Ürün detay sayfasında "Nesne Talep Et" butonunun hemen altında görüntülenir.
  * `isConfigurable` false olduğunda buton görünmeye devam eder ama tıklanamaz
  * ve soluk görünür (Sanity'den aktif/deaktif edilir — bkz. product.ts
@@ -21,7 +22,7 @@ export function CustomizeButton({ slug, isConfigurable }: { slug: string; isConf
   }
 
   return (
-    <Link href={`/custom-registry?preset=${slug}`} className="btn-bureau-outline mt-2.5 block w-full text-center">
+    <Link href={`/?preset=${encodeURIComponent(slug)}`} className="btn-bureau-outline mt-2.5 block w-full text-center">
       {t('customize')}
     </Link>
   )

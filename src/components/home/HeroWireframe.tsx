@@ -26,8 +26,11 @@ export function HeroWireframe({
   items,
   locale,
   focusCollection = null,
+  focusSlug = null,
   active = true,
 }: {
+  /** Seçilen nesne (ürün slug'ı ya da "model:<id>"): koleksiyondan önce gelir. */
+  focusSlug?: string | null
   items: HeroWireframeData[]
   locale: string
   /** Seçilen Özel Tahsis koleksiyonu: sahne o koleksiyonun bir nesnesine geçer, sıra durur. */
@@ -55,7 +58,7 @@ export function HeroWireframe({
   const [fading, setFading] = useState(false)
   const shownAt = useRef(0)
   const onPreloaded = useCallback(() => setNextReady(true), [])
-  const rotating = items.length > 1 && animate && !focusCollection
+  const rotating = items.length > 1 && animate && !focusCollection && !focusSlug
   const nextIdx = (idx + 1) % items.length
 
   useEffect(() => {
@@ -84,10 +87,14 @@ export function HeroWireframe({
 
   // Koleksiyon seçildi: tel kafes o koleksiyonun ilk nesnesine geçer.
   useEffect(() => {
-    if (!focusCollection) return
-    const i = items.findIndex((x) => x.collectionKey === focusCollection)
-    if (i >= 0) setIdx(i)
-  }, [focusCollection, items])
+    if (!focusCollection && !focusSlug) return
+    let i = focusSlug ? items.findIndex((x) => x.slug === focusSlug) : -1
+    if (i < 0 && focusCollection) i = items.findIndex((x) => x.collectionKey === focusCollection)
+    if (i >= 0) {
+      setIdx(i)
+      setFading(false)
+    }
+  }, [focusCollection, focusSlug, items])
 
   const data = items[idx]
 

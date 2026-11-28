@@ -113,7 +113,7 @@ export function ProductCard({
       : `REG. NO. ${product.registryNo}`
 
   const href = modelLink
-    ? `/custom-registry?collection=${encodeURIComponent(modelLink.collectionKey)}&model=${encodeURIComponent(modelLink.modelId)}`
+    ? `/?collection=${encodeURIComponent(modelLink.collectionKey)}&model=${encodeURIComponent(modelLink.modelId)}`
     : `/registry/${product.slug.current}`
   const purchasable = !modelLink && !dropSoldOut && isProductPurchasable(product)
   const configurable = !modelLink && !dropSoldOut && product.isConfigurable

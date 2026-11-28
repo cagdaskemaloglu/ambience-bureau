@@ -7,6 +7,7 @@ import { useConfiguratorStore } from '@/lib/store/configurator'
 import { SlotPicker } from './SlotPicker'
 import { MaterialPicker } from './MaterialPicker'
 import { ModelPanel } from './ModelPanel'
+import { IotToggle } from './IotToggle'
 import { getLocalizedValue } from '@/lib/sanity'
 
 type Tab = 'base' | 'body' | 'head'
@@ -18,7 +19,7 @@ type Tab = 'base' | 'body' | 'head'
  * otomatik olarak Gövde'ye geçiyor; Gövde opsiyonel/çoklu-ekleme
  * olduğu için "Devam Et" butonuyla kendi kararıyla Başlık'a geçiyor.
  */
-export function ControlPanel() {
+export function ControlPanel({ hideIot = false }: { hideIot?: boolean } = {}) {
   const locale = useLocale()
   const tr = locale === 'tr'
   // Koleksiyonda seçilebilir taban/başlık parçası yoksa o sekme hiç gösterilmez
@@ -31,8 +32,6 @@ export function ControlPanel() {
   const base = useConfiguratorStore((s) => s.base)
   const body = useConfiguratorStore((s) => s.body)
   const head = useConfiguratorStore((s) => s.head)
-  const iotEnabled = useConfiguratorStore((s) => s.iotEnabled)
-  const hardwareFees = useConfiguratorStore((s) => s.hardwareFees)
   const bodyLimits = useConfiguratorStore((s) => s.bodyLimits)
   const toggleSinglePart = useConfiguratorStore((s) => s.toggleSinglePart)
   const addBodyPart = useConfiguratorStore((s) => s.addBodyPart)
@@ -41,7 +40,6 @@ export function ControlPanel() {
   const selectMaterial = useConfiguratorStore((s) => s.selectMaterial)
   const getSelectedPart = useConfiguratorStore((s) => s.getSelectedPart)
   const getBodyPartCount = useConfiguratorStore((s) => s.getBodyPartCount)
-  const toggleIot = useConfiguratorStore((s) => s.toggleIot)
   const modelMode = useConfiguratorStore((s) => s.layoutMode === 'model')
 
   // Gövde sayısı sınırları koleksiyona göre Sanity'den gelir (min/max).
@@ -63,15 +61,6 @@ export function ControlPanel() {
   const baseComplete = !!base.partId && !!base.materialId
   const headComplete = !!head.partId && !!head.materialId
 
-  const hardwareFeeLabel =
-    locale === 'tr'
-      ? iotEnabled
-        ? `Donanım Tahsisi: ₺${(hardwareFees.baseTRY + hardwareFees.iotTRY).toLocaleString('tr-TR')} (₺${hardwareFees.baseTRY.toLocaleString('tr-TR')} + ₺${hardwareFees.iotTRY.toLocaleString('tr-TR')} IoT)`
-        : `Donanım Tahsisi: ₺${hardwareFees.baseTRY.toLocaleString('tr-TR')}`
-      : iotEnabled
-        ? `Hardware Allocation: $${hardwareFees.baseUSD + hardwareFees.iotUSD} ($${hardwareFees.baseUSD} + $${hardwareFees.iotUSD} IoT)`
-        : `Hardware Allocation: $${hardwareFees.baseUSD}`
-
   if (availableParts.length === 0 && !modelMode) {
     return (
       <div className="flex h-40 items-center justify-center">
@@ -82,36 +71,7 @@ export function ControlPanel() {
     )
   }
 
-  const iotToggle = (
-    <>
-      {/* IoT Toggle */}
-      <div className="flex items-center justify-between border border-bureau-rule p-3">
-        <div>
-          <p className="font-mono text-[10.5px] uppercase tracking-wide text-bureau-black">
-            {tr ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
-          </p>
-          <span className="font-mono text-[9.5px] text-bureau-muted">{hardwareFeeLabel}</span>
-        </div>
-        <button
-          onClick={toggleIot}
-          role="switch"
-          aria-checked={iotEnabled}
-          aria-label={tr ? 'Akıllı Cihaz (IoT)' : 'Smart Device (IoT)'}
-          // p-0 + sabit sol konum: global buton stilleri knob'u kaydırmasın
-          // (açıkken yuvarlak pencereden taşıyordu).
-          className={`relative block h-6 w-11 flex-shrink-0 overflow-hidden rounded-full p-0 transition-colors ${
-            iotEnabled ? 'bg-bureau-amber' : 'bg-bureau-rule'
-          }`}
-        >
-          <span
-            className={`absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
-              iotEnabled ? 'translate-x-5' : 'translate-x-0'
-            }`}
-          />
-        </button>
-      </div>
-    </>
-  )
+  const iotToggle = hideIot ? null : <IotToggle />
 
   // Montajlı model (sarkıt/aplik/masa): sekmeler yerine model + parça renkleri.
   if (modelMode) {
@@ -129,7 +89,7 @@ export function ControlPanel() {
       ? [
           {
             key: 'body' as Tab,
-            label: (tr ? 'Gövde' : 'Body') + (body.length > 0 ? ` (${body.length})` : ''),
+            label: tr ? 'Gövde' : 'Body',
             done: body.length >= Math.max(1, bodyLimits.min),
           },
         ]
@@ -143,23 +103,33 @@ export function ControlPanel() {
     <div className="space-y-4">
       {iotToggle}
 
-      {/* Sekme başlıkları */}
-      <div className="flex items-center gap-6 border-b border-bureau-black">
-        {TABS.map((tabItem) => (
-          <button
-            key={tabItem.key}
-            onClick={() => setActiveTab(tabItem.key)}
-            className={`flex items-center gap-1.5 border-b-2 pb-2.5 font-mono text-[11px] uppercase tracking-wider transition-colors ${
-              currentTab === tabItem.key
-                ? 'border-bureau-amber text-bureau-black'
-                : 'border-transparent text-bureau-muted hover:text-bureau-black'
-            }`}
-          >
-            {tabItem.done && <span className="text-bureau-amber">✓</span>}
-            {tabItem.label}
-          </button>
-        ))}
-      </div>
+      {/* Adımlar: numaralı, tamamlanan adımda onay işareti */}
+      <ol className="grid border border-bureau-black" style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}>
+        {TABS.map((tabItem, i) => {
+          const on = currentTab === tabItem.key
+          return (
+            <li key={tabItem.key} className="border-r border-bureau-black last:border-r-0">
+              <button
+                type="button"
+                onClick={() => setActiveTab(tabItem.key)}
+                aria-current={on ? 'step' : undefined}
+                className={`focus-bureau flex w-full items-center gap-2 px-2.5 py-2 text-left transition-colors ${
+                  on ? 'bg-bureau-black text-bureau-white' : 'text-bureau-black hover:bg-bureau-surface'
+                }`}
+              >
+                <span
+                  className={`flex h-5 w-5 flex-shrink-0 items-center justify-center font-mono text-[9.5px] ${
+                    tabItem.done ? 'bg-bureau-amber text-white' : on ? 'border border-bureau-white/60' : 'border border-bureau-rule text-bureau-muted'
+                  }`}
+                >
+                  {tabItem.done ? '✓' : String(i + 1).padStart(2, '0')}
+                </span>
+                <span className="truncate font-mono text-[10.5px] uppercase tracking-wider">{tabItem.label}</span>
+              </button>
+            </li>
+          )
+        })}
+      </ol>
 
       {/* Taban */}
       {currentTab === 'base' && (

@@ -121,9 +121,11 @@ function SceneLights({ isCaptureMode = false }: { isCaptureMode?: boolean }) {
 interface SceneProps {
   children: React.ReactNode
   cameraDistance?: number
+  /** false: teknik zemin ızgarası çizilmez (anasayfa stüdyosunda yerine tel kafes oda). */
+  grid?: boolean
 }
 
-export function Scene({ children, cameraDistance = 750 }: SceneProps) {
+export function Scene({ children, cameraDistance = 750, grid = true }: SceneProps) {
   // Capture modunda (bkz. SpinCaptureHook.tsx) GizmoHelper (yön pusulası)
   // gizlenir — bu bir HTML overlay değil, WebGL sahnesinin bir parçası,
   // yani product spin kareleri toDataURL() ile yakalanırken görünürdü.
@@ -152,7 +154,7 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
         <GradientBackground top={VIEWER_BG_TOP} bottom={VIEWER_BG_BOTTOM} />
 
         <SceneLights isCaptureMode={isCaptureMode} />
-        <TechnicalGrid />
+        {grid && <TechnicalGrid />}
 
         <Suspense fallback={null}>
           <Environment preset="studio" environmentIntensity={isCaptureMode ? 0.21 : 0.6} resolution={isCaptureMode ? 1536 : 256} />

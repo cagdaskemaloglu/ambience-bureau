@@ -36,18 +36,14 @@ export function CustomizeButtonMini({
     if (!isConfigurable) return
     // Anasayfadaysak konfigüratör AYNI SAYFADA, ilk ekranın içinde açılır
     // (HomeIndex 'bureau:open-studio' olayını dinler ve preventDefault eder).
-    if (href) {
-      const q = new URLSearchParams(href.split('?')[1] ?? '')
-      const collection = q.get('collection')
-      if (collection) {
-        const ev = new CustomEvent('bureau:open-studio', {
-          detail: { collection, model: q.get('model') ?? undefined },
-          cancelable: true,
-        })
-        if (!window.dispatchEvent(ev)) return
-      }
-    }
-    router.push(href ?? `/custom-registry?preset=${slug}`)
+    // Model kartı: ?collection=…&model=…; diğerleri: ürünün kombinasyonu (preset).
+    const q = new URLSearchParams(href?.split('?')[1] ?? '')
+    const collection = q.get('collection')
+    const detail = collection ? { collection, model: q.get('model') ?? undefined } : { preset: slug }
+    const ev = new CustomEvent('bureau:open-studio', { detail, cancelable: true })
+    if (!window.dispatchEvent(ev)) return
+    // Başka sayfadaysak: anasayfaya git, stüdyo ilk ekranda açılır.
+    router.push(collection ? (href as string) : `/?preset=${encodeURIComponent(slug)}`)
   }
 
   return (

@@ -4,6 +4,7 @@ import { createContext, Suspense, useContext, useEffect, useMemo, useRef } from 
 import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import * as THREE from 'three'
+import { MERIDIANS, sliceAt, sliceMeridian } from '@/lib/three/wireSlices'
 import type { HeroWireframeData } from '@/lib/queries'
 import { normalizeUnits } from '@/lib/three/normalizeUnits'
 
@@ -93,7 +94,8 @@ function Lines({ geometry, color, opacity }: { geometry: THREE.BufferGeometry; c
   )
 }
 
-function Room({ height, radius, hanging, lampTop }: { height: number; radius: number; hanging?: boolean; lampTop: number }) {
+/** Oda tel kafesi — konfigüratör (anasayfaya gömülü stüdyo) de aynısını çizer. */
+export function Room({ height, radius, hanging, lampTop }: { height: number; radius: number; hanging?: boolean; lampTop: number }) {
   const tone = useContext(ToneCtx)
   const geo = useMemo(() => {
     const { step, half, wallZ, front, wallH } = roomDims(height, radius)
@@ -165,61 +167,6 @@ function Room({ height, radius, hanging, lampTop }: { height: number; radius: nu
     </group>
   )
 }
-
-/**
- * Bir parçayı y = c düzlemiyle keser: kesit çizgileri (segment çiftleri).
- * Üçgen ağı yerine bu "halkalar" çizilir;
- * organik formlarda bile temiz, teknik çizim gibi okunur.
- */
-function sliceAt(pos: ArrayLike<number>, c: number, out: number[]) {
-  const p: number[] = []
-  for (let i = 0; i < pos.length; i += 9) {
-    p.length = 0
-    for (let k = 0; k < 3; k++) {
-      const a = i + k * 3
-      const b = i + ((k + 1) % 3) * 3
-      const ya = pos[a + 1] - c
-      const yb = pos[b + 1] - c
-      if ((ya < 0) !== (yb < 0)) {
-        const t = ya / (ya - yb)
-        const x = pos[a] + (pos[b] - pos[a]) * t
-        const z = pos[a + 2] + (pos[b + 2] - pos[a + 2]) * t
-        p.push(x, z)
-      }
-    }
-    if (p.length === 4) out.push(p[0], c, p[1], p[2], c, p[3])
-  }
-}
-
-/**
- * Bir parçayı lambanın ekseninden (y) geçen dikey bir düzlemle keser
- * (normal = (nx, 0, nz)): parçanın o açıdaki gerçek dikey profili. Lambayla
- * birlikte döner; organik/yaylı formlarda da doğru dış hat verir.
- */
-function sliceMeridian(pos: ArrayLike<number>, nx: number, nz: number, out: number[]) {
-  const p: number[] = []
-  for (let i = 0; i < pos.length; i += 9) {
-    p.length = 0
-    for (let k = 0; k < 3; k++) {
-      const a = i + k * 3
-      const b = i + ((k + 1) % 3) * 3
-      const da = pos[a] * nx + pos[a + 2] * nz
-      const db = pos[b] * nx + pos[b + 2] * nz
-      if ((da < 0) !== (db < 0)) {
-        const t = da / (da - db)
-        p.push(
-          pos[a] + (pos[b] - pos[a]) * t,
-          pos[a + 1] + (pos[b + 1] - pos[a + 1]) * t,
-          pos[a + 2] + (pos[b + 2] - pos[a + 2]) * t
-        )
-      }
-    }
-    if (p.length === 6) out.push(...p)
-  }
-}
-
-/** Meridyen düzlemleri: 0°, 45°, 90°, 135° (her biri iki yan profil verir). */
-const MERIDIANS = [0, 45, 90, 135].map((deg) => [Math.cos((deg * Math.PI) / 180), Math.sin((deg * Math.PI) / 180)] as const)
 
 type PartDraw = { rings: THREE.BufferGeometry; meridians: THREE.BufferGeometry; height: number; radius: number }
 

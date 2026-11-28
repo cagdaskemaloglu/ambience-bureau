@@ -1,7 +1,8 @@
 'use client'
 
 import { CustomRegistryClient } from '@/components/configurator/CustomRegistryClient'
-import type { Collection } from '@/types'
+import type { RevealPhase } from '@/components/configurator/WireReveal'
+import type { Collection, ProductConfiguratorPart } from '@/types'
 
 /**
  * Anasayfanın ilk ekranına GÖMÜLÜ konfigüratör (Özel Tahsis). Bu dosya
@@ -14,7 +15,15 @@ export default function HeroStudio({
   collectionKey,
   modelId,
   onClose,
+  onReady,
+  layout,
+  presetDesign = null,
+  reveal,
 }: {
+  onReady?: () => void
+  layout: 'desktop' | 'mobile'
+  presetDesign?: { collectionKey: string; parts: ProductConfiguratorPart[] } | null
+  reveal?: RevealPhase
   collections: Collection[]
   collectionKey: string
   modelId?: string
@@ -25,11 +34,14 @@ export default function HeroStudio({
       collections={collections}
       initialCollectionKey={collectionKey}
       initialModelId={modelId}
-      presetDesign={null}
-      presetStatus="not-requested"
+      presetDesign={presetDesign}
+      presetStatus={presetDesign ? 'ok' : 'not-requested'}
       showTutorial={false}
       embedded
+      embeddedLayout={layout}
       onClose={onClose}
+      onReady={onReady}
+      reveal={reveal}
     />
   )
 }

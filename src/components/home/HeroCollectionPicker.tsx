@@ -24,7 +24,7 @@ export function HeroCollectionPicker({
   /** Koleksiyon seçildi: konfigüratör aynı sayfada, ilk ekranda açılır. */
   onPick?: (key: string) => void
   /** Seçim niyeti (üzerine gelme/odak): konfigüratör kodu önceden indirilir. */
-  onIntent?: () => void
+  onIntent?: (key: string) => void
 }) {
   const tr = locale === 'tr'
   return (
@@ -60,9 +60,9 @@ export function HeroCollectionPicker({
           return (
             <li key={c._id}>
               <Link
-                href={`/custom-registry?collection=${encodeURIComponent(key)}`}
-                onMouseEnter={onIntent}
-                onFocus={onIntent}
+                href={`/?collection=${encodeURIComponent(key)}`}
+                onMouseEnter={() => onIntent?.(key)}
+                onFocus={() => onIntent?.(key)}
                 onClick={(e) => {
                   if (!onPick || e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return
                   e.preventDefault()

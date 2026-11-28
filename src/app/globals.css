@@ -556,3 +556,27 @@
 /* Anasayfada header 3B sahnenin parçası gibi: alt çizgi yok, zemin sahnenin
    üst kenarıyla aynı (karanlıkta siyah, aydınlıkta kâğıt). */
 .dark .home-header { background: #000; }
+
+/* Gömülü stüdyo (anasayfa ilk ekranı): tuval kenarlarda ilk ekranın zeminine
+   erir — tel kafes sahnesinin vinyetinden daha hafif, sürükleme alanı açık. */
+.studio-vignette {
+  background: radial-gradient(ellipse 70% 90% at 50% 46%, transparent 55%, rgb(var(--bureau-white) / 0.55) 85%, rgb(var(--bureau-white) / 0.9) 100%);
+}
+.dark .studio-vignette {
+  background: radial-gradient(ellipse 70% 90% at 50% 46%, transparent 55%, rgb(0 0 0 / 0.55) 85%, rgb(0 0 0 / 0.9) 100%);
+}
+
+/* Stüdyo yükleme çubuğu: seçimde 0,25 sn'de %60, hazır olunca 0,15 sn'de %100. */
+.studio-loadbar {
+  transform-origin: left;
+  transform: scaleX(0);
+}
+.studio-loadbar[data-stage='loading'] { animation: loadbar-start 250ms cubic-bezier(0.2, 0.7, 0.1, 1) forwards; }
+.studio-loadbar[data-stage='done'] { animation: loadbar-end 150ms ease-out forwards, loadbar-fade 200ms ease-out 150ms forwards; }
+@keyframes loadbar-start { from { transform: scaleX(0); } to { transform: scaleX(0.6); } }
+@keyframes loadbar-end { from { transform: scaleX(0.6); } to { transform: scaleX(1); } }
+@keyframes loadbar-fade { to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .studio-loadbar[data-stage] { animation-duration: 1ms; }
+}
+.studio-loadwrap[data-stage='done'] { animation: loadbar-fade 200ms ease-out 150ms forwards; }

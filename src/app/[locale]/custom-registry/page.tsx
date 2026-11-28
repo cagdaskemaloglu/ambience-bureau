@@ -86,8 +86,16 @@ export default async function CustomRegistryPage({
   // Koleksiyon seçimi artık anasayfanın ilk ekranında yapılır (header'daki
   // 3B görüntüleyici yerinde kalır). Koleksiyonsuz/presetsiz gelen ziyaretçi
   // oraya yönlendirilir.
-  if (!collection && !preset && !isCaptureMode) {
-    redirect(`/${locale}#ozel-tahsis`)
+  if (!isCaptureMode) {
+    // Konfigüratör artık anasayfanın ilk ekranında (3B görüntüleyicinin
+    // yerinde) açılır; eski bağlantılar oraya aynı parametrelerle gider.
+    const q = new URLSearchParams()
+    if (preset) q.set('preset', preset)
+    else if (collection) {
+      q.set('collection', collection)
+      if (model) q.set('model', model)
+    }
+    redirect(q.size ? `/${locale}?${q.toString()}` : `/${locale}#ozel-tahsis`)
   }
   const realCollections = await getAllLampCollections()
   // SADECE local demo modunda: "Blender konumu" yerleşimini denemek için

@@ -1,7 +1,7 @@
 import { resolveDropState } from '@/lib/dropSchedule'
 import { getLightClass } from '@/lib/lightClasses'
 import { sanityClient } from './sanity'
-import type { LampModelDef, LocalizedString, ProductCard } from '@/types'
+import type { LampModelDef, LocalizedString, ProductCard, ProductConfiguratorPart } from '@/types'
 
 // ── Fragment'lar (tekrar kullanılan GROQ parçaları) ───────
 
@@ -585,6 +585,25 @@ export async function getLampPartsByCollection(collectionKey: string) {
 }
 
 /** "Montajlı model" koleksiyonlarının modelleri (her biri kendi parça setiyle). */
+/**
+ * Ürünün konfigüratör kombinasyonu ("Özelleştir" → anasayfadaki stüdyo):
+ * koleksiyon + parça/malzeme dizilimi. Eksikse null.
+ */
+export async function getProductPresetDesign(
+  slug: string
+): Promise<{ collectionKey: string; parts: ProductConfiguratorPart[] } | null> {
+  const row = await sanityClient.fetch<{ collectionKey: string | null; parts: ProductConfiguratorPart[] | null } | null>(
+    `*[_type == "product" && active != false && slug.current == $slug][0]{
+      "collectionKey": configuratorCollection->key.current,
+      "parts": configuratorParts[]{ slotType, "partId": part->partId.current, "materialId": material->materialId.current }
+    }`,
+    { slug },
+    { next: { tags: [`product-${slug}`] } }
+  )
+  const parts = (row?.parts ?? []).filter((p) => p?.partId && p?.materialId)
+  return row?.collectionKey && parts.length > 0 ? { collectionKey: row.collectionKey, parts } : null
+}
+
 export async function getLampModelsByCollection(collectionKey: string): Promise<LampModelDef[]> {
   return sanityClient.fetch(
     `*[_type == "lampModel" && active != false && collection->key.current == $collectionKey]
@@ -753,7 +772,7 @@ async function getModelWireframes(): Promise<HeroWireframeData[]> {
     return [
       {
         slug: `model:${r.modelId}`,
-        href: `/custom-registry?collection=${encodeURIComponent(r.collectionKey)}&model=${encodeURIComponent(r.modelId)}`,
+        href: `/?collection=${encodeURIComponent(r.collectionKey)}&model=${encodeURIComponent(r.modelId)}`,
         dropNo: null,
         tag: `SINIF ${code} · MODEL`,
         name: r.name,

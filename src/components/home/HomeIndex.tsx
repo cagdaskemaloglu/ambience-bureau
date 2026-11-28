@@ -10,7 +10,9 @@ import { LIGHT_CLASSES } from '@/lib/lightClasses'
 import { formatPrice, getLocalizedValue, getPricingForLocale, urlFor } from '@/lib/sanity'
 import { ProductCard } from '@/components/registry/ProductCard'
 import { Link } from '@/i18n/navigation'
-import type { Collection, ProductCard as ProductCardType, SanityImage } from '@/types'
+import type { Collection, ProductCard as ProductCardType, ProductConfiguratorPart, SanityImage } from '@/types'
+import { getProductPresetDesign } from '@/lib/queries'
+import { StudioLoadBar } from '@/components/configurator/StudioLoadBar'
 import { HeroCollectionPicker } from './HeroCollectionPicker'
 import { HeroWireframe } from './HeroWireframe'
 import type { HeroWireframeData } from '@/lib/queries'
@@ -27,15 +29,26 @@ let studioPreloaded = false
  * adreste `?collection=` YOKSA stüdyo açık kalamaz. (Statik çizimde
  * `useSearchParams` Suspense ister — ayrı bileşen bu yüzden.)
  */
-function StudioUrlSync({ onChange }: { onChange: (collection: string | null, model?: string) => void }) {
+function StudioUrlSync({ onChange }: { onChange: (collection: string | null, model?: string, preset?: string) => void }) {
   const sp = useSearchParams()
   const collection = sp.get('collection')
   const model = sp.get('model') ?? undefined
+  const preset = sp.get('preset') ?? undefined
   useEffect(() => {
-    onChange(collection, model)
-  }, [collection, model, onChange])
+    onChange(collection, model, preset)
+  }, [collection, model, preset, onChange])
   return null
 }
+
+/** Seçimden stüdyonun görünmesine kadar en az bu kadar (tel kafes görünür kalır). */
+const STUDIO_MIN_MS = 1000
+
+type PresetDesign = { collectionKey: string; parts: ProductConfiguratorPart[] }
+/** Stüdyo isteği: koleksiyon (+model) ya da ürün kombinasyonu (preset = ürün slug'ı). */
+type StudioReq = { collection?: string; model?: string; preset?: string }
+type StudioState = { collection: string; model?: string; preset: PresetDesign | null; key: string }
+const reqKey = (r: StudioReq) => `${r.collection ?? ''}|${r.model ?? ''}|${r.preset ?? ''}`
+
 function preloadStudio() {
   if (studioPreloaded) return
   studioPreloaded = true
@@ -166,7 +179,24 @@ export function HomeIndex({
   // Özel Tahsis: ilk ekranın solunda tanıtım yerine koleksiyon seçimi.
   const [picking, setPicking] = useState(false)
   // Gömülü konfigüratör (Özel Tahsis stüdyosu) — ilk ekranın içinde açılır.
-  const [studio, setStudio] = useState<{ collection: string; model?: string } | null>(null)
+  const [studio, setStudio] = useState<StudioState | null>(null)
+  // Tel kafes sahnesinin odağı: seçim yapılır yapılmaz açılacak nesneye geçer
+  // (stüdyo yüklenirken ziyaretçi AYNI lambanın tel kafesini görür).
+  const [focus, setFocus] = useState<{ collection: string | null; slug: string | null } | null>(null)
+  // Stüdyo görünür mü: en az STUDIO_MIN_MS sonra ve tuvalde model hazırken.
+  const [studioReady, setStudioReady] = useState(false)
+  // Yükleme çubuğu: seçimde 0,25 sn'de %60 → hazır olunca 0,15 sn'de %100.
+  const [loadStage, setLoadStage] = useState<'idle' | 'loading' | 'done'>('idle')
+  const readyRef = useRef(false)
+  const openedAt = useRef(0)
+  const openToken = useRef(0)
+  // Açık/açılmakta olan stüdyonun adres anahtarı (adres ↔ durum eşleşmesi).
+  const currentKey = useRef('')
+  const timers = useRef<number[]>([])
+  const clearTimers = () => {
+    timers.current.forEach((t) => window.clearTimeout(t))
+    timers.current = []
+  }
   const [isDesktop, setIsDesktop] = useState(true)
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)')
@@ -176,22 +206,96 @@ export function HomeIndex({
     return () => mq.removeEventListener('change', sync)
   }, [])
 
-  // Adres ↔ stüdyo: ?collection=…(&model=…) stüdyoyu açar; adreste yoksa
-  // kapalıdır. Koleksiyon listesinden açıldıysa geri tuşu listeye döner.
-  const syncFromUrl = useCallback((collection: string | null, model?: string) => {
-    if (collection) {
-      setStudio((prev) => (prev?.collection === collection && prev?.model === model ? prev : { collection, model }))
-    } else {
-      setStudio(null)
-      // Koleksiyon listesi adreste #ozel-tahsis varken açık; geri gelinince kapanır.
-      setPicking(window.location.hash === `#${CUSTOM_PICKER_ID}`)
-    }
-  }, [])
+  /**
+   * Stüdyoyu hazırla. Üst üste (stack) koleksiyonda model verilmemişse
+   * sahnedeki o koleksiyonun ürünü (tel kafesi gösterilen) kombinasyonuyla
+   * açılır — tel kafes ile materyalli görünüm aynı lamba olur.
+   */
+  const startStudio = useCallback(
+    async (req: StudioReq) => {
+      const token = ++openToken.current
+      currentKey.current = reqKey(req)
+      clearTimers()
+      preloadStudio()
+      openedAt.current = performance.now()
+      readyRef.current = false
+      setStudioReady(false)
+      setLoadStage('loading')
+      let collection = req.collection
+      let presetSlug = req.preset
+      if (!presetSlug && collection && !req.model) {
+        const c = collections.find((x) => x.key.current === collection)
+        if (c?.layoutMode !== 'model') {
+          presetSlug = wireframes?.find((w) => w.kind === 'stack' && w.collectionKey === collection)?.slug
+        }
+      }
+      setFocus({ collection: collection ?? null, slug: presetSlug ?? (req.model ? `model:${req.model}` : null) })
+      const hero = heroRef.current
+      if (hero && hero.getBoundingClientRect().top < -40) hero.scrollIntoView({ behavior: 'smooth', block: 'start' })
+
+      let preset: PresetDesign | null = null
+      if (presetSlug) {
+        preset = await getProductPresetDesign(presetSlug).catch(() => null)
+        if (token !== openToken.current) return
+        if (preset) collection = preset.collectionKey
+      }
+      if (!collection) {
+        // Ürünün konfigüratör verisi yok: akış kapanır, sayfa yerinde kalır.
+        currentKey.current = ''
+        setFocus(null)
+        setLoadStage('idle')
+        return
+      }
+      setStudio({ collection, model: req.model, preset, key: `${collection}|${req.model ?? ''}|${preset ? presetSlug : ''}` })
+    },
+    [collections, wireframes]
+  )
+
+  // Seçim niyeti (koleksiyonun üzerine gelme): konfigüratör kodu ve o
+  // koleksiyonun tel kafes dosyaları önceden indirilir — seçilince tel kafes
+  // beklemeden çizilir.
+  const prefetched = useRef(new Set<string>())
+  const prefetchCollection = useCallback(
+    (key: string) => {
+      preloadStudio()
+      if (prefetched.current.has(key)) return
+      prefetched.current.add(key)
+      const c = collections.find((x) => x.key.current === key)
+      const item =
+        (c?.layoutMode !== 'model' && wireframes?.find((w) => w.kind === 'stack' && w.collectionKey === key)) ||
+        wireframes?.find((w) => w.collectionKey === key)
+      item?.parts.forEach((p) => void fetch(p.url, { priority: 'low' } as RequestInit).catch(() => {}))
+    },
+    [collections, wireframes]
+  )
+
+  // Adres ↔ stüdyo: ?collection=…(&model=…) ya da ?preset=<ürün> stüdyoyu
+  // açar; adreste yoksa kapalıdır. Koleksiyon listesinden açıldıysa geri
+  // tuşu listeye döner.
+  const syncFromUrl = useCallback(
+    (collection: string | null, model?: string, preset?: string) => {
+      if (collection || preset) {
+        const req = { collection: collection ?? undefined, model, preset }
+        if (reqKey(req) !== currentKey.current) void startStudio(req)
+      } else {
+        openToken.current++
+        currentKey.current = ''
+        clearTimers()
+        setStudio(null)
+        setFocus(null)
+        setStudioReady(false)
+        setLoadStage('idle')
+        // Koleksiyon listesi adreste #ozel-tahsis varken açık; geri gelinince kapanır.
+        setPicking(window.location.hash === `#${CUSTOM_PICKER_ID}`)
+      }
+    },
+    [startStudio]
+  )
   // Yedek: bazı tarayıcı geri hareketlerinde (bfcache vb.) doğrudan popstate.
   useEffect(() => {
     const onPop = () => {
       const q = new URLSearchParams(window.location.search)
-      syncFromUrl(q.get('collection'), q.get('model') ?? undefined)
+      syncFromUrl(q.get('collection'), q.get('model') ?? undefined, q.get('preset') ?? undefined)
     }
     window.addEventListener('popstate', onPop)
     window.addEventListener('pageshow', onPop)
@@ -201,29 +305,68 @@ export function HomeIndex({
     }
   }, [syncFromUrl])
 
-  const openStudio = useCallback((collection: string, model?: string) => {
-    preloadStudio()
-    setPicking(false)
-    setStudio({ collection, model })
-    const q = new URLSearchParams({ collection, ...(model ? { model } : {}) })
-    history.pushState({ studio: true }, '', `${window.location.pathname}?${q.toString()}`)
-  }, [])
+  const openStudio = useCallback(
+    (req: StudioReq) => {
+      void startStudio(req)
+      const q = new URLSearchParams(
+        req.preset ? { preset: req.preset } : { collection: req.collection ?? '', ...(req.model ? { model: req.model } : {}) }
+      )
+      history.pushState({ studio: true }, '', `${window.location.pathname}?${q.toString()}`)
+    },
+    [startStudio]
+  )
 
-  // Kartlardaki "Özelleştir" (model kartları): sayfadan ayrılmadan stüdyoyu aç.
+  // Kartlardaki / ürün sayfasındaki "Özelleştir": sayfadan ayrılmadan stüdyoyu aç.
   useEffect(() => {
     const onOpen = (e: Event) => {
-      const d = (e as CustomEvent<{ collection: string; model?: string }>).detail
-      if (!d?.collection) return
+      const d = (e as CustomEvent<StudioReq>).detail
+      if (!d?.collection && !d?.preset) return
       e.preventDefault()
-      openStudio(d.collection, d.model)
+      openStudio(d)
       heroRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }
     window.addEventListener('bureau:open-studio', onOpen)
     return () => window.removeEventListener('bureau:open-studio', onOpen)
   }, [openStudio])
 
+  // Tuval hazır: en erken seçimden STUDIO_MIN_MS − 150 ms sonra çubuk %100'e
+  // tamamlanır, 150 ms sonra stüdyo tel kafesten açılır (toplam ≥ 1 sn).
+  const onStudioReady = useCallback(() => {
+    if (readyRef.current) return
+    readyRef.current = true
+    const wait = Math.max(0, openedAt.current + STUDIO_MIN_MS - 150 - performance.now())
+    timers.current.push(
+      window.setTimeout(() => {
+        setLoadStage((s) => (s === 'loading' ? 'done' : s))
+        timers.current.push(
+          window.setTimeout(() => {
+            setStudioReady(true)
+            setPicking(false)
+          }, 150)
+        )
+      }, wait)
+    )
+  }, [])
+  // Bir şey takılırsa akış yine de tamamlansın.
+  useEffect(() => {
+    if (!studio || studioReady) return
+    const t = setTimeout(onStudioReady, 8000)
+    return () => clearTimeout(t)
+  }, [studio, studioReady, onStudioReady])
+  useEffect(() => {
+    if (loadStage !== 'done') return
+    const t = setTimeout(() => setLoadStage('idle'), 400)
+    return () => clearTimeout(t)
+  }, [loadStage])
+
   const closeStudio = useCallback(() => {
+    openToken.current++
+    currentKey.current = ''
+    clearTimers()
     setStudio(null)
+    setFocus(null)
+    setStudioReady(false)
+    setLoadStage('idle')
     if ((history.state as { studio?: boolean } | null)?.studio) history.back()
     else history.replaceState(null, '', window.location.pathname)
   }, [])
@@ -345,34 +488,55 @@ export function HomeIndex({
           <HeroWireframe
             items={wireframes}
             locale={locale}
-            focusCollection={studio?.collection ?? null}
-            active={!studio}
+            focusCollection={focus?.collection ?? studio?.collection ?? null}
+            focusSlug={focus?.slug ?? null}
+            active={!(studio && studioReady && isDesktop)}
           />
         )}
 
-        {/* GÖMÜLÜ KONFİGÜRATÖR (masaüstü): ilk ekranın içinde, sahnenin yerine. */}
+        {/* GÖMÜLÜ KONFİGÜRATÖR (masaüstü): ilk ekranın içinde, AYNI yerleşimle —
+            tuval tel kafes sahnesinin yerinde, solda koleksiyon künyesi, sağda
+            tahsis formu (bülten + vitrin kartının yerinde). Hazır olana dek
+            görünmez yüklenir; sonra tel kafesin üstüne erir. */}
         {studio && isDesktop && (
-          <div className="animate-drawer-in absolute inset-0 z-20 flex">
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center font-mono text-[10px] uppercase tracking-widest text-bureau-wire/70">
-              {tr ? 'Stüdyo hazırlanıyor…' : 'Preparing studio…'}
-            </span>
+          <div
+            aria-hidden={!studioReady || undefined}
+            className={`absolute inset-0 z-20 flex transition-opacity duration-300 ease-out motion-reduce:transition-none ${
+              studioReady ? 'opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+          >
             <div className="relative flex min-h-0 flex-1">
-              <HeroStudio collections={collections} collectionKey={studio.collection} modelId={studio.model} onClose={closeStudio} />
+              <HeroStudio
+                key={studio.key}
+                collections={collections}
+                collectionKey={studio.collection}
+                modelId={studio.model}
+                onClose={closeStudio}
+                onReady={onStudioReady}
+                layout="desktop"
+                presetDesign={studio.preset}
+                reveal={studioReady ? 'reveal' : 'hidden'}
+              />
             </div>
           </div>
         )}
 
+        {/* Yükleme çubuğu — 3B görüntüleyicinin (tel kafesin) üstünde. */}
+        {loadStage !== 'idle' && isDesktop && (
+          <StudioLoadBar stage={loadStage} tr={tr} className="absolute left-1/2 top-6 z-30 w-[min(360px,28%)] -translate-x-1/2" />
+        )}
+
         <div
-          aria-hidden={studio && isDesktop ? true : undefined}
-          className={`pointer-events-none relative z-10 grid ${studio && isDesktop ? 'invisible' : ''} flex-1 gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] md:px-9 md:py-8 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)_minmax(300px,380px)]`}>
+          aria-hidden={studio && studioReady && isDesktop ? true : undefined}
+          className={`pointer-events-none relative z-10 grid transition-opacity duration-200 ${studio && studioReady && isDesktop ? 'invisible opacity-0' : ''} flex-1 gap-8 px-5 py-6 md:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] md:px-9 md:py-8 lg:grid-cols-[minmax(320px,440px)_minmax(0,1fr)_minmax(300px,380px)]`}>
           {/* Sol: künye + başlık + açıklama + eylemler */}
           <div className="pointer-events-auto flex min-w-0 flex-col justify-center">
             {picking ? (
               <HeroCollectionPicker
                 collections={collections}
                 locale={locale}
-                onPick={(key) => openStudio(key)}
-                onIntent={preloadStudio}
+                onPick={(key) => openStudio({ collection: key })}
+                onIntent={prefetchCollection}
                 onBack={() => {
                   setPicking(false)
                   // Aynı bağlantıya yeniden basılınca tekrar açılabilsin.
@@ -448,8 +612,21 @@ export function HomeIndex({
                 {tr ? 'Kapat' : 'Close'} ✕
               </button>
             </div>
-            <div className="flex min-h-0 flex-1 flex-col">
-              <HeroStudio collections={collections} collectionKey={studio.collection} modelId={studio.model} onClose={closeStudio} />
+            <div className="relative flex min-h-0 flex-1 flex-col">
+              {loadStage !== 'idle' && (
+                <StudioLoadBar stage={loadStage} tr={tr} className="absolute inset-x-4 top-3 z-10" />
+              )}
+              <HeroStudio
+                key={studio.key}
+                collections={collections}
+                collectionKey={studio.collection}
+                modelId={studio.model}
+                onClose={closeStudio}
+                onReady={onStudioReady}
+                layout="mobile"
+                presetDesign={studio.preset}
+                reveal={studioReady ? 'reveal' : 'hidden'}
+              />
             </div>
           </div>,
           document.body
@@ -566,7 +743,7 @@ export function HomeIndex({
 /** Kart vitrininde gösterilecek ürünün bağlantısı (model kartı → konfigüratör). */
 function productHref(p: ProductCardType): string {
   if (p.modelLink) {
-    return `/custom-registry?collection=${encodeURIComponent(p.modelLink.collectionKey)}&model=${encodeURIComponent(p.modelLink.modelId)}`
+    return `/?collection=${encodeURIComponent(p.modelLink.collectionKey)}&model=${encodeURIComponent(p.modelLink.modelId)}`
   }
   return `/registry/${p.slug.current}`
 }

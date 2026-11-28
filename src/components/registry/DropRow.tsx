@@ -95,8 +95,8 @@ export function DropRow({
   const panelOnLeft = index % 2 === 1
 
   const createHref = drop.configuratorCollectionKey
-    ? `/custom-registry?collection=${encodeURIComponent(drop.configuratorCollectionKey)}`
-    : '/custom-registry'
+    ? `/?collection=${encodeURIComponent(drop.configuratorCollectionKey)}`
+    : '/#ozel-tahsis'
 
   // Tüm adetler tahsis edildi mi? (plannedQuantity yoksa sınırsız kabul edilir)
   const soldOut = typeof drop.plannedQuantity === 'number' && drop.plannedQuantity - drop.soldCount <= 0

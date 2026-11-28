@@ -271,7 +271,7 @@ export function LampModel() {
   if (layout.items.length === 0) return null
 
   return (
-    <group position={layout.groupPos}>
+    <group name="lamp-model" position={layout.groupPos}>
       {layout.items.map((item) => {
         // Işık mekanizması başlıkta: seçilen başlık parlar; sabit parçalar parlamaz.
         // Montajlı modelde ise Studio'da "Işık yayar" işaretli parça parlar.
