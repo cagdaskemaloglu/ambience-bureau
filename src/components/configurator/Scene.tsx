@@ -138,7 +138,8 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
           position: [cameraDistance * 0.6, cameraDistance * 0.45, cameraDistance * 0.6],
           fov: 40,
           near: 1,
-          far: 3000,
+          // Lambader gibi ~1,5 m'lik modeller de sığsın (kamera 4 m'ye kadar uzaklaşır).
+          far: 10000,
         }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, preserveDrawingBuffer: true }}
         // dpr (device pixel ratio) SADECE capture modunda yükseltilir — bu,
@@ -190,7 +191,9 @@ export function Scene({ children, cameraDistance = 750 }: SceneProps) {
           makeDefault
           target={[0, 80, 0]}
           minDistance={150}
-          maxDistance={1200}
+          // 1200 idi: ~1,2 m'lik lambaderde kamera sınıra takılıp modeli
+          // kadraja sığdıramıyordu. CameraFit gerekli uzaklığı kendi hesaplar.
+          maxDistance={4000}
           maxPolarAngle={Math.PI / 1.95}
           enableDamping
           dampingFactor={0.08}

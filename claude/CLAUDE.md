@@ -145,6 +145,16 @@ dokunurken hepsini düşün. Sabit parçalar
 DEĞİL — seçim/kombinasyon/fiyat kodu bunu varsayar. Konfigüratörü local'de
 sadece `localhost:3000`'de test edin (Sanity CORS).
 
+### 17. Model dosyaları MİLİMETRE varsayılır; metre otomatik düzeltilir
+Blender varsayılanı metredir; metre ile dışa aktarılan bir STL'de lamba ~1
+birim boyunda olur ve sahnede ~1 mm görünür (konfigüratörde "0 mm", model
+görünmez). `src/lib/three/normalizeUnits.ts`: en büyük boyutu 5 birimin
+altındaki parça metre sayılıp ×1000 ölçeklenir (konfigüratör, anasayfa tel
+kafesi, ürün sayfası — hepsi bu fonksiyondan geçer). Yeni bir geometri
+yükleyicisi eklersen onu da bundan geçir. Kalıcı doğrusu: Blender'da
+dışa aktarırken birimi mm yapmak (Scale 1000). Kamera `maxDistance` ~1,5 m'lik
+lambaderler için 4000'e çıkarıldı (`Scene.tsx`).
+
 ## Konvansiyonlar
 
 - **Dil:** Kod yorumları ve commit'ler bu projede genelde **Türkçe**

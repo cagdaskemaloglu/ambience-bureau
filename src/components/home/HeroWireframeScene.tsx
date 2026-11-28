@@ -5,6 +5,7 @@ import { Canvas, useFrame, useLoader, useThree } from '@react-three/fiber'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import * as THREE from 'three'
 import type { HeroWireframeData } from '@/lib/queries'
+import { normalizeUnits } from '@/lib/three/normalizeUnits'
 
 /**
  * Masthead'deki 3B tel kafes "oda": ürünün kayıtlı dizilimi (taban →
@@ -271,7 +272,9 @@ const HANG_ROOM = 2.3
 function Model({ item, animate }: { item: SceneItem; animate: boolean }) {
   const { parts, kind, hanging } = item
   const urls = useMemo(() => Array.from(new Set(parts.map((p) => p.url))), [parts])
-  const loaded = useLoader(STLLoader, urls)
+  const raw = useLoader(STLLoader, urls)
+  // Metre biriminde dışa aktarılmış dosyalar milimetreye çevrilir (bkz. normalizeUnits).
+  const loaded = useMemo(() => raw.map((g) => normalizeUnits(g.clone())), [raw])
 
   const layout = useMemo(() => {
     const geoOf = (url: string) => loaded[urls.indexOf(url)]

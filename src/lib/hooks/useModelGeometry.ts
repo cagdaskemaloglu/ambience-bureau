@@ -6,6 +6,7 @@ import { useGLTF } from '@react-three/drei'
 import { STLLoader } from 'three/examples/jsm/loaders/STLLoader.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import * as THREE from 'three'
+import { normalizeUnits } from '@/lib/three/normalizeUnits'
 
 export function isGLTFUrl(url: string): boolean {
   return url.endsWith('.glb') || url.endsWith('.gltf')
@@ -20,7 +21,7 @@ export function isGLTFUrl(url: string): boolean {
 export function useSTLGeometry(url: string, centered = true): THREE.BufferGeometry {
   const geometry = useLoader(STLLoader, url)
   return useMemo(() => {
-    const cloned = geometry.clone()
+    const cloned = normalizeUnits(geometry.clone())
     cloned.computeVertexNormals()
     if (centered) cloned.center()
     cloned.computeBoundingBox()
@@ -42,7 +43,7 @@ export function useGLTFGeometry(url: string, centered = true): THREE.BufferGeome
         foundGeometry = g
       }
     })
-    const result: THREE.BufferGeometry = foundGeometry ?? new THREE.BoxGeometry(1, 1, 1)
+    const result: THREE.BufferGeometry = foundGeometry ? normalizeUnits(foundGeometry) : new THREE.BoxGeometry(1, 1, 1)
     result.computeBoundingBox()
     return result
   }, [gltf, centered])
